@@ -311,6 +311,10 @@ body.mob .sheet{max-height:calc(100dvh - 40px);overflow:auto}
   body.mob #legend{bottom:calc(env(safe-area-inset-bottom,0px) + 84px)}
   body.mob #scen{bottom:calc(env(safe-area-inset-bottom,0px) + 84px);width:min(460px,calc(100% - 16px));max-height:60dvh}
 }
+.cl{margin:10px 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(124,143,162,.07);max-height:42vh;overflow:auto;font-size:13px;line-height:1.7}
+.cl-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:4px}.cl-h b{color:var(--accent)}.cl-h span{font-size:12px;color:var(--muted)}
+.cl-s{font-size:12px;font-weight:600;margin-top:6px;color:var(--fg)}.cl ul{margin:2px 0 4px;padding-inline-start:18px}.cl li{color:var(--muted)}
+.cl details{margin-top:6px}.cl summary{cursor:pointer;font-size:12px;color:var(--accent)}.cl-o{margin-top:6px}.cl-o b{font-size:12px}
 #modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(3,6,9,.6);z-index:5;padding:16px}
 .sheet{width:min(440px,100%);border-radius:14px;padding:22px 22px 18px;background:var(--panel);border:1px solid var(--line2);box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .sheet h3{font-family:var(--f-disp);font-size:24px;margin:0 0 8px;font-weight:700;text-wrap:balance}
@@ -1260,7 +1264,7 @@ function weakMod(){atmOk();wmw=Math.ceil(W/WMG)+2;wmh=Math.ceil(H/WMG)+2;if(!WML
 let CSZ=null,CST=null,CSN=null,csw=0,csh=0;
 function coreSpread(){const G=3,A=0.32,w=csw=Math.ceil(W/G)+2,h=csh=Math.ceil(H/G)+2;if(!CSZ||CSZ.length!==w*h){CSZ=new Float32Array(w*h);CST=new Float32Array(w*h);CSN=new Float32Array(w*h)}CSZ.fill(0);CSN.fill(0);
   let x0b=1e9,y0b=1e9,x1b=-1,y1b=-1;
-  for(let y=0;y<H;y++){const gy=(y/G)|0,gr=gy*w,r=y*W;for(let x=0;x<W;x++){const z=Zf[r+x];if(z>=31623){const gx=(x/G)|0;CSZ[gr+gx]+=z/9;if(gx<x0b)x0b=gx;if(gx>x1b)x1b=gx;if(gy<y0b)y0b=gy;if(gy>y1b)y1b=gy}}}
+  for(let y=0;y<H;y++){const gy=(y/G)|0,gr=gy*w,r=y*W;for(let x=0;x<W;x++){const z=Zf[r+x];if(z>=10000){const gx=(x/G)|0,wz=z>=63096?1:sst(10000,63096,z);CSZ[gr+gx]+=z*wz/9;if(gx<x0b)x0b=gx;if(gx>x1b)x1b=gx;if(gy<y0b)y0b=gy;if(gy>y1b)y1b=gy}}}
   if(x1b<0)return;
   // the halo reaches ~25 km: work only in that box
   const X0=Math.max(0,x0b-9),X1=Math.min(w-1,x1b+9),Y0=Math.max(0,y0b-9),Y1=Math.min(h-1,y1b+9);
@@ -1280,7 +1284,7 @@ function computeField(dtf=1){
     const kf=Math.min(1,dtf*(s.kill?0.45:0.12));s.hk=hailOK(s)?(s.type==='super'?1.5:1)*(0.75+0.5*env.sev)*(0.85+0.3*((s.hailRoll*97)%1))+(s.type==='super'&&env.sev>=0.9&&((s.hailRoll*31)%1)<0.08?10:0):0;
     for(const b of s.blobs){
       const pb=p-Math.min(0.15,25/s.life)*b.late,cf=(b.life2&&!b.persist)?pulse(b.age2/b.life2):1,ft=b.out?0:Math.max(0,lifeF(pb,s.g0||0.15)*s.killF*cf);
-      b.fv=b.fv==null?ft:b.fv+(ft-b.fv)*kf;const f=b.fv;b.Pe=0;if(f<=0.004)continue;s.vis=true;
+      b.fv=b.fv==null?0:b.fv+(ft-b.fv)*kf;const f=b.fv;b.Pe=0;if(f<=0.004)continue;s.vis=true;
       const fs=pb<(s.g0||0.15)?f:1,mo=b.m==null?0.5:b.m,P=6+(Math.min(71,b.P+(b.g>1.1?s.boost:s.boost*0.5)+(b.g>1.1?(mo-0.5)*9*env.moistFx:(mo-0.5)*2*env.moistFx+((b.gr??1)-1)*8))-6)*f;b.Pe=P;
       const sc=(b.g>1.1?(0.55+0.45*fs)*(1+(0.35*mo-0.2)*env.moistFx):(0.75+0.25*fs)*(0.96+0.08*mo)*(b.halo?env.shieldK:1)*(b.gr??1))*gf,ax=b.ax*sc,ay=b.ay*sc;
       const cx=s.x+(b.rx*fx+b.ry*rxv)*gf,cy=s.y+(b.rx*fy+b.ry*fx)*gf;b.cx=cx;b.cy=cy;
@@ -1807,7 +1811,7 @@ function sndShot(name,dest,vol,rate,lp,when,attack=0){const c=SND.ctx,b=SND.buf[
 function sndThunderAt(x,y){
   const c=SND.ctx;if(!c||!SND.ready||SND.mute||!SND.thunder||c.state!=='running'||product==='fcst')return;const pt=sndPoint();if(!pt)return;
   const d=Math.hypot(x-pt.x,y-pt.y)*PX;if(d>55)return;const now=c.currentTime;SND.active=SND.active.filter(a=>a.end>now);
-  if(now-SND.lastThunder<0.7||SND.active.length>=4)return;SND.lastThunder=now;
+  if(now-SND.lastThunder<0.35||SND.active.length>=3)return;SND.lastThunder=now;
   // real recordings by distance: a sharp crack right overhead, muffled peals a few km away, a low rumble far off
   // (high frequencies die out with distance, and the sound arrives later the farther the strike)
   const set=d<8?['thunder_close_1','thunder_close_2','thunder_close_3','thunder_close_4','thunder_close_5']:d<22?['thunder_mid_1','thunder_mid_2','thunder_mid_3','thunder_mid_4','thunder_mid_5']:['thunder_far_1','thunder_far_2','thunder_far_3','thunder_far_4','thunder_far_5','thunder_far_6'];
@@ -2165,7 +2169,17 @@ $('scSpeed').addEventListener('click',e=>{const b=e.target.closest('button');if(
 $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventListener('click',scenBack);$('scBack2').addEventListener('click',scenBack);$('scAcc').addEventListener('click',()=>setProduct('acc'));$('scEditAgain').addEventListener('click',()=>{scen.editing=true;setProduct('fcst')});
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
-function showWelcome(){showModal(`<h3>مختبر العواصف</h3><p>تم إنشاء هذا المحاكي في المملكة العربية السعودية بمساعدة الذكاء الاصطناعي.</p><p>نستقبل أفكاركم واقتراحاتكم لتطوير المحاكي على ديسكورد${DISCORD_URL?'':' (الرابط قريباً)'}.</p><div class="row"><button class="btn" id="welcomeGo">ابدأ</button>${DISCORD_URL?`<a class="btn ghost" href="${DISCORD_URL}" target="_blank" rel="noopener">انضم إلى ديسكورد</a>`:''}</div>`);
+// update notes shown on the welcome screen (newest first), like game patch notes
+const APP_VERSION=50;
+const CHANGELOG=[
+  {v:50,title:'إصلاحات المطر والرعد',fix:['إصلاح خلل المطر اللي كان يقوى فجأة لحظات ثم يرجع لحالته السابقة','الخلايا الجديدة وقطع المطر صارت تبدأ بالتدريج بدل ما تظهر فجأة بكامل قوتها'],add:['أصوات الرعد تقدر تشتغل مع بعض لين 3 أصوات في نفس الوقت لما يكون البرق قريب','ملاحظات التحديث صارت تظهر هنا مع الترحيب بعد كل تحديث']},
+  {v:49,title:'أصوات رعد حقيقية جديدة',add:['16 صوت رعد حقيقي: قريب وقوي، ومتوسط، وبعيد','كل ما قرب البرق من الزائد يكون صوت الرعد أقوى وأحد، ويتأخر صوت البعيد']},
+  {v:48,title:'البرق والسحب',add:['البرق صار مرتبط بقوة السحابة: الخلية اللي تقوى يكثر برقها فجأة (قفزة البرق)','السحب تمتد على شكل شرائط مع الرياح، ونظام ألوان جديد "الخليجي"','التحديث التلقائي لبرنامج الكمبيوتر'],fix:['حركة السحب العشوائية صارت نادرة جداً']},
+];
+function changelogHTML(){const c=CHANGELOG[0],li=a=>a.map(t=>`<li>${t}</li>`).join('');
+  return `<div class="cl"><div class="cl-h"><b>ما الجديد في النسخة ${c.v}</b><span>${c.title}</span></div>${c.fix?`<div class="cl-s">تم إصلاح</div><ul>${li(c.fix)}</ul>`:''}${c.add?`<div class="cl-s">الإضافات</div><ul>${li(c.add)}</ul>`:''}
+  <details><summary>التحديثات السابقة</summary>${CHANGELOG.slice(1).map(o=>`<div class="cl-o"><b>النسخة ${o.v} · ${o.title}</b><ul>${li([...(o.fix||[]),...(o.add||[])])}</ul></div>`).join('')}</details></div>`}
+function showWelcome(){showModal(`<h3>مختبر العواصف <small style="font-size:12px;color:var(--muted);font-weight:400">النسخة ${APP_VERSION}</small></h3><p>تم إنشاء هذا المحاكي في المملكة العربية السعودية بمساعدة الذكاء الاصطناعي.</p>${changelogHTML()}<p>نستقبل أفكاركم واقتراحاتكم لتطوير المحاكي على ديسكورد${DISCORD_URL?'':' (الرابط قريباً)'}.</p><div class="row"><button class="btn" id="welcomeGo">ابدأ</button>${DISCORD_URL?`<a class="btn ghost" href="${DISCORD_URL}" target="_blank" rel="noopener">انضم إلى ديسكورد</a>`:''}</div>`);
   $('welcomeGo').onclick=()=>{hideModal();if(!SND.mute)sndInit()}}
 DEM_READY.then(()=>{loadRegion('big');stInit();renderLegend();setTool(document.body.classList.contains('mob')?'pan':'storm');resize();startFree(true);renderCities();requestAnimationFrame(frame);if(!window.__NOWELCOME)showWelcome()});
 // ---------- phone layout: full-screen map, thumb toolbar, settings in a pull-up sheet ----------
