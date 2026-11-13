@@ -348,6 +348,7 @@ body.mob .sheet{max-height:calc(100dvh - 40px);overflow:auto}
 .wl .dim{color:var(--muted);font-size:12px}
 .sl{display:grid;gap:4px;margin-top:10px}
 .sl label{display:flex;justify-content:space-between;font-size:12.5px}
+.sl .slv{display:inline-flex;flex-direction:row-reverse;align-items:center;gap:6px;direction:ltr}.sl .rst{all:unset;cursor:pointer;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;border:1px solid var(--line);color:var(--accent);background:var(--panel)}.sl .rst:hover{background:var(--accent-dim)}.sl .rst svg{width:13px;height:13px}.sl .rst[hidden]{display:none}
 .sl label output{font-family:var(--f-mono);font-size:11.5px;color:var(--accent);direction:ltr}
 input[type=range]{width:100%;accent-color:var(--accent);margin:0}
 .chk{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;cursor:pointer}
@@ -656,9 +657,9 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
           </svg>
           <div class="wl" id="windLabel"></div>
         </div>
-        <div class="sl"><label for="windSpd">سرعة الرياح <output id="oSpd"></output></label><input type="range" id="windSpd" min="0" max="80" step="1"></div>
-        <div class="sl"><label for="inst">عدم الاستقرار (CAPE) <output id="oInst"></output></label><input type="range" id="inst" min="0" max="100" step="1"></div>
-        <div class="sl"><label for="moist">متوسط الرطوبة (الماء القابل للهطول) <output id="oMoist"></output></label><input type="range" id="moist" min="0" max="100" step="1"></div>
+        <div class="sl"><label for="windSpd">سرعة الرياح <span class="slv"><output id="oSpd"></output><button type="button" class="rst" data-k="windSpd" hidden title="رجوع للقيمة قبل التغيير" aria-label="رجوع للقيمة قبل التغيير"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button></span></label><input type="range" id="windSpd" min="0" max="80" step="1"></div>
+        <div class="sl"><label for="inst">عدم الاستقرار (CAPE) <span class="slv"><output id="oInst"></output><button type="button" class="rst" data-k="inst" hidden title="رجوع للقيمة قبل التغيير" aria-label="رجوع للقيمة قبل التغيير"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button></span></label><input type="range" id="inst" min="0" max="100" step="1"></div>
+        <div class="sl"><label for="moist">متوسط الرطوبة (الماء القابل للهطول) <span class="slv"><output id="oMoist"></output><button type="button" class="rst" data-k="moist" hidden title="رجوع للقيمة قبل التغيير" aria-label="رجوع للقيمة قبل التغيير"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button></span></label><input type="range" id="moist" min="0" max="100" step="1"></div>
         <label class="chk" style="margin-top:10px"><input type="checkbox" id="natural"><span id="natLabel">عواصف تلقائية فوق جبال الحجاز</span></label>
       </section>
       <section>
@@ -2113,14 +2114,16 @@ const ADV=[
  ['hail','احتمال البرد',0,2,0.05,v=>v<0.05?'بلا برد':Math.round(v*100)+'%','نسبة العواصف التي تحمل برداً'],
  ['merge','قابلية اندماج العواصف',0,2,0.05,v=>v<0.05?'لا تندمج':'×'+v.toFixed(2),'من أي مسافة تندمج عاصفتان'],
  ['moistFx','تأثير الرطوبة',0,2,0.05,v=>'×'+v.toFixed(2),'كم تقوى العاصفة في الرطب وتضعف في الجاف'],
- ['humK','قوة الرطوبة',0.3,2,0.05,v=>'×'+v.toFixed(2),'كل ما زدتها زادت الرطوبة في الجو كله (تشوفها على خريطة الرطوبة): سحب أكثر وأقوى وتطوّل، وإذا نقصتها يجف الجو'],
  ['speedK','سرعة حركة العواصف',0.3,2,0.05,v=>'×'+v.toFixed(2),'سرعة العواصف مقارنة بسرعة الرياح'],
  ['evap','تبخر المطر قبل وصوله للأرض',0,1,0.01,v=>Math.round(v*100)+'%','يقلل مجموع الأمطار على الأرض في الجو الجاف'],
 ];
-$('adv').innerHTML=ADV.map(([k,n,mi,ma,st,,h])=>`<div class="sl"><label for="a_${k}">${n} <output id="o_${k}"></output></label><input type="range" id="a_${k}" min="${mi}" max="${ma}" step="${st}"><span class="hint">${h}</span></div>`).join('');
+$('adv').innerHTML=ADV.map(([k,n,mi,ma,st,,h])=>`<div class="sl"><label for="a_${k}">${n} <span class="slv"><output id="o_${k}"></output><button type="button" class="rst" data-k="${k}" hidden title="رجوع للقيمة قبل التغيير" aria-label="رجوع للقيمة قبل التغيير"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button></span></label><input type="range" id="a_${k}" min="${mi}" max="${ma}" step="${st}"><span class="hint">${h}</span></div>`).join('');
+// the value each setting had before the player touched it (the chosen preset): the arrow beside a changed setting puts it back
+let envBase={...env};function setBase(){const h=envBase.humK??1;envBase={...env};envBase.humK=h}
+document.addEventListener('click',e=>{const b=e.target.closest('.rst');if(!b)return;e.preventDefault();const k=b.dataset.k,old=env[k];env[k]=envBase[k];if(k==='moist')atmRescale((env.moist+0.15)/(old+0.15));if(k==='evap')buildRR();syncEnv()});
 ADV.forEach(([k])=>$('a_'+k).addEventListener('input',e=>{const old=env[k];env[k]=+e.target.value;if(k==='humK')atmRescale(env[k]/old);if(k==='evap')buildRR();segSet('presetSeg','k','');syncEnv()}));
-$('presetSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const om=env.moist;Object.assign(env,PRESETS[b.dataset.k]);atmRescale((env.moist+0.15)/(om+0.15));env.season=b.dataset.k==='summer'?'summer':b.dataset.k==='winter'?'winter':b.dataset.k==='dry'?'late':'spring';if(ATM.Q)atmDiag();renderLegend();segSet('presetSeg','k',b.dataset.k);buildRR();syncEnv()});
-function syncEnv(){ADV.forEach(([k,,,,,f])=>{$('a_'+k).value=env[k];$('o_'+k).textContent=f(env[k])});const to=(env.windFrom+180)%360;
+$('presetSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const om=env.moist;Object.assign(env,PRESETS[b.dataset.k]);atmRescale((env.moist+0.15)/(om+0.15));env.season=b.dataset.k==='summer'?'summer':b.dataset.k==='winter'?'winter':b.dataset.k==='dry'?'late':'spring';if(ATM.Q)atmDiag();renderLegend();segSet('presetSeg','k',b.dataset.k);buildRR();setBase();syncEnv()});
+function syncEnv(){ADV.forEach(([k,,,,,f])=>{$('a_'+k).value=env[k];$('o_'+k).textContent=f(env[k]);});document.querySelectorAll('.rst').forEach(rb=>{const k=rb.dataset.k;rb.hidden=!(Math.abs(env[k]-envBase[k])>0.004)});const to=(env.windFrom+180)%360;
   $('arrow').setAttribute('transform',`rotate(${to})`);$('dial').setAttribute('aria-valuenow',Math.round(to));
   $('windLabel').innerHTML=`تتجه العواصف نحو <b>${DIRS[Math.round(to/45)%8]}</b><div class="dim">الرياح من <b>${String(Math.round(env.windFrom)).padStart(3,'0')}°</b> · ${Math.round(env.windSpd)} كم/س</div>`;
   $('windSpd').value=env.windSpd;$('oSpd').textContent=Math.round(env.windSpd)+' km/h';
@@ -2238,7 +2241,7 @@ function endMission(win){mission.done=true;paused=true;syncSpeed();
   <div class="row"><button class="btn" id="again">جولة جديدة</button><button class="btn ghost" id="free">العب حر</button></div>`);
   $('again').onclick=()=>{hideModal();briefMission()};$('free').onclick=()=>{hideModal();startFree()};}
 function startFree(seed=true){mission.on=false;mission.done=false;mode='free';segSet('modeSeg','m','free');$('missionBox').hidden=true;$('cityHead').textContent='المجموع منذ البداية';
-  resetWorld();env.windFrom=REGION.wind;env.windSpd=24;Object.assign(env,PRESETS.spring);env.natural=true;segSet('presetSeg','k','spring');syncEnv();updateCosts();paused=false;syncSpeed();
+  resetWorld();env.windFrom=REGION.wind;env.windSpd=24;Object.assign(env,PRESETS.spring);env.natural=true;setBase();segSet('presetSeg','k','spring');syncEnv();updateCosts();paused=false;syncSpeed();
   if(seed){for(const[t,lo,la,age]of REGION.seed)spawn(t,lon2x(lo),lat2y(la),{age});
     for(let k=0;k<25;k++)step(1)}
   computeField();
@@ -2275,9 +2278,10 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=66,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=67,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
-  {v:66,title:'قوة الرطوبة',add:['خيار جديد "قوة الرطوبة" تحت تأثير الرطوبة: كل ما زدته زادت الرطوبة في الجو كله، وتشوف التغيير فوراً على خريطة الرطوبة','زيادة الرطوبة تعطي سحب أكثر وأقوى وتطوّل، ونقصها يجفف الجو ويضعف السحب'],fix:['تغيير "متوسط الرطوبة" صار يبان فوراً على خريطة الرطوبة بدل ما ياخذ ساعات']},
+  {v:67,title:'سهم الرجوع في خصائص الجو',add:['إذا غيّرت أي خاصية من خصائص الجو المتقدمة يطلع سهم يسارها: اضغطه وترجع القيمة مثل ما كانت قبل ما تغيّرها','نفس السهم في سرعة الرياح وعدم الاستقرار ومتوسط الرطوبة'],fix:['شلنا خيار "قوة الرطوبة" (متوسط الرطوبة يكفي)']},
+  {v:66,title:'الرطوبة تتغير فوراً',fix:['تغيير "متوسط الرطوبة" والأنماط الجاهزة صار يبان فوراً على خريطة الرطوبة بدل ما ياخذ ساعات']},
   {v:65,title:'خريطة رطوبة أوضح',add:['خريطة الرطوبة صارت بألوان واضحة: بني للجاف، أصفر وأخضر للمتوسط، أزرق وبنفسجي للرطب جداً، وكل لون يمثل 10%','مفتاح ألوان الرطوبة يطلع تحت يسار لما تشغّل الخريطة'],fix:['خريطة الرطوبة كانت باهتة وتختفي في المناطق المتوسطة','الإعدادات: إذا البرنامج قديم يطلع تنبيه واضح إنك تحتاج تنزّل البرنامج الجديد']},
   {v:64,title:'زر الإعدادات',add:['زر "الإعدادات" فوق، وداخله خيار "تفعيل قوة كرت الشاشة" (يشتغل في برنامج الكمبيوتر)'],fix:['شلنا سطر اسم كرت الشاشة من تحت الطبقات']},
   {v:63,title:'السحب تبقى بعد الصباح',add:['السحب ما عادت كلها تختفي إذا جا الظهر: في موسم الأمطار والمنخفض الشتوي والشديد والخلايا العملاقة والربيعي أغلبها يبقى ويكمل','حتى في الصيف يبقى بعضها، والسحب المندمجة مع بعضها فرصتها أكبر تكمل','في الأجواء الرطبة السحب ما عادت تضعف في الصباح بانتظار حرارة الظهر','السحب صارت مربوطة بدرجة الحرارة مثل الواقع: في الحر الشديد (فوق 40°) يتبخر المطر الخفيف بسرعة وتضعف العواصف ويقل تكوّن السحب، وفي الجو المعتدل والبارد تطوّل'],fix:['شلنا خانة "قوة السحب (اختيار سريع)"','تحت الطبقات صار مكتوب اسم كرت الشاشة اللي يشتغل عليه المحاكي، عشان تتأكد إنه الكرت القوي']},
