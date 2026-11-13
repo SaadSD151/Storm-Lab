@@ -1797,6 +1797,9 @@ function mergeStorms(){
       // keep the merged storm in full maturity and give it extra life
       const remB=Math.max(0,0.85*big.life-big.age),remS=Math.max(0,0.85*sm.life-sm.age),keepM=Math.min(Math.max(remB,remS)+0.35*Math.min(remB,remS),Math.max(remB,remS,0.7*Math.max(big.life0||big.life,sm.life0||sm.life)));
       big.life=Math.max(big.life,(big.age+keepM)/0.85);big.g0=Math.min(0.15,15/big.life);if(big.age<big.g0*big.life)big.age=big.g0*big.life;if(hailOK(sm)&&!hailOK(big)){big.hailRoll=0}
+      // a small thunderstorm that joins another cloud stops being a short-lived pulse: the merged storm lives on like any thunderstorm, with cores that renew
+      if(big.mini||sm.mini){big.mini=0;for(const q of big.blobs)if(q.persist&&!q.ax0&&q.g>1.1&&!q.hook){q.persist=0;q.life2=cellLife();q.age2=q.life2*R(0.15,0.45)}
+        big.life=Math.max(big.life,(big.age+R(120,190)*(0.6+0.8*env.moist))/0.85);big.g0=Math.min(0.15,15/big.life);big.maxCores=Math.max(big.maxCores||0,6)}
       if(big.mega){big.megaB=Math.min(6,(big.megaB||3)+0.5);big.maxCores=Math.min(34,(big.maxCores||22)+2)}
       if(sm.type==='storm'&&big.type==='storm'){big.sj=(big.sj||0)+(sm.sj||0)+1;if(big.sj>=3&&!big.mega&&!big.kill&&!big.megaTried&&(big.megaTried=1)&&rnd()<0.08){big.mega=1;big.megaB=3;big.maxCores=22;big.life=Math.max(big.life,300);megaTail(big,28);for(const q of big.blobs)if(q.ti!=null)q.fv=0;alert(`اتحدت أربع عواصف رعدية وتكوّنت عاصفة رعدية عملاقة (${big.id})`,'bad')}}
       big.merged++;if(!big.mega)big.rad=Math.max(big.rad||10,(d+(sm.rad||10)*gS)/gB);sm.dead=true;
@@ -2417,8 +2420,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=90,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=91,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:91,title:'العاصفة الصغيرة تندمج',add:['العاصفة الرعدية الصغيرة صارت تندمج مع السحب الثانية مثل كل الغيوم','إذا اندمجت يطول عمرها: تتحول لعاصفة رعدية عادية تتجدد أنويتها وتعيش ساعات زيادة']},
   {v:90,title:'العاصفة الصغيرة تعيش أطول',fix:['العاصفة الرعدية الصغيرة كانت تختفي بسرعة زايدة (أقل من ساعة): الحين تعيش من ساعة ونص إلى ساعتين تقريباً، ولسا تطلع فجأة وأقصر عمراً من العاصفة الرعدية العادية']},
   {v:89,title:'عاصفة رعدية صغيرة',add:['أداة رسم جديدة بين الخلية المطرية والعاصفة الرعدية: "عاصفة رعدية صغيرة"','تطلع فجأة خلال دقائق، قوية وصغيرة، وتختفي بسرعة (أقل من ساعة)','رعدها أقوى من العاصفة الرعدية العادية وبرقها أكثر','شكلها عشوائي كل مرة: نواة وحدة مايلة، نواتين، نواة معها طرف أضعف، أو قوس قصير من ثلاث','تطلع لحالها أحياناً مع العواصف التلقائية']},
   {v:88,title:'رقم النسخة فوق',add:['رقم نسخة المحاكي صار مكتوب فوق يسار اسم المحاكي','خانة "الانعكاسية" صار اسمها "الأمطار"']},
