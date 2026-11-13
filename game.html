@@ -564,6 +564,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
       <button class="num" data-s="64" aria-pressed="false">64×</button>
     </div>
     <button class="seg wbtn" id="wideBtn" aria-pressed="false"><span>توسيع الخريطة</span></button>
+    <button class="seg wbtn uibtn" id="setBtn" title="الإعدادات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg><span>الإعدادات</span></button>
     <button class="seg wbtn uibtn" id="toMob" title="التبديل إلى نسخة الجوال"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/></svg><span>نسخة الجوال</span></button>
     <button class="sndbtn" id="sndBtn" aria-pressed="true" title="الصوت" aria-label="الصوت"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w1" d="M16.5 9.5a3.5 3.5 0 0 1 0 5"/><path class="w2" d="M19 7a7 7 0 0 1 0 10"/><path class="x" d="M17 9l5 6M22 9l-5 6"/></svg><i id="sndMeter"></i></button>
     <div class="clock"><b id="clock">13:00</b><small id="scan">مسح رقم 1</small></div>
@@ -2130,11 +2131,6 @@ $('natural').addEventListener('change',e=>{env.natural=e.target.checked});
   dial.addEventListener('pointerdown',e=>{on=true;dial.setPointerCapture(e.pointerId);set(e)});
   dial.addEventListener('pointermove',e=>{if(on)set(e)});dial.addEventListener('pointerup',()=>on=false);
   dial.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowDown'){env.windFrom=(env.windFrom+350)%360;syncEnv();e.preventDefault()}if(e.key==='ArrowRight'||e.key==='ArrowUp'){env.windFrom=(env.windFrom+10)%360;syncEnv();e.preventDefault()}});}
-// which graphics card is drawing the simulator (shown under the layers, so the player can check the dedicated card is in use)
-try{const g=document.createElement('canvas').getContext('webgl',{powerPreference:'high-performance'}),e=g&&g.getExtension('WEBGL_debug_renderer_info');let n=e?String(g.getParameter(e.UNMASKED_RENDERER_WEBGL)):'';
-  const soft=!n||/swiftshader|llvmpipe|software|basic render/i.test(n);n=n.replace(/^ANGLE \(/,'').replace(/\)$/,'').replace(/ Direct3D.*$/,'').replace(/^[^,]*, /,'').slice(0,60);
-  const d=document.createElement('div');d.id='gpuInfo';d.style.cssText='font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6';
-  d.innerHTML='<b style="color:var(--fg)">كرت الشاشة:</b> '+(soft?'الرسم على المعالج (ما فيه كرت شاشة مفعّل)':'<span dir="ltr">'+n.replace(/[<>&]/g,'')+'</span>');$('lRings').closest('section').appendChild(d)}catch(e){}
 const LMAP={lMoist:'moist',lStreets:'streets',lTracks:'tracks',lRings:'rings',lSweep:'sweep',lLight:'light',lClutter:'clutter',lSmooth:'smooth',lLabels:'labels'};
 for(const[id,k]of Object.entries(LMAP)){$(id).checked=layers[k];$(id).addEventListener('change',e=>{layers[k]=e.target.checked;stDirty=true})}
 $('bClear').addEventListener('click',()=>{storms.forEach(s=>s.kill=true);MEM.fadeT=simT+30;toast('تتبدد السحب الآن')});
@@ -2274,8 +2270,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=63,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=64,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:64,title:'زر الإعدادات',add:['زر "الإعدادات" فوق، وداخله خيار "تفعيل قوة كرت الشاشة" (يشتغل في برنامج الكمبيوتر)'],fix:['شلنا سطر اسم كرت الشاشة من تحت الطبقات']},
   {v:63,title:'السحب تبقى بعد الصباح',add:['السحب ما عادت كلها تختفي إذا جا الظهر: في موسم الأمطار والمنخفض الشتوي والشديد والخلايا العملاقة والربيعي أغلبها يبقى ويكمل','حتى في الصيف يبقى بعضها، والسحب المندمجة مع بعضها فرصتها أكبر تكمل','في الأجواء الرطبة السحب ما عادت تضعف في الصباح بانتظار حرارة الظهر','السحب صارت مربوطة بدرجة الحرارة مثل الواقع: في الحر الشديد (فوق 40°) يتبخر المطر الخفيف بسرعة وتضعف العواصف ويقل تكوّن السحب، وفي الجو المعتدل والبارد تطوّل'],fix:['شلنا خانة "قوة السحب (اختيار سريع)"','تحت الطبقات صار مكتوب اسم كرت الشاشة اللي يشتغل عليه المحاكي، عشان تتأكد إنه الكرت القوي']},
   {v:62,title:'ذيل السحابة يتمايل حول العواصف الكبيرة فقط',add:['حركة تمايل المطر الخفيف (ذيل السحابة) رجعت، لكن حول العواصف الكبيرة والقوية فقط: الخلية العملاقة، والعواصف الرعدية المتحدة أو كثيرة الخلايا','كل ما كانت العاصفة أقوى زاد التمايل، والسحب العادية والصغيرة تمشي بهدوء مع الرياح']},
   {v:61,title:'حركة أهدأ واختيار سريع لقوة السحب',add:['خانة جديدة "قوة السحب" فوق خصائص الجو المتقدمة بثلاث خيارات: ممطر، غزير، عاصف','الوضع السلس صار 24 إطار بالثانية في كل السرعات (كان 10 في السرعات الأقل من 16)','أداء أخف على الجهاز: تحديث صورة الرادار يتخطى المناطق الفاضية'],fix:['المطر الخفيف ما عاد ينزل جهة الجنوب عن السحابة: يمشي بنفس اتجاهها','حلقات المدى ودوران الهوائي والصدى الأرضي وتنعيم الصورة صارت مطفية من البداية (تقدر تشغلها من الطبقات)','المطر الخفيف (الأزرق والأخضر) ما عاد يرقص ويروح ويرجع: يمشي مع الرياح بهدوء وباتجاه واحد','سرعة المطر الخفيف صارت قريبة من سرعة السحابة نفسها بدل ما يسبقها']},
@@ -2318,6 +2315,11 @@ $('legend').addEventListener('click',e=>{const t=e.target.closest('[data-ly]');i
 document.querySelector('#scen .sc-h').addEventListener('click',()=>{if(mob.on)$('scen').classList.toggle('col')});
 if(document.fullscreenEnabled){$('mFull').hidden=false;$('mFull').addEventListener('click',()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen().catch(()=>{});mSheet(false)})}
 $('toMob').addEventListener('click',()=>setUi('mob'));
+// settings: using the graphics card is a switch of the desktop program itself (it restarts to apply it)
+$('setBtn').addEventListener('click',async()=>{const A=window.stormApp;let on=true;if(A){try{on=await A.gpuGet()}catch(e){}}
+  showModal(`<h3>الإعدادات</h3><label class="chk" style="margin:14px 0 6px;font-size:15px"><input type="checkbox" id="setGpu" ${on?'checked':''} ${A?'':'disabled'}><span>تفعيل قوة كرت الشاشة</span></label>
+  <p style="font-size:13px;color:var(--muted);line-height:1.7;margin:0 0 14px">${A?'يخلي المحاكي يرسم على كرت الشاشة القوي بدل المعالج. عند تغيير الخيار يُعاد تشغيل البرنامج تلقائياً.':'هذا الخيار يشتغل في برنامج الكمبيوتر فقط (آخر نسخة من البرنامج).'}</p><div class="row"><button class="btn" id="setClose">تم</button></div>`);
+  $('setClose').onclick=hideModal;if(A)$('setGpu').onchange=e=>{const v=e.target.checked;toast('يُعاد تشغيل البرنامج الآن…');setTimeout(()=>A.gpuSet(v),600)}});
 {const ms=$('monthSel');ms.innerHTML=MONTHS.map((n,k)=>`<option value="${k+1}">${n}</option>`).join('');ms.value=String(env.month||4);
   ms.addEventListener('change',()=>{env.month=+ms.value;env.season=MONTH_SEASON[env.month-1];if(ATM.Q)atmDiag();renderLegend();toast(`الشهر: ${MONTHS[env.month-1]} · ${seasonOf().n}`)});
   $('nowBtn').addEventListener('click',()=>{const d=new Date();START_H=((d.getHours()+d.getMinutes()/60-simT/60)%24+24)%24;env.month=d.getMonth()+1;ms.value=String(env.month);env.season=MONTH_SEASON[env.month-1];if(ATM.Q)atmDiag();renderLegend();toast('الوقت والشهر الحاليين: '+clockStr()+' · '+MONTHS[env.month-1])});
