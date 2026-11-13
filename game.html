@@ -1167,7 +1167,7 @@ function megaTail(s,r0){const Zs=env.size/PX,bl=s.blobs,blob=(rx,ry,ax,ay,P,g,o=
         const tb=blob(x,y,L/n*R(1.05,1.35),w0*(1+fan*t)*R(0.85,1.15),39-15*t+R(-1.5,1.5),0.85,{k:1,m:1.1,late:t*0.8,ang:sl+R(-.12,.12)});tb.ti=t;bl.push(tb);
         if(fork&&t>0.45){const fb=blob(x,y+fork*(t-0.45)*L,L/n*R(1,1.3),w0*(0.8+fan*t*0.7),34-14*t+R(-1.5,1.5),0.85,{k:1,m:1.1,late:t*0.8,ang:sl+Math.atan(fork)});fb.ti=t;bl.push(fb)}}
       for(const b of bl)if(b.ti!=null){b.x0=b.rx;b.y0=b.ry;b.P0=b.P;b.ay0=b.ay;b.a0=b.ang}
-      s.tailL=L*Zs;s.twob=wob*Zs;s.tph=ph;s.megaT=1;s.r0=r0*Zs;s.mph=R(0,6.28);
+      s.tailL=L*Zs;s.tailT=L*env.size;s.twob=wob*Zs;s.tph=ph;s.megaT=1;s.r0=r0*Zs;s.mph=R(0,6.28);
 }
 let idc=0;const nextId=()=>{const c=idc++;return String.fromCharCode(65+c%26)+(1+(c/26|0))};
 // a band of 2-4 cells lined up along the steering flow (band-parallel organisation, as in the Najd / Eastern Province radar images)
@@ -1667,11 +1667,19 @@ function superDynamics(s,dt){
 // brightens and fades in patches; the red core breathes and changes shape, and new towers keep bubbling up on its flanks and merging into it.
 function megaDynamics(s,dt){s.mt=(s.mt||0)+dt;const a=s.mt,L=s.tailL,ph=s.tph,k=Math.min(1,dt*0.05),dm=Math.exp(-dt/90),sq=Math.sqrt(Math.min(dt,20));
   const cuD=0.2*Math.sin(a/480+ph)+0.11*Math.sin(a/300+ph*2.3),len=1+0.2*Math.sin(a/420+ph*1.7)+0.08*Math.sin(a/260+ph);
-  // the tail is not one stiff piece: every stretch of it wanders on its own a little (more toward the far end), on top of the slow bending of the whole
-  for(const b of s.blobs)if(b.ti!=null){const t=b.ti;b.jx=(b.jx||0)*dm+gauss()*sq*0.05*(0.4+t)*s.twob;b.jy=(b.jy||0)*dm+gauss()*sq*0.07*(0.4+1.6*t)*s.twob;
-    const wave=s.twob*(0.6+1.6*t)*Math.sin(ph+t*5.5-a/200)+s.twob*0.7*t*Math.sin(ph*3+t*11-a/120),tx=b.x0*(0.25+0.75*len)+b.jx,ty=b.y0+cuD*t*t*L+wave*t+b.jy;
-    b.rx+=(tx-b.rx)*k;b.ry+=(ty-b.ry)*k;b.ang=b.a0+Math.atan2(2*cuD*t*L+s.twob*(0.6+1.6*t)*5.5*Math.cos(ph+t*5.5-a/200)*t,L)*0.8;
-    b.P=b.P0+3*Math.sin(a/70+t*9+ph)+(len<1?(len-1)*14*t:0);b.ay=b.ay0*(1+0.22*Math.sin(a/160+t*4+ph))}
+  // The tail is a real plume: rain released from the red core and carried off by the fast winds aloft (about 60 km/h faster than the storm).
+  // Each stretch of the tail is where the core WAS some time ago, plus the distance the winds aloft have carried it since.
+  // So the core is free to go its own way (south, north, slowing, surging) and the tail is dragged after it, bending along the path it took.
+  const hist=s.hist||(s.hist=[]);if(!hist.length||a-hist[hist.length-1].t>=2)hist.push({t:a,x:s.x,y:s.y});while(hist.length>2&&hist[1].t<a-s.tailT-12)hist.shift();
+  const st=steerAt(s.x,s.y),sm_=Math.hypot(st.x,st.y)||1e-6,ux=st.x/sm_,uy=st.y/sm_,bx=st.x*env.speedK*0.9,by=st.y*env.speedK*0.9,U=len/PX,vax=bx+ux*U,vay=by+uy*U,gf=s.gf||1,hang=Math.atan2(s.hy,s.hx);
+  const at=tq=>{const h0=hist[0];if(tq<=h0.t)return[h0.x-bx*(h0.t-tq),h0.y-by*(h0.t-tq)];let i=hist.length-1;const hl=hist[i];if(tq>=hl.t){const f=a>hl.t?(tq-hl.t)/(a-hl.t):1;return[hl.x+(s.x-hl.x)*f,hl.y+(s.y-hl.y)*f]}
+    while(i>0&&hist[i].t>tq)i--;const p=hist[i],q=hist[i+1],f=(tq-p.t)/(q.t-p.t);return[p.x+(q.x-p.x)*f,p.y+(q.y-p.y)*f]};
+  for(const b of s.blobs)if(b.ti!=null){const t=b.ti,tau=t*s.tailT;b.jy=(b.jy||0)*dm+gauss()*sq*0.07*(0.4+1.6*t)*s.twob;
+    const off=(b.y0*0.5+s.twob*(0.6+1.6*t)*Math.sin(ph+t*5.5-a/200)*t+b.jy)*gf,c0=at(a-tau),c1=at(a-tau-4),c2=at(a-tau+4);
+    const wx=c0[0]+vax*tau-uy*off,wy=c0[1]+vay*tau+ux*off,tgx=(c1[0]+vax*(tau+4))-(c2[0]+vax*(tau-4)),tgy=(c1[1]+vay*(tau+4))-(c2[1]+vay*(tau-4));
+    const dx=wx-s.x,dy=wy-s.y,tx=(dx*s.hx+dy*s.hy)/gf,ty=(-dx*s.hy+dy*s.hx)/gf,kk=b.pl?Math.min(1,dt*0.25):1;b.pl=1;
+    b.rx+=(tx-b.rx)*kk;b.ry+=(ty-b.ry)*kk;b.ang=Math.atan2(tgy,tgx)-hang;
+    b.P=b.P0+3*Math.sin(a/70+t*9+ph);b.ay=b.ay0*(1+0.22*Math.sin(a/160+t*4+ph))}
   {let live=0;for(const b of s.blobs)if(b.g>1.1&&!b.out&&!b.hook&&!b.abs&&(b.age2||0)<(b.life2||1)*0.8)live++;if(live<3&&!s.kill&&a>=(s.nextFix||0)){s.nextFix=a+R(10,20);const th=R(0,6.28),d=s.r0*R(0,0.4),r=s.r0*R(0.6,0.8),e=R(1,1.25);
     const nb=B(Math.cos(th)*d,Math.sin(th)*d,r*e,r/e,R(62,66),2,{k:2.4,ang:R(-1.5,1.5)});nb.fv=0;nb.life2=cellLife()*1.5;nb.age2=0;nb.t=0;s.blobs.push(nb)}}
   // its cores stay gathered in one mass (they are replaced where they die instead of scattering)
@@ -1773,7 +1781,7 @@ function step(dt,rdt=0){
     let anc=0;if(s.type!=='line'&&s.type!=='low'&&s.type!=='trail'&&pS<0.8){const el=elevAt(s.x,s.y),up=ATM.UP?atmSamp(ATM.UP,s.x,s.y):0;anc=clamp((el-0.25)/0.3,0,1)*clamp(0.65+up*3,0,1);if(anc>0){tx*=1-0.85*anc;ty*=1-0.85*anc}}s.anc=anc;
     if(!s.mega&&s.type!=='low'&&s.type!=='line')for(const m of storms){if(!m.mega||m.kill||m===s)continue;const dx=m.x-s.x,dy=m.y-s.y,d=Math.hypot(dx,dy),Rr=megaReach(m)+(s.rad||10)*(s.gf||1)*0.6+14/PX;
       if(d<Rr&&d>1){const pull=0.3*(Math.hypot(ws.x,ws.y)*env.speedK+0.05/PX)*(1-d/Rr);tx+=dx/d*pull;ty+=dy/d*pull}}
-    if(s.megaT){const mt=s.mt||0,a=0.3*Math.sin(mt/240+s.mph)+0.12*Math.sin(mt/105+s.mph*2),c=Math.cos(a),sn=Math.sin(a),f=0.88+0.18*Math.sin(mt/170+s.mph*1.4);[tx,ty]=[(tx*c-ty*sn)*f,(tx*sn+ty*c)*f]}
+    if(s.megaT){const mt=s.mt||0,a=0.8*Math.sin(mt/210+s.mph)+0.4*Math.sin(mt/95+s.mph*2.1)+0.15*Math.sin(mt/41+s.mph*3),c=Math.cos(a),sn=Math.sin(a),f=0.85+0.3*Math.sin(mt/150+s.mph*1.4);[tx,ty]=[(tx*c-ty*sn)*f,(tx*sn+ty*c)*f]}
     if(s.type==='low'){tx*=0.7;ty*=0.7}
     if(s.type==='line'){const wm=Math.hypot(w.x,w.y);if(wm>1e-3&&(w.x*s.hx+w.y*s.hy)>0){const k3=Math.min(1,dt*0.01);s.hx+=(w.x/wm-s.hx)*k3;s.hy+=(w.y/wm-s.hy)*k3;const n=Math.hypot(s.hx,s.hy);s.hx/=n;s.hy/=n}
       const sp=Math.max(tx*s.hx+ty*s.hy,0.25)*(1.05+0.15*lifeF(pS,0.2));tx=s.hx*sp;ty=s.hy*sp}else{tx+=s.jx;ty+=s.jy}
@@ -2355,8 +2363,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=77,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=78,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:78,title:'الدائرة الحمراء حرّة والذيل ينسحب وراها',add:['الدائرة الحمراء للعاصفة العملاقة صارت تمشي الطريق اللي تبيه: تنحرف جنوب أو شمال وتبطّئ وتسرع بحرية أكبر','الذيل صار ذيل حقيقي: مطر يطلع من الدائرة وتحمله الرياح العليا، فكل جزء منه هو المكان اللي كانت فيه الدائرة قبل، وينسحب وراها وينحني مع مسارها'],fix:['الذيل ما عاد يتحكم في حركة الدائرة ولا يتحرك معها كقطعة وحدة']},
   {v:77,title:'بلع العواصف صار منطقي',fix:['العاصفة العملاقة كانت تبلع العواصف من آخر الخريطة لأن مداها كان يكبر مع كل عاصفة تبلعها: الحين مداها ثابت على حجم كتلتها الحمراء فقط (أقصى شي 45 كم) وما تبلع إلا اللي يلامسها','العاصفة الصغيرة القريبة تنجذب لها بالتدريج وتقرّب شوي شوي قبل ما تندمج','أنوية العاصفة المبلوعة ما عادت تنسحب لمركز العملاقة: تبقى مكانها وتتلاشى بهدوء']},
   {v:76,title:'تصنيف الرعد وأصوات أقوى',add:['3 أصوات رعد جديدة للعاصفة الرعدية العملاقة، أقوى من السابقة، من تسجيل حقيقي لعاصفة رعدية كبيرة','الرعد صار ثلاث درجات: ضعيف يطلع طول الوقت، متوسط أندر، وقوي نادر وهو الأعلى','أكثر من رعد بنفس الوقت: ممكن رعد ضعيف يدحرج في الخلفية والرعد القوي شغال (إلى 5 أصوات)','مدى سماع الرعد صار 65 كم','العاصفة الرعدية العملاقة ممكن تتكون لحالها، لكن نادر جداً: إذا اتحدت أربع عواصف رعدية مع بعض تتحول لعاصفة رعدية عملاقة بذيلها الطويل ويطلع لك تنبيه'],fix:['الرعد القوي للعاصفة العملاقة صار أعلى من قبل','العاصفة الرعدية العملاقة ما عادت تتحرك كقطعة وحدة: صارت مثل العاصفة الرعدية العادية، أنويتها تولد وتموت وتتجدد فيتغير شكلها ومكانها، لكنها ما تتفكك بسهولة','كل جزء من ذيلها يتحرك لحاله شوي بدل ما يتحرك الذيل كله مع بعض']},
   {v:75,title:'حركة العاصفة الرعدية العملاقة أهدأ',fix:['ذيل العاصفة الرعدية العملاقة كان يرفرف بسرعة لما تسرّع الوقت: الحين تموّجه وانحناؤه ياخذ ساعات مثل الواقع','مسارها يتعرّج ببطء، والدائرة الحمراء تتغير بهدوء، والأنوية الجديدة تطلع على أطرافها كل 35 إلى 70 دقيقة']},
