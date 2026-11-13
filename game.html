@@ -1120,7 +1120,7 @@ function buildRR(){const top=0.95-0.8*env.evap,lo=top*0.73,light=clamp(1-env.eva
 const rainRate=dbz=>RR_LUT[Math.min(110,Math.max(0,(dbz*2)|0))];
 
 /* ---------- state ---------- */
-const env={windFrom:230,windSpd:24,inst:0.55,moist:0.55,natural:true,light:1,sev:0.35,size:1.2,growth:1.5,lifeM:3,natRate:0.2,shear:0.35,morph:0.3,shieldK:1.2,regen:0.6,hail:1,merge:1,moistFx:1,speedK:1,evap:0.5};
+const env={humK:1,windFrom:230,windSpd:24,inst:0.55,moist:0.55,natural:true,light:1,sev:0.35,size:1.2,growth:1.5,lifeM:3,natRate:0.2,shear:0.35,morph:0.3,shieldK:1.2,regen:0.6,hail:1,merge:1,moistFx:1,speedK:1,evap:0.5};
 buildRR();
 const PRESETS={
   calm:{inst:.3,moist:.4,light:.5,sev:.1,size:1,growth:1,lifeM:2,natRate:.05,shear:.2,morph:.2,shieldK:1.1,regen:.4,hail:.3,merge:.8,moistFx:.8,speedK:.9,evap:.6},
@@ -1525,7 +1525,9 @@ function atmInit(){const w=ATM.w=Math.ceil(W/MG),h=ATM.h=Math.ceil(H/MG),n=w*h;
     else if(LF[i]<0.5){const a=T1[xp]-T1[xm],b=T1[yp]-T1[ym],m=Math.hypot(a,b);if(m>1e-3){NX[i]=a/m;NY[i]=b/m;NM[i]=Math.min(1,m*2.5)}}}
   atmReset()}
 function atmBase(i,x,y){const ws=windVec(),t=simT,u=x-ws.x*t*0.8,v=y-ws.y*t*0.8;
-  return clamp(env.moist*(0.8+0.35*Math.exp(-ATM.DI[i]/110))+0.3*samp(TEX2,u*0.33+31+t*0.004,v*0.33+77-t*0.003)+0.08*samp(TEX,u*1.1+5,v*1.1+9),0.03,1)}
+  return clamp((env.moist*(0.8+0.35*Math.exp(-ATM.DI[i]/110))+0.3*samp(TEX2,u*0.33+31+t*0.004,v*0.33+77-t*0.003)+0.08*samp(TEX,u*1.1+5,v*1.1+9))*(env.humK||1),0.03,1)}
+// a change of the humidity controls shows at once: the whole field is rescaled instead of waiting hours for the air to adjust
+function atmRescale(r){if(!ATM.Q||!(r>0)||r===1)return;const Q=ATM.Q;for(let i=0;i<Q.length;i++)Q[i]=clamp(Q[i]*r,0.02,1);for(let gy=0;gy<ATM.h;gy++)for(let gx=0;gx<ATM.w;gx++){const i=gy*ATM.w+gx;ATM.B[i]=atmBase(i,gx*MG+4,gy*MG+4)}atmDiag();moistT=0}
 function atmReset(){if(!ATM.Q)return;const {w,h,Q,CP}=ATM;for(let gy=0;gy<h;gy++)for(let gx=0;gx<w;gx++){const i=gy*w+gx;Q[i]=ATM.B[i]=atmBase(i,gx*MG+4,gy*MG+4);CP[i]=0}atmWinds();atmDiag()}
 // Temperature climatology of Saudi Arabia (mean daily max/min at ~600 m in central Najd, e.g. Riyadh: Jan ≈20/8.5, Apr ≈33/20, Jul ≈43.5/29 °C),
 // with latitude (north colder, much more in winter; in summer the monsoon-moist south is a little cooler), height (≈5-6.5 °C per km),
@@ -2111,12 +2113,13 @@ const ADV=[
  ['hail','احتمال البرد',0,2,0.05,v=>v<0.05?'بلا برد':Math.round(v*100)+'%','نسبة العواصف التي تحمل برداً'],
  ['merge','قابلية اندماج العواصف',0,2,0.05,v=>v<0.05?'لا تندمج':'×'+v.toFixed(2),'من أي مسافة تندمج عاصفتان'],
  ['moistFx','تأثير الرطوبة',0,2,0.05,v=>'×'+v.toFixed(2),'كم تقوى العاصفة في الرطب وتضعف في الجاف'],
+ ['humK','قوة الرطوبة',0.3,2,0.05,v=>'×'+v.toFixed(2),'كل ما زدتها زادت الرطوبة في الجو كله (تشوفها على خريطة الرطوبة): سحب أكثر وأقوى وتطوّل، وإذا نقصتها يجف الجو'],
  ['speedK','سرعة حركة العواصف',0.3,2,0.05,v=>'×'+v.toFixed(2),'سرعة العواصف مقارنة بسرعة الرياح'],
  ['evap','تبخر المطر قبل وصوله للأرض',0,1,0.01,v=>Math.round(v*100)+'%','يقلل مجموع الأمطار على الأرض في الجو الجاف'],
 ];
 $('adv').innerHTML=ADV.map(([k,n,mi,ma,st,,h])=>`<div class="sl"><label for="a_${k}">${n} <output id="o_${k}"></output></label><input type="range" id="a_${k}" min="${mi}" max="${ma}" step="${st}"><span class="hint">${h}</span></div>`).join('');
-ADV.forEach(([k])=>$('a_'+k).addEventListener('input',e=>{env[k]=+e.target.value;if(k==='evap')buildRR();segSet('presetSeg','k','');syncEnv()}));
-$('presetSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;Object.assign(env,PRESETS[b.dataset.k]);env.season=b.dataset.k==='summer'?'summer':b.dataset.k==='winter'?'winter':b.dataset.k==='dry'?'late':'spring';if(ATM.Q)atmDiag();renderLegend();segSet('presetSeg','k',b.dataset.k);buildRR();syncEnv()});
+ADV.forEach(([k])=>$('a_'+k).addEventListener('input',e=>{const old=env[k];env[k]=+e.target.value;if(k==='humK')atmRescale(env[k]/old);if(k==='evap')buildRR();segSet('presetSeg','k','');syncEnv()}));
+$('presetSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const om=env.moist;Object.assign(env,PRESETS[b.dataset.k]);atmRescale((env.moist+0.15)/(om+0.15));env.season=b.dataset.k==='summer'?'summer':b.dataset.k==='winter'?'winter':b.dataset.k==='dry'?'late':'spring';if(ATM.Q)atmDiag();renderLegend();segSet('presetSeg','k',b.dataset.k);buildRR();syncEnv()});
 function syncEnv(){ADV.forEach(([k,,,,,f])=>{$('a_'+k).value=env[k];$('o_'+k).textContent=f(env[k])});const to=(env.windFrom+180)%360;
   $('arrow').setAttribute('transform',`rotate(${to})`);$('dial').setAttribute('aria-valuenow',Math.round(to));
   $('windLabel').innerHTML=`تتجه العواصف نحو <b>${DIRS[Math.round(to/45)%8]}</b><div class="dim">الرياح من <b>${String(Math.round(env.windFrom)).padStart(3,'0')}°</b> · ${Math.round(env.windSpd)} كم/س</div>`;
@@ -2126,7 +2129,7 @@ function syncEnv(){ADV.forEach(([k,,,,,f])=>{$('a_'+k).value=env[k];$('o_'+k).te
   $('natural').checked=env.natural&&!mission.on;$('natural').disabled=mission.on;}
 $('windSpd').addEventListener('input',e=>{env.windSpd=+e.target.value;syncEnv()});
 $('inst').addEventListener('input',e=>{env.inst=e.target.value/100;segSet('presetSeg','k','');syncEnv()});
-$('moist').addEventListener('input',e=>{env.moist=e.target.value/100;segSet('presetSeg','k','');syncEnv()});
+$('moist').addEventListener('input',e=>{const om=env.moist;env.moist=e.target.value/100;atmRescale((env.moist+0.15)/(om+0.15));segSet('presetSeg','k','');syncEnv()});
 $('natural').addEventListener('change',e=>{env.natural=e.target.checked});
 {const dial=$('dial');let on=false;
   const set=e=>{const r=dial.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2;const to=(Math.atan2(x,-y)*180/Math.PI+360)%360;env.windFrom=(to+180)%360;syncEnv()};
@@ -2272,8 +2275,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=65,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=66,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:66,title:'قوة الرطوبة',add:['خيار جديد "قوة الرطوبة" تحت تأثير الرطوبة: كل ما زدته زادت الرطوبة في الجو كله، وتشوف التغيير فوراً على خريطة الرطوبة','زيادة الرطوبة تعطي سحب أكثر وأقوى وتطوّل، ونقصها يجفف الجو ويضعف السحب'],fix:['تغيير "متوسط الرطوبة" صار يبان فوراً على خريطة الرطوبة بدل ما ياخذ ساعات']},
   {v:65,title:'خريطة رطوبة أوضح',add:['خريطة الرطوبة صارت بألوان واضحة: بني للجاف، أصفر وأخضر للمتوسط، أزرق وبنفسجي للرطب جداً، وكل لون يمثل 10%','مفتاح ألوان الرطوبة يطلع تحت يسار لما تشغّل الخريطة'],fix:['خريطة الرطوبة كانت باهتة وتختفي في المناطق المتوسطة','الإعدادات: إذا البرنامج قديم يطلع تنبيه واضح إنك تحتاج تنزّل البرنامج الجديد']},
   {v:64,title:'زر الإعدادات',add:['زر "الإعدادات" فوق، وداخله خيار "تفعيل قوة كرت الشاشة" (يشتغل في برنامج الكمبيوتر)'],fix:['شلنا سطر اسم كرت الشاشة من تحت الطبقات']},
   {v:63,title:'السحب تبقى بعد الصباح',add:['السحب ما عادت كلها تختفي إذا جا الظهر: في موسم الأمطار والمنخفض الشتوي والشديد والخلايا العملاقة والربيعي أغلبها يبقى ويكمل','حتى في الصيف يبقى بعضها، والسحب المندمجة مع بعضها فرصتها أكبر تكمل','في الأجواء الرطبة السحب ما عادت تضعف في الصباح بانتظار حرارة الظهر','السحب صارت مربوطة بدرجة الحرارة مثل الواقع: في الحر الشديد (فوق 40°) يتبخر المطر الخفيف بسرعة وتضعف العواصف ويقل تكوّن السحب، وفي الجو المعتدل والبارد تطوّل'],fix:['شلنا خانة "قوة السحب (اختيار سريع)"','تحت الطبقات صار مكتوب اسم كرت الشاشة اللي يشتغل عليه المحاكي، عشان تتأكد إنه الكرت القوي']},
