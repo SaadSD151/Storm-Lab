@@ -1656,15 +1656,15 @@ function superDynamics(s,dt){
 }
 // The giant thunderstorm is alive: its long tail waves and bends like a flag in the changing winds aloft, stretches and shrinks,
 // brightens and fades in patches; the red core breathes and changes shape, and new towers keep bubbling up on its flanks and merging into it.
-function megaDynamics(s,dt){const a=s.age,L=s.tailL,ph=s.tph,k=Math.min(1,dt*0.12);
-  const cuD=0.2*Math.sin(a/85+ph)+0.11*Math.sin(a/37+ph*2.3),len=1+0.2*Math.sin(a/64+ph*1.7)+0.08*Math.sin(a/23+ph);
+function megaDynamics(s,dt){s.mt=(s.mt||0)+dt;const a=s.mt,L=s.tailL,ph=s.tph,k=Math.min(1,dt*0.05);
+  const cuD=0.2*Math.sin(a/480+ph)+0.11*Math.sin(a/300+ph*2.3),len=1+0.2*Math.sin(a/420+ph*1.7)+0.08*Math.sin(a/260+ph);
   for(const b of s.blobs){
-    if(b.ti!=null){const t=b.ti,wave=s.twob*(0.6+1.6*t)*Math.sin(ph+t*5.5-a/21)+s.twob*0.7*t*Math.sin(ph*3+t*11-a/9),tx=b.x0*(0.25+0.75*len)+0,ty=b.y0+cuD*t*t*L+wave*t;
-      b.rx+=(tx-b.rx)*k;b.ry+=(ty-b.ry)*k;b.ang=b.a0+Math.atan2(2*cuD*t*L+s.twob*(0.6+1.6*t)*5.5*Math.cos(ph+t*5.5-a/21)*t,L)*0.8;
-      b.P=b.P0+3*Math.sin(a/17+t*9+ph)+(len<1?(len-1)*14*t:0);b.ay=b.ay0*(1+0.22*Math.sin(a/48+t*4+ph))}
-    else if(b.persist&&b.ax0){const q=1+0.13*Math.sin(a/27+ph)+0.06*Math.sin(a/11+ph*2);b.ax=b.ax0*q;b.ay=b.ay0/q*(1+0.07*Math.sin(a/33));b.ang+=dt*0.006*Math.sin(a/50+ph);
-      b.rx=s.r0*0.14*Math.sin(a/31+ph);b.ry=s.r0*0.14*Math.cos(a/41+ph*1.3)}}
-  if(a>=s.nextSat&&!s.kill){s.nextSat=a+R(18,36);const th=R(0,6.28),d=s.r0*R(0.75,1.15),r=s.r0*R(0.3,0.5),e=R(1.1,1.6);
+    if(b.ti!=null){const t=b.ti,wave=s.twob*(0.6+1.6*t)*Math.sin(ph+t*5.5-a/200)+s.twob*0.7*t*Math.sin(ph*3+t*11-a/120),tx=b.x0*(0.25+0.75*len)+0,ty=b.y0+cuD*t*t*L+wave*t;
+      b.rx+=(tx-b.rx)*k;b.ry+=(ty-b.ry)*k;b.ang=b.a0+Math.atan2(2*cuD*t*L+s.twob*(0.6+1.6*t)*5.5*Math.cos(ph+t*5.5-a/200)*t,L)*0.8;
+      b.P=b.P0+3*Math.sin(a/70+t*9+ph)+(len<1?(len-1)*14*t:0);b.ay=b.ay0*(1+0.22*Math.sin(a/160+t*4+ph))}
+    else if(b.persist&&b.ax0){const q=1+0.13*Math.sin(a/90+ph)+0.06*Math.sin(a/46+ph*2);b.ax=b.ax0*q;b.ay=b.ay0/q*(1+0.07*Math.sin(a/110));b.ang+=dt*0.002*Math.sin(a/150+ph);
+      b.rx=s.r0*0.14*Math.sin(a/100+ph);b.ry=s.r0*0.14*Math.cos(a/130+ph*1.3)}}
+  if(a>=s.nextSat&&!s.kill){s.nextSat=a+R(35,70);const th=R(0,6.28),d=s.r0*R(0.75,1.15),r=s.r0*R(0.3,0.5),e=R(1.1,1.6);
     const nb=B(Math.cos(th)*d,Math.sin(th)*d,r*e,r/e,R(55,63),2,{k:2.1,ang:R(-1,1)});nb.fv=0;nb.life2=cellLife()*0.55;nb.age2=0;nb.t=0;nb.spawned=1;s.blobs.push(nb)}
 }
 function cellDynamics(s,dt){
@@ -1759,7 +1759,7 @@ function step(dt,rdt=0){
       if(gm>1e-4){const pm=0.28*Math.hypot(ws.x,ws.y)*env.speedK*Math.min(1,gm*12);tx+=gx/gm*pm;ty+=gy/gm*pm}}
     // orographic anchoring: while moist air keeps being forced up the slope, new cells keep forming over the mountain and the storm stays there
     let anc=0;if(s.type!=='line'&&s.type!=='low'&&s.type!=='trail'&&pS<0.8){const el=elevAt(s.x,s.y),up=ATM.UP?atmSamp(ATM.UP,s.x,s.y):0;anc=clamp((el-0.25)/0.3,0,1)*clamp(0.65+up*3,0,1);if(anc>0){tx*=1-0.85*anc;ty*=1-0.85*anc}}s.anc=anc;
-    if(s.megaT){const a=0.32*Math.sin(s.age/70+s.mph)+0.14*Math.sin(s.age/26+s.mph*2),c=Math.cos(a),sn=Math.sin(a),f=0.85+0.22*Math.sin(s.age/45+s.mph*1.4);[tx,ty]=[(tx*c-ty*sn)*f,(tx*sn+ty*c)*f]}
+    if(s.megaT){const mt=s.mt||0,a=0.3*Math.sin(mt/240+s.mph)+0.12*Math.sin(mt/105+s.mph*2),c=Math.cos(a),sn=Math.sin(a),f=0.88+0.18*Math.sin(mt/170+s.mph*1.4);[tx,ty]=[(tx*c-ty*sn)*f,(tx*sn+ty*c)*f]}
     if(s.type==='low'){tx*=0.7;ty*=0.7}
     if(s.type==='line'){const wm=Math.hypot(w.x,w.y);if(wm>1e-3&&(w.x*s.hx+w.y*s.hy)>0){const k3=Math.min(1,dt*0.01);s.hx+=(w.x/wm-s.hx)*k3;s.hy+=(w.y/wm-s.hy)*k3;const n=Math.hypot(s.hx,s.hy);s.hx/=n;s.hy/=n}
       const sp=Math.max(tx*s.hx+ty*s.hy,0.25)*(1.05+0.15*lifeF(pS,0.2));tx=s.hx*sp;ty=s.hy*sp}else{tx+=s.jx;ty+=s.jy}
@@ -2335,9 +2335,10 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=74,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=75,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
-  {v:74,title:'المطر يقوى بعد الرعد',add:['مثل الواقع: المطر يهدأ، تسمع الرعد، وبعدها يقوى المطر أكثر من قبل لفترة ثم يرجع طبيعي'],fix:['شلنا الرعد من اليمين واليسار (3D)، رجع ينسمع من الجهتين بالتساوي']},
+  {v:75,title:'حركة العاصفة الرعدية العملاقة أهدأ',fix:['ذيل العاصفة الرعدية العملاقة كان يرفرف بسرعة لما تسرّع الوقت: الحين تموّجه وانحناؤه ياخذ ساعات مثل الواقع','مسارها يتعرّج ببطء، والدائرة الحمراء تتغير بهدوء، والأنوية الجديدة تطلع على أطرافها كل 35 إلى 70 دقيقة']},
+  {v:74,title:'المطر يقوى بعد الرعد',add:['مثل الواقع: المطر يهدأ، تسمع الرعد، وبعدها يقوى المطر أكثر من قبل لفترة ثم يرجع طبيعي (مع كل أنواع السحب)'],fix:['شلنا الرعد من اليمين واليسار (3D)، رجع ينسمع من الجهتين بالتساوي']},
   {v:73,title:'رعد أقوى وله اتجاه',add:['الرعد صار ينسمع من جهة الصاعقة: إذا السحابة على يمينك تسمعه من اليمين، وإذا على يسارك من اليسار (أوضح بالسماعات)','كل ما قربت من السحابة قوي الرعد أكثر'],fix:['داخل العاصفة كان صوت المطر يغطي على الرعد: الحين الرعد أعلى، والمطر والرياح يهدون لحظة مع كل ضربة قريبة']},
   {v:72,title:'رعد العاصفة الرعدية العملاقة',add:['4 أصوات رعد جديدة خاصة بالعاصفة الرعدية العملاقة: تسجيلات حقيقية، عميقة وطويلة وتتدحرج (17 إلى 27 ثانية)','رعدها ينسمع من مسافة أبعد (85 كم بدل 55) وأعلى من رعد العواصف العادية']},
   {v:71,title:'رادار مجموع البرد',add:['رادار جديد جنب مجموع الأمطار: "مجموع البرد" يلوّن بالأبيض كل مكان نزل عليه برد منذ البداية','اللون يدل على أكبر حجم برد نزل على المكان (أبيض للصغير ويغمق للأكبر)، وزر تصفير المجاميع يمسحه']},
