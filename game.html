@@ -1322,7 +1322,7 @@ function memStep(dt,EM){memOk();atmOk();const{M,T,A,D,RU,RV,w,h,G,cw,ch}=MEM,n=w
       for(const s of storms){if(s.kill||!s.vis)continue;let mx=0,nc=0;for(const b of s.blobs)if(b.g>1.1&&b.Pe>45){nc++;if(b.Pe>mx)mx=b.Pe}const big=s.type==='super'?mx>=55:mx>=58&&(s.merged>0||nc>=5||s.type==='line'||s.type==='low');if(big){const r=(s.rad||12)*(s.gf||1)*2.2+35/PX;BIG.push(s.x,s.y,r*r,clamp((mx-52)/10,0.3,1))}}
       for(let cj=0;cj<ch;cj++)for(let ci=0;ci<cw;ci++){const X=(ci*6-1)*G+MEM.ox,Y=(cj*6-1)*G+MEM.oy,v=upWind(X,Y),tu=(X-MEM.tx)*PX*0.9,tv=(Y-MEM.ty)*PX*0.9;
         let wb=0;for(let e=0;e<BIG.length;e+=4){const dx=X-BIG[e],dy=Y-BIG[e+1],q=BIG[e+3]*Math.exp(-(dx*dx+dy*dy)/BIG[e+2]);if(q>wb)wb=q}
-        const blk=0.55*clamp((ATM.EL[clamp((Y/MG)|0,0,ATM.h-1)*ATM.w+clamp((X/MG)|0,0,ATM.w-1)]-0.28)/0.4,0,1);
+        const blk=0.3*clamp((ATM.EL[clamp((Y/MG)|0,0,ATM.h-1)*ATM.w+clamp((X/MG)|0,0,ATM.w-1)]-0.28)/0.4,0,1);
         RU[cj*cw+ci]=(v.x*(1-blk)-u.x+amp*samp(TEX2,tu,tv+40)+wb*ampB*samp(TEX2,tu+t*0.05,tv+140))*d/G;RV[cj*cw+ci]=(v.y*(1-blk)-u.y+amp*samp(TEX2,tu+90,tv)+wb*ampB*samp(TEX2,tu+190,tv-t*0.05))*d/G}
       for(let j=0;j<h;j++){const cy=j/6,c0=cy|0,fy=cy-c0;for(let i=0;i<w;i++){const cx=i/6,b0=cx|0,fx=cx-b0,k=c0*cw+b0,a=(1-fx)*(1-fy),b=fx*(1-fy),c=(1-fx)*fy,e=fx*fy;
         const x=clamp(i-(RU[k]*a+RU[k+1]*b+RU[k+cw]*c+RU[k+cw+1]*e),0,w-1.001),y=clamp(j-(RV[k]*a+RV[k+1]*b+RV[k+cw]*c+RV[k+cw+1]*e),0,h-1.001),x0=x|0,y0=y|0,gx=x-x0,gy=y-y0,q=y0*w+x0;
@@ -1704,7 +1704,7 @@ function cellDynamics(s,dt){
     const ga=(1.5+5*env.morph)*env.moistFx,rw=0.008+0.03*env.morph;b.vu=(b.vu||0)*dm+(gu*ga+R(-1,1)*rw)*dt;b.vr=(b.vr||0)*dm+(gr*ga+R(-1,1)*rw)*dt;
     const vmax=0.03+0.17*env.morph,sp=Math.hypot(b.vu,b.vr);if(sp>vmax){b.vu*=vmax/sp;b.vr*=vmax/sp}
     b.rx+=b.vu*dt/gf;b.ry+=b.vr*dt/gf;
-    if(s.type!=='line'&&s.type!=='low'){const hold=0.55*clamp((elevAt(X,Y)-0.28)/0.35,0,1);if(hold>0){b.rx-=svu*hold*dt/gf;b.ry-=svr*hold*dt/gf}}
+    if(s.type!=='line'&&s.type!=='low'){const hold=0.28*clamp((elevAt(X,Y)-0.28)/0.35,0,1)*(1-sst(0.3,0.8,b.age2/b.life2));if(hold>0){b.rx-=svu*hold*dt/gf;b.ry-=svr*hold*dt/gf}}
     {const q0=b.age2/b.life2;if(q0>0.62&&s.type!=='line'){const kd=0.45*sst(0.62,1,q0)*dt/gf;b.rx+=upU*kd;b.ry+=upV*kd}}
     if(!s.merged){const lim=(s.rad||20)*1.6,q=Math.hypot(b.rx/(lim*1.45),b.ry/(lim*0.8));if(q>1){b.rx/=q;b.ry/=q}}
     const w=(b.fv||0)*b.P;cx+=b.rx*w;cy+=b.ry*w;ws+=w;
@@ -1782,7 +1782,7 @@ function step(dt,rdt=0){
     if((s.type==='storm'||s.type==='super')&&pS<0.8){const gx=moistAt(s.x+8,s.y)-moistAt(s.x-8,s.y),gy=moistAt(s.x,s.y+8)-moistAt(s.x,s.y-8),gm=Math.hypot(gx,gy);
       if(gm>1e-4){const pm=0.28*Math.hypot(ws.x,ws.y)*env.speedK*Math.min(1,gm*12);tx+=gx/gm*pm;ty+=gy/gm*pm}}
     // orographic anchoring: while moist air keeps being forced up the slope, new cells keep forming over the mountain and the storm stays there
-    let anc=0;if(s.type!=='line'&&s.type!=='low'&&s.type!=='trail'&&pS<0.8){const el=elevAt(s.x,s.y),up=ATM.UP?atmSamp(ATM.UP,s.x,s.y):0;anc=clamp((el-0.25)/0.3,0,1)*clamp(0.65+up*3,0,1);if(anc>0){tx*=1-0.85*anc;ty*=1-0.85*anc}}s.anc=anc;
+    let anc=0;if(s.type!=='line'&&s.type!=='low'&&s.type!=='trail'&&pS<0.8){const el=elevAt(s.x,s.y),up=ATM.UP?atmSamp(ATM.UP,s.x,s.y):0;s.tl=(s.tl||0)+dt;anc=clamp((el-0.25)/0.3,0,1)*clamp(0.65+up*3,0,1)*(1-sst(45,140,s.tl));if(anc>0){tx*=1-0.75*anc;ty*=1-0.75*anc}}s.anc=anc;
     if(!s.mega&&s.type!=='low'&&s.type!=='line')for(const m of storms){if(!m.mega||m.kill||m===s)continue;const dx=m.x-s.x,dy=m.y-s.y,d=Math.hypot(dx,dy),Rr=megaReach(m)+(s.rad||10)*(s.gf||1)*0.6+14/PX;
       if(d<Rr&&d>1){const pull=0.3*(Math.hypot(ws.x,ws.y)*env.speedK+0.05/PX)*(1-d/Rr);tx+=dx/d*pull;ty+=dy/d*pull}}
     if(s.megaT){const mt=s.mt||0,a=0.8*Math.sin(mt/210+s.mph)+0.4*Math.sin(mt/95+s.mph*2.1)+0.15*Math.sin(mt/41+s.mph*3),c=Math.cos(a),sn=Math.sin(a),f=0.85+0.3*Math.sin(mt/150+s.mph*1.4);[tx,ty]=[(tx*c-ty*sn)*f,(tx*sn+ty*c)*f]}
@@ -2371,8 +2371,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=82,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=83,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:83,title:'السحب ما عادت تعلق فوق الجبال',fix:['السحب كانت تعلق فوق الجبال وتنبض مكانها طول اليوم بدون ما تتحرك: الحين السحابة تتكون وتكبر فوق الجبل أول ساعة إلى ساعتين من عمرها، ثم تتحرر وتمشي مع الرياح','خففنا إعاقة الجبال للأنوية وللمطر الخفيف: تبطّئ السحب بدون ما توقفها']},
   {v:82,title:'العاصفة العملاقة لها عمر',fix:['العاصفة الرعدية العملاقة كانت تقطع أكثر من ألف كيلو وما تضعف: الحين تبقى في قوتها حوالي 280 إلى 370 كم، وبعدها تضعف وتتلاشى مثل العاصفة الرعدية العادية (المجموع تقريباً 430 كم)','لو كانت شبه واقفة مكانها تعيش 10 إلى 14 ساعة ثم تبدأ تضعف، يعني أطول من العاصفة العادية لكن مو للأبد']},
   {v:81,title:'سحب الجبال مثل مقاطع الرادار',add:['من المقاطع اللي أرسلتها: سحب الجبال صارت تتمدد على طول سلسلة الجبل نفسها (مو مع اتجاه الرياح)','السحابة الثابتة فوق الجبل تكبر مكانها: تطلع أنوية جديدة على أطرافها وتتوسع لين تصير كتلة كبيرة، بدل ما تمشي','العواصف الجديدة فوق المرتفعات تطلع صف على طول السلسلة','خلف الجبال (ظل المطر) المطر يتلاشى بسرعة والأنوية تضعف، فالمنخفض الجاي من البحر ينضغط على السلسلة ويضعف بعدها']},
   {v:80,title:'العاصفة العملاقة أندر',fix:['ظهور العاصفة الرعدية العملاقة لحالها صار نادر جداً: حتى لو اتحدت أربع عواصف رعدية، فرصة تحولها لعملاقة 8% فقط (كانت تتحول كل مرة)']},
