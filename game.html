@@ -318,6 +318,10 @@ body.mob .sheet{max-height:calc(100dvh - 40px);overflow:auto}
 .cl details{margin-top:6px}.cl summary{cursor:pointer;font-size:12px;color:var(--accent)}.cl-o{margin-top:6px}.cl-o b{font-size:12px}
 .wl{display:grid;gap:3px;font-size:12px;margin:4px 0}.wl i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:5px;vertical-align:middle}
 #scChal.pulse{box-shadow:0 0 0 2px var(--accent);animation:recP 0.8s 5}@keyframes recP{50%{opacity:.55}}
+.cchev{display:inline-block;width:7px;height:7px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);margin:0 2px 3px 6px;transition:transform .15s}#cityTog[aria-expanded=false] .cchev{transform:rotate(45deg);margin-bottom:1px}
+#setPanel{position:absolute;inset:0;display:grid;place-items:center;background:rgba(3,6,9,.6);z-index:5;padding:16px}#setPanel[hidden]{display:none}
+.setBox{width:min(460px,100%);max-height:100%;overflow:auto;border-radius:14px;padding:14px 16px 18px;background:var(--panel)}.setHead{display:flex;justify-content:space-between;align-items:center;font-size:17px;margin-bottom:6px;position:sticky;top:-14px;background:var(--panel);padding:8px 0;z-index:1}
+.setBox section{padding:12px 0 4px;border-top:1px solid var(--line);margin-top:10px}#setGpuBox .chk{font-size:14.5px;margin:8px 0 4px}
 #modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(3,6,9,.6);z-index:5;padding:16px}
 .sheet{width:min(440px,100%);border-radius:14px;padding:22px 22px 18px;background:var(--panel);border:1px solid var(--line2);box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .sheet h3{font-family:var(--f-disp);font-size:24px;margin:0 0 8px;font-weight:700;text-wrap:balance}
@@ -614,6 +618,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
         </div>
       </div>
       <div id="modal" hidden><div class="sheet" id="sheet"></div></div>
+      <div id="setPanel" hidden><div class="setBox glass"><div class="setHead"><b>الإعدادات</b><button class="btn sm ghost" id="setX">إغلاق</button></div><div id="setGpuBox"></div><div id="setBody"></div></div></div>
     </div>
 
     <aside id="panel">
@@ -627,7 +632,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
           <div><small>سيول</small><b id="mFlood">0</b></div>
         </div>
       </section>
-      <section>
+      <section id="secLook">
         <h2>مظهر الخريطة والرادار</h2>
         <div class="sub">نوع الخريطة</div>
         <div class="chips" id="styleGrid" role="group" aria-label="نوع الخريطة"></div>
@@ -641,7 +646,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
         <div class="hint" id="fpsHint" style="font-size:11px;color:var(--muted);margin-top:4px">الصورة تتحدث 10 مرات في الثانية.</div>
         <div class="sl"><label for="radAlpha">وضوح ألوان المطر <output id="oAlpha"></output></label><input type="range" id="radAlpha" min="35" max="100" step="1"></div>
       </section>
-      <section>
+      <section id="secSnd">
         <h2>الصوت <small id="sndState">مرّر المؤشر فوق المطر</small></h2>
         <label class="chk pc-only"><input type="checkbox" id="sAim" checked><span>الزائد في نص الخريطة هو المؤشر: حرّك الخريطة تحته لتسمع وتقرأ (بدل الماوس)</span></label>
         <label class="chk"><input type="checkbox" id="sOn" checked><span>صوت المطر والبرد حسب شدته تحت المؤشر</span></label>
@@ -650,7 +655,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
         <div class="sl"><label for="sVol">مستوى الصوت <output id="oVol"></output></label><input type="range" id="sVol" min="0" max="100" step="1"></div>
         <div class="hint" style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6">أصوات حقيقية مسجّلة: خمس طبقات للمطر من الرذاذ إلى السيل، والبرد الصغير والكبير، والرياح. الرعد يُسمع حتى نحو 55 كم ويتأخر ويخفت كلما بعدت الصاعقة. الأصوات: المطر والرياح والرعد من Mixkit (رخصة Mixkit المجانية)، والبرد من تسجيلات Radio Aporee على أرشيف الإنترنت (ملكية عامة). الرعد يتأخر ويخفت كلما بعدت الصاعقة عن المؤشر. يبدأ الصوت بعد أول نقرة.</div>
       </section>
-      <section>
+      <section id="secAtm">
         <h2>الأجواء</h2>
         <div class="sc-row" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px"><label for="monthSel" style="font-size:12.5px">الشهر</label><select id="monthSel" style="background:var(--panel2,#0e151c);color:inherit;border:1px solid var(--line);border-radius:8px;padding:4px 6px"></select><button class="btn sm ghost" id="nowBtn">الوقت الآن</button><button class="btn sm ghost" id="realWx">طقس اليوم الحقيقي</button></div>
         <div class="wind">
@@ -681,7 +686,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
         <div id="adv"></div>
       </section>
       <section>
-        <h2>المدن · انقر للتكبير <small id="cityHead">المجموع منذ البداية</small></h2>
+        <h2 id="cityTog" role="button" tabindex="0" aria-expanded="true" title="اضغط للفتح والإغلاق" style="cursor:pointer;user-select:none"><span><i class="cchev" aria-hidden="true"></i> إحصائيات الأمطار</span> <small id="cityHead">المجموع منذ البداية</small></h2>
         <div class="cities" id="cities"></div>
       </section>
       <section>
@@ -2400,8 +2405,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=86,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=87,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:87,title:'ترتيب القائمة الجانبية',add:['قائمة المدن صار اسمها "إحصائيات الأمطار" وتقدر تقفلها وتفتحها بضغطة على عنوانها (وتتذكر اختيارك)'],fix:['"مظهر الخريطة والرادار" و"الصوت" انتقلوا من القائمة الجانبية إلى زر الإعدادات فوق، عشان ما ياخذون مساحة (في نسخة الجوال باقين مكانهم)']},
   {v:86,title:'حساب المطر على طريقة الأجواء الجافة',add:['حساب المليمتر تغيّر من أساسه ليناسب السعودية: المطر الخفيف أغلبه يتبخر قبل ما يوصل الأرض في الجو الجاف، والمجموع يجي أساساً من الأنوية الغزيرة القصيرة','الرطوبة المحلية تأثر: نفس السحابة تعطي مطر أقل على الأرض إذا الجو تحتها جاف','الأنوية اللي فيها برد ما عادت تعطي أرقام مطر مبالغ فيها','خيار جديد في الطبقات: "مجموع المطر تحت المدن" تقدر تخفيه','رادار الغيوم: الغيوم صارت أوسع بكثير حول السحابة مثل الواقع، تنتشر حول العواصف ومع الرياح وتبقى ساعات بعد المطر'],fix:['المجاميع كانت توصل 140 مم في يوم واحد في كذا مدينة: الحين اليوم الربيعي يعطي غالباً أقل من 15 مم، وموسم الأمطار إلى حدود 40 مم، والأرقام فوق 60 مم صارت للأجواء الشديدة فقط','رقم المطر ما عاد ينكتب فوق اسم الرادار']},
   {v:85,title:'مجموع المطر على الخريطة ورادار الغيوم',add:['مجموع الأمطار (مم) صار مكتوب تحت اسم كل مدينة على الخريطة: أزرق للقليل، أخضر من 10 مم، وأحمر من 50 مم','رادار جديد "الغيوم": يعرض غطاء السحب مثل صورة القمر الصناعي']},
   {v:84,title:'السحابة ما تلف، والمطر يطوّل',fix:['السحابة كانت تميل وتلف كاملة مثل السيارة: الحين تحافظ على اتجاهها اللي تكونت فيه، وتغيّر شكلها يجي من تكوّن أنوية جديدة مو من دوران السحابة كلها','سحب الجبال تتكون من البداية مصطفّة على السلسلة بدل ما تلف عليها بعدين','مسار العاصفة العملاقة يتمايل بهدوء بدل الانعطاف الحاد','المطر صار ياخذ وقت أطول لين يختفي: التبخر أبطأ، والسحب تستهلك الرطوبة وتبرّد الجو تحتها بنصف السرعة السابقة']},
@@ -2468,10 +2474,18 @@ document.querySelector('#scen .sc-h').addEventListener('click',()=>{if(mob.on)$(
 if(document.fullscreenEnabled){$('mFull').hidden=false;$('mFull').addEventListener('click',()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen().catch(()=>{});mSheet(false)})}
 $('toMob').addEventListener('click',()=>setUi('mob'));
 // settings: using the graphics card is a switch of the desktop program itself (it restarts to apply it)
+// Settings window: the graphics-card switch, plus the map/radar look and the sound settings (moved here from the side panel to free its space).
+// On the phone layout these two stay in the side panel, where the phone menus expect them.
+function placeSet(){const mobL=document.body.classList.contains('mob'),look=$('secLook'),snd=$('secSnd');if(mobL){const at=$('secAtm');if(look.parentNode!==at.parentNode){at.parentNode.insertBefore(look,at);at.parentNode.insertBefore(snd,at)}}else if(look.parentNode!==$('setBody')){$('setBody').appendChild(look);$('setBody').appendChild(snd)}}
+placeSet();new MutationObserver(placeSet).observe(document.body,{attributes:true,attributeFilter:['class']});
+// rain statistics list: opens and closes like a menu (remembered)
+{const tg=$('cityTog'),setC=o=>{tg.setAttribute('aria-expanded',o);$('cities').hidden=!o;try{localStorage.setItem('stormlab-cities',o?'1':'0')}catch(e){}};let o=true;try{o=localStorage.getItem('stormlab-cities')!=='0'}catch(e){}setC(o);
+  const fl=()=>setC(tg.getAttribute('aria-expanded')!=='true');tg.addEventListener('click',fl);tg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fl()}})}
+$('setX').addEventListener('click',()=>{$('setPanel').hidden=true});$('setPanel').addEventListener('pointerdown',e=>{if(e.target===$('setPanel'))$('setPanel').hidden=true});
 $('setBtn').addEventListener('click',async()=>{const A=window.stormApp;let on=true;if(A){try{on=await A.gpuGet()}catch(e){}}
-  showModal(`<h3>الإعدادات</h3><label class="chk" style="margin:14px 0 6px;font-size:15px"><input type="checkbox" id="setGpu" ${A&&on?'checked':''} ${A?'':'disabled'}><span>تفعيل قوة كرت الشاشة</span></label>
-  <p style="font-size:13px;color:var(--muted);line-height:1.7;margin:0 0 14px">${A?'يخلي المحاكي يرسم على كرت الشاشة القوي بدل المعالج. عند تغيير الخيار يُعاد تشغيل البرنامج تلقائياً.':(/Electron/i.test(navigator.userAgent)?'<b style="color:var(--warn,#ffb547)">البرنامج اللي عندك قديم وما يدعم هذا الخيار.</b> نزّل البرنامج الجديد (StormLab-Windows-0.64) وشغّله بدل القديم، وبعدها تقدر تفعّل وتطفي الخيار.':'هذا الخيار يشتغل في برنامج الكمبيوتر فقط، مو في المتصفح.')}</p><div class="row"><button class="btn" id="setClose">تم</button></div>`);
-  $('setClose').onclick=hideModal;if(A)$('setGpu').onchange=e=>{const v=e.target.checked;toast('يُعاد تشغيل البرنامج الآن…');setTimeout(()=>A.gpuSet(v),600)}});
+  $('setGpuBox').innerHTML=`<label class="chk"><input type="checkbox" id="setGpu" ${A&&on?'checked':''} ${A?'':'disabled'}><span>تفعيل قوة كرت الشاشة</span></label>
+  <p style="font-size:12.5px;color:var(--muted);line-height:1.7;margin:0">${A?'يخلي المحاكي يرسم على كرت الشاشة القوي بدل المعالج. عند تغيير الخيار يُعاد تشغيل البرنامج تلقائياً.':(/Electron/i.test(navigator.userAgent)?'<b style="color:var(--warn,#ffb547)">البرنامج اللي عندك قديم وما يدعم هذا الخيار.</b> نزّل آخر نسخة من البرنامج وشغّلها بدل القديمة.':'هذا الخيار يشتغل في برنامج الكمبيوتر فقط، مو في المتصفح.')}</p>`;
+  if(A)$('setGpu').onchange=e=>{const v=e.target.checked;toast('يُعاد تشغيل البرنامج الآن…');setTimeout(()=>A.gpuSet(v),600)};placeSet();$('setPanel').hidden=false});
 {const ms=$('monthSel');ms.innerHTML=MONTHS.map((n,k)=>`<option value="${k+1}">${n}</option>`).join('');ms.value=String(env.month||4);
   ms.addEventListener('change',()=>{env.month=+ms.value;env.season=MONTH_SEASON[env.month-1];if(ATM.Q)atmDiag();renderLegend();toast(`الشهر: ${MONTHS[env.month-1]} · ${seasonOf().n}`)});
   $('nowBtn').addEventListener('click',()=>{const d=new Date();START_H=((d.getHours()+d.getMinutes()/60-simT/60)%24+24)%24;env.month=d.getMonth()+1;ms.value=String(env.month);env.season=MONTH_SEASON[env.month-1];if(ATM.Q)atmDiag();renderLegend();toast('الوقت والشهر الحاليين: '+clockStr()+' · '+MONTHS[env.month-1])});
