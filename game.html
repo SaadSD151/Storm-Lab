@@ -661,13 +661,6 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
         <label class="chk" style="margin-top:10px"><input type="checkbox" id="natural"><span id="natLabel">عواصف تلقائية فوق جبال الحجاز</span></label>
       </section>
       <section>
-        <h2>قوة السحب (اختيار سريع)</h2>
-        <div class="seg" id="powSeg" role="group" aria-label="قوة السحب" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr))">
-          <button data-k="rainy" aria-pressed="false">ممطر</button><button data-k="heavy" aria-pressed="false">غزير</button><button data-k="stormy" aria-pressed="false">عاصف</button>
-        </div>
-        <div class="hint" id="powInfo" style="font-size:11.5px;color:var(--muted);margin:6px 0 2px;line-height:1.6">اختصار سريع لقوة السحب، بدون الدخول في التفاصيل.</div>
-      </section>
-      <section>
         <h2>خصائص الجو المتقدمة</h2>
         <div class="seg presets" id="presetSeg" role="group" aria-label="أنماط الجو الجاهزة">
           <button data-k="calm" aria-pressed="false">هادئ</button><button data-k="spring" aria-pressed="true">ربيعي</button><button data-k="wet" aria-pressed="false">موسم أمطار</button><button data-k="severe" aria-pressed="false">شديد</button>
@@ -1138,10 +1131,6 @@ const PRESETS={
   dry:{inst:.4,moist:.18,light:.7,sev:.2,size:.85,growth:.8,lifeM:1.2,natRate:.08,shear:.3,morph:.35,shieldK:.8,regen:.3,hail:.3,merge:.7,moistFx:1.5,speedK:1.1,evap:.95},
   supercell:{inst:1,moist:.7,light:2.4,sev:1,size:1.35,growth:1.6,lifeM:3,natRate:.25,shear:1,morph:.4,shieldK:1.15,regen:.7,hail:2,merge:.6,moistFx:1.1,speedK:1.15,evap:.4},
 };
-const POW={rainy:{inst:.4,moist:.6,light:.5,sev:.12,size:1.1,growth:1.2,lifeM:2.5,natRate:.18,shear:.25,hail:.2,shieldK:1.3,regen:.5,evap:.4},
-  heavy:{inst:.6,moist:.82,light:1.1,sev:.4,size:1.4,growth:1.8,lifeM:3.5,natRate:.3,shear:.35,hail:.7,shieldK:1.4,regen:.7,evap:.28},
-  stormy:{inst:.93,moist:.75,light:2,sev:.95,size:1.4,growth:2,lifeM:3.5,natRate:.3,shear:.8,hail:1.5,shieldK:1.25,regen:.8,evap:.4}};
-const POW_INFO={rainy:'ممطر: سحب ممطرة عادية، مطر خفيف إلى متوسط وبرق قليل.',heavy:'غزير: رطوبة عالية وأمطار غزيرة واسعة تدوم طويلاً مع عواصف رعدية.',stormy:'عاصف: عواصف رعدية شديدة، برق كثيف وبرد ورياح قوية.'};
 const PRESET_INFO={calm:'جو مستقر: سحب قليلة ومطر خفيف، والعواصف ضعيفة وقصيرة.',spring:'أجواء ربيعية معتدلة: عواصف رعدية متفرقة ومطر متوسط.',
   wet:'موسم الأمطار: رطوبة عالية، ومطر واسع وغزير يدوم طويلاً.',severe:'جو شديد الخطورة: عواصف قوية، برق كثيف وبرد متكرر.',
   summer:'صيف حار: هواء جاف وحرارة، عواصف رعدية متفرقة وبرق كثير، وأغلب المطر يتبخر قبل وصوله للأرض.',
@@ -1300,9 +1289,9 @@ function memStep(dt,EM){memOk();atmOk();const{M,T,A,D,RU,RV,w,h,G,cw,ch}=MEM,n=w
       const dbz=P-(P-6)*(dd<=0?0:dd*dd*dd),k=(dbz*4)|0,z=Z_LUT[k<0?0:k>399?399:k];if(z>T[j*w+i])T[j*w+i]=z}}}
   if(dt>0){
     // 4) fill toward the source over minutes; evaporate by the humidity of the air mass, faster where air sinks behind mountains
-    const fade=simT<MEM.fadeT,kf=1-Math.exp(-dt/9),ev=1.3-0.8*env.evap,B=ATM.B,UP=ATM.UP,aw=ATM.w,ah=ATM.h;
+    const fade=simT<MEM.fadeT,kf=1-Math.exp(-dt/9),ev=1.3-0.8*env.evap,B=ATM.B,UP=ATM.UP,TT=ATM.T,aw=ATM.w,ah=ATM.h;
     for(let j=0;j<h;j++){const Y=(j-1)*G+MEM.oy,gy=clamp((Y/MG)|0,0,ah-1)*aw;for(let i=0;i<w;i++){const q=j*w+i;let m=M[q];const t=T[q];if(m<0.5&&t<=0){M[q]=0;continue}
-      const g=gy+clamp((((i-1)*G+MEM.ox)/MG)|0,0,aw-1),tau=fade?4:(16+52*B[g])*ev*clamp(1+2.5*UP[g],0.5,1.7);m/=1+dt/tau;if(t>m)m+=(t-m)*kf;M[q]=m}}
+      const g=gy+clamp((((i-1)*G+MEM.ox)/MG)|0,0,aw-1),tau=fade?4:(16+52*B[g])*ev*clamp(1+2.5*UP[g],0.5,1.7)*clamp(1.25-(TT[g]-30)/22,0.4,1.25);m/=1+dt/tau;if(t>m)m+=(t-m)*kf;M[q]=m}}
     // 5) it spreads out sideways (turbulent mixing and the spread of falling rain)
     let p=4*(1.1*env.shieldK/((G*PX)*(G*PX)))*dt;if(p>10)p=10;while(p>0){memBlur(Math.min(1,p));p-=1}}
   // 6) what the radar shows of it: streaks and patches along the flow that travel with the rain and slowly change, thinner in dry air
@@ -1561,7 +1550,7 @@ function atmDiag(){const {w,h,Q,CP,U,V,LF,EL,I,T,TX,TN,R,UP,DI}=ATM,hour=atmHour
     if(land){const[tx,tn]=tempClim(lon,lat,EL[i]*3,Math.min(DI[i],400));TX[i]=tx;TN[i]=tn;T[i]=tn+(tx-tn)*ds-(tx-tn)*0.45*Math.min(1,(R[i]||0)/3)*ds-9*CP[i]}
     else{const sst=lon>46?S.sg:S.sr;TX[i]=sst+0.5;TN[i]=sst-0.5;T[i]=sst-0.5+ds-4*CP[i]}
     // surface heating since the morning drives convection over land (mountain tops heat first); over the sea convection peaks at night
-    const heatF=land?clamp((T[i]-TN[i])/Math.max(2,TX[i]-TN[i]),0,1):0,heat=land?0.12+0.88*Math.max(heatF,res):0.5+(night?0.12:0);
+    const heatF=land?clamp((T[i]-TN[i])/Math.max(2,TX[i]-TN[i]),0,1):0,hb=Math.max(0.12,clamp(env.moist-0.35,0,0.5)*1.4),heat=land?hb+(1-hb)*Math.max(heatF,res):0.5+(night?0.12:0);
     // terrain: moist air forced up windward slopes (lift), sinking and drying on the lee side (rain shadow), elevated heating of high ground
     const up=(U[i]*(EL[xp]-EL[xm])+V[i]*(EL[yp]-EL[ym]))/(2*MG*PX)*60;UP[i]=clamp(up*4,-0.25,0.35);
     const oro=0.35*clamp((EL[i]-0.2)/0.55,0,1)*hc+UP[i];
@@ -1704,7 +1693,7 @@ function step(dt,rdt=0){
   const w=windVec(),hour=(START_H+simT/60)%24,diurnal=0.35+0.65*Math.max(0,Math.sin(Math.PI*(hour-9)/12));
   for(const s of storms){
     {const mc=moistAt(s.x,s.y);s.mc=s.mc==null?mc:s.mc+(mc-s.mc)*Math.min(1,dt*0.1)}
-    s.boost=(env.inst-0.5)*14+elevAt(s.x,s.y)*6+(ATM.UP?atmSamp(ATM.UP,s.x,s.y)*12:0)+(env.sev-0.35)*8+(s.mc-0.5)*8*env.moistFx+(s.fcBoost||0)+(s.nb||0)+(s.erB||0)+(s.trail?-9*clamp(s.age/s.life,0,1):0);
+    s.boost=(env.inst-0.5)*14+elevAt(s.x,s.y)*6+(ATM.UP?atmSamp(ATM.UP,s.x,s.y)*12:0)+(env.sev-0.35)*8+(s.mc-0.5)*8*env.moistFx+(s.fcBoost||0)+(s.nb||0)+(s.erB||0)+(s.trail?-9*clamp(s.age/s.life,0,1):0)-7*clamp(((ATM.T?atmSamp(ATM.T,s.x,s.y):30)-39)/8,0,1);
     // storm motion = steering wind (+ propagation): ordinary cells drift with ~90-100% of the mean wind,
     // supercells deviate ~30° right at ~75% (Maddox / Bunkers), squall lines run ahead of it (forward propagation),
     // multicells creep toward the moist inflow where new cells form, and young storms over high mountains stay anchored to the terrain.
@@ -1741,11 +1730,12 @@ function step(dt,rdt=0){
     s.age+=dt*(1+(0.5-s.mc)*0.9*env.moistFx)*(1-0.4*(s.anc||0));const p=s.age/s.life;for(const b of s.blobs)b.t=(b.t||0)+dt;cellDynamics(s,dt);if(s.merged>0)coalesce(s,dt);
     if(s.scen){
       // scenario clouds keep their water through the night (weakening to lighter rain); from 8 AM the sun eats them away over 2-3 hours
-      if(!s.erode&&hour>=8&&hour<12&&simT-(s.bornT??simT)>120){s.erode=1;s.erT=simT;s.erA=Math.min(s.age,s.life*0.8);s.erD=R(110,200)}
+      {const dy=Math.floor((START_H+simT/60)/24);if(s.kd!==dy&&hour>=8&&hour<12&&simT-(s.bornT??simT)>120){s.kd=dy;s.keep=rnd()<clamp(1.3*env.moist+(s.merged>0?0.3:0),0.2,0.95)*clamp(1.4-(atmSamp(ATM.TX,s.x,s.y)-28)/14,0.25,1.1)}}
+      if(!s.erode&&!s.keep&&hour>=8&&hour<12&&simT-(s.bornT??simT)>120){s.erode=1;s.erT=simT;s.erA=Math.min(s.age,s.life*0.8);s.erD=R(110,200)}
       if(s.erode){const k=(simT-s.erT)/s.erD;s.age=k>=1?s.life*1.25:s.erA+k*(s.life-s.erA);s.erB=-14*Math.min(1,k)}
       else{const night=hour>=20||hour<8,hN=night?(hour>=20?hour-20:hour+4):0;s.nb=-Math.min(7,hN*1.75);
         // from العصر over the moist forecast area the cloud keeps going (lighter rain) until the morning sun; elsewhere it lives out its natural life
-        if((hour>=15.5||hour<8)&&s.age>s.life*0.8&&scen.bN){const bx=Math.floor(s.x/FG/scen.BS),by=Math.floor(s.y/FG/scen.BS);let near=false;
+        if((hour>=15.5||hour<8||s.keep)&&s.age>s.life*0.8&&scen.bN){const bx=Math.floor(s.x/FG/scen.BS),by=Math.floor(s.y/FG/scen.BS);let near=false;
           for(let oy=-1;oy<=1&&!near;oy++)for(let ox=-1;ox<=1;ox++){const X=bx+ox,Y=by+oy;if(X>=0&&Y>=0&&X<scen.bw&&Y<scen.bh&&scen.bN[Y*scen.bw+X]){near=true;break}}
           if(near)s.age=s.life*0.8}}}
     if(s.kill)s.killF=Math.max(0,s.killF-dt*0.16);
@@ -1766,7 +1756,7 @@ function step(dt,rdt=0){
   liveT+=rdt;strikes=strikes.filter(k=>liveT-k.lt<6);if(hailMk.length)hailMk=hailMk.filter(k=>liveT-k.lt<6);if(hailMk.length>300)hailMk.splice(0,hailMk.length-300);if(strikes.length>350)strikes.splice(0,strikes.length-350);while(boltLog.length&&simT-boltLog[0]>60)boltLog.shift();
   if(env.natural&&!mission.on&&!scen.world&&storms.length<(REGION.maxStorms||45)&&rnd()<dt*env.inst*env.moist*0.5*env.natRate*(REGION.natMul||1)){
     let bx=0,by=0,bv=-1;for(let t=0;t<16;t++){const x=R(20,W-20),y=R(20,H-20),v=moistAt(x,y)+R(0,0.05);if(v>bv){bv=v;bx=x;by=y}}
-    for(let t=0;t<1;t++){const x=bx,y=by;if(rnd()<clamp((bv-0.5)/0.25,0,1)){spawnBand(0.5,env.inst<0.35&&env.moist>0.6?(rnd()<0.6?'strat':'shower'):env.sev>0.85&&env.shear>0.7&&rnd()<0.25?'super':env.inst>0.7&&rnd()<0.3?'storm':'shower',x,y);break}}}
+    for(let t=0;t<1;t++){const x=bx,y=by;if(rnd()<clamp((bv-0.5)/0.25,0,1)*(1-0.8*clamp((atmSamp(ATM.T,x,y)-40)/7,0,1))){spawnBand(0.5,env.inst<0.35&&env.moist>0.6?(rnd()<0.6?'strat':'shower'):env.sev>0.85&&env.shear>0.7&&rnd()<0.25?'super':env.inst>0.7&&rnd()<0.3?'storm':'shower',x,y);break}}}
   mergeStorms();
   fieldClock+=rdt;pendDt+=dt;
   if(rdt===0||(radarFps<0?scanNo!==fieldScan:fieldClock>=(radarFps?1/radarFps:document.body.classList.contains('mob')?1/20:1/24))){fieldScan=scanNo;fieldClock=0;computeField(pendDt,1);fieldDirty=true;
@@ -2122,10 +2112,8 @@ const ADV=[
  ['evap','تبخر المطر قبل وصوله للأرض',0,1,0.01,v=>Math.round(v*100)+'%','يقلل مجموع الأمطار على الأرض في الجو الجاف'],
 ];
 $('adv').innerHTML=ADV.map(([k,n,mi,ma,st,,h])=>`<div class="sl"><label for="a_${k}">${n} <output id="o_${k}"></output></label><input type="range" id="a_${k}" min="${mi}" max="${ma}" step="${st}"><span class="hint">${h}</span></div>`).join('');
-ADV.forEach(([k])=>$('a_'+k).addEventListener('input',e=>{env[k]=+e.target.value;if(k==='evap')buildRR();powOff();segSet('presetSeg','k','');syncEnv()}));
-$('presetSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;Object.assign(env,PRESETS[b.dataset.k]);env.season=b.dataset.k==='summer'?'summer':b.dataset.k==='winter'?'winter':b.dataset.k==='dry'?'late':'spring';if(ATM.Q)atmDiag();renderLegend();powOff();segSet('presetSeg','k',b.dataset.k);buildRR();syncEnv()});
-function powOff(){segSet('powSeg','k','');$('powInfo').textContent='اختصار سريع لقوة السحب، بدون الدخول في التفاصيل.'}
-$('powSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;Object.assign(env,POW[k]);segSet('presetSeg','k','');segSet('powSeg','k',k);$('powInfo').textContent=POW_INFO[k];buildRR();if(ATM.Q)atmDiag();syncEnv()});
+ADV.forEach(([k])=>$('a_'+k).addEventListener('input',e=>{env[k]=+e.target.value;if(k==='evap')buildRR();segSet('presetSeg','k','');syncEnv()}));
+$('presetSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;Object.assign(env,PRESETS[b.dataset.k]);env.season=b.dataset.k==='summer'?'summer':b.dataset.k==='winter'?'winter':b.dataset.k==='dry'?'late':'spring';if(ATM.Q)atmDiag();renderLegend();segSet('presetSeg','k',b.dataset.k);buildRR();syncEnv()});
 function syncEnv(){ADV.forEach(([k,,,,,f])=>{$('a_'+k).value=env[k];$('o_'+k).textContent=f(env[k])});const to=(env.windFrom+180)%360;
   $('arrow').setAttribute('transform',`rotate(${to})`);$('dial').setAttribute('aria-valuenow',Math.round(to));
   $('windLabel').innerHTML=`تتجه العواصف نحو <b>${DIRS[Math.round(to/45)%8]}</b><div class="dim">الرياح من <b>${String(Math.round(env.windFrom)).padStart(3,'0')}°</b> · ${Math.round(env.windSpd)} كم/س</div>`;
@@ -2134,14 +2122,19 @@ function syncEnv(){ADV.forEach(([k,,,,,f])=>{$('a_'+k).value=env[k];$('o_'+k).te
   $('moist').value=Math.round(env.moist*100);$('oMoist').textContent=Math.round(15+env.moist*45)+' mm';
   $('natural').checked=env.natural&&!mission.on;$('natural').disabled=mission.on;}
 $('windSpd').addEventListener('input',e=>{env.windSpd=+e.target.value;syncEnv()});
-$('inst').addEventListener('input',e=>{env.inst=e.target.value/100;powOff();segSet('presetSeg','k','');syncEnv()});
-$('moist').addEventListener('input',e=>{env.moist=e.target.value/100;powOff();segSet('presetSeg','k','');syncEnv()});
+$('inst').addEventListener('input',e=>{env.inst=e.target.value/100;segSet('presetSeg','k','');syncEnv()});
+$('moist').addEventListener('input',e=>{env.moist=e.target.value/100;segSet('presetSeg','k','');syncEnv()});
 $('natural').addEventListener('change',e=>{env.natural=e.target.checked});
 {const dial=$('dial');let on=false;
   const set=e=>{const r=dial.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2;const to=(Math.atan2(x,-y)*180/Math.PI+360)%360;env.windFrom=(to+180)%360;syncEnv()};
   dial.addEventListener('pointerdown',e=>{on=true;dial.setPointerCapture(e.pointerId);set(e)});
   dial.addEventListener('pointermove',e=>{if(on)set(e)});dial.addEventListener('pointerup',()=>on=false);
   dial.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowDown'){env.windFrom=(env.windFrom+350)%360;syncEnv();e.preventDefault()}if(e.key==='ArrowRight'||e.key==='ArrowUp'){env.windFrom=(env.windFrom+10)%360;syncEnv();e.preventDefault()}});}
+// which graphics card is drawing the simulator (shown under the layers, so the player can check the dedicated card is in use)
+try{const g=document.createElement('canvas').getContext('webgl',{powerPreference:'high-performance'}),e=g&&g.getExtension('WEBGL_debug_renderer_info');let n=e?String(g.getParameter(e.UNMASKED_RENDERER_WEBGL)):'';
+  const soft=!n||/swiftshader|llvmpipe|software|basic render/i.test(n);n=n.replace(/^ANGLE \(/,'').replace(/\)$/,'').replace(/ Direct3D.*$/,'').replace(/^[^,]*, /,'').slice(0,60);
+  const d=document.createElement('div');d.id='gpuInfo';d.style.cssText='font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6';
+  d.innerHTML='<b style="color:var(--fg)">كرت الشاشة:</b> '+(soft?'الرسم على المعالج (ما فيه كرت شاشة مفعّل)':'<span dir="ltr">'+n.replace(/[<>&]/g,'')+'</span>');$('lRings').closest('section').appendChild(d)}catch(e){}
 const LMAP={lMoist:'moist',lStreets:'streets',lTracks:'tracks',lRings:'rings',lSweep:'sweep',lLight:'light',lClutter:'clutter',lSmooth:'smooth',lLabels:'labels'};
 for(const[id,k]of Object.entries(LMAP)){$(id).checked=layers[k];$(id).addEventListener('change',e=>{layers[k]=e.target.checked;stDirty=true})}
 $('bClear').addEventListener('click',()=>{storms.forEach(s=>s.kill=true);MEM.fadeT=simT+30;toast('تتبدد السحب الآن')});
@@ -2281,8 +2274,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=62,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=63,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:63,title:'السحب تبقى بعد الصباح',add:['السحب ما عادت كلها تختفي إذا جا الظهر: في موسم الأمطار والمنخفض الشتوي والشديد والخلايا العملاقة والربيعي أغلبها يبقى ويكمل','حتى في الصيف يبقى بعضها، والسحب المندمجة مع بعضها فرصتها أكبر تكمل','في الأجواء الرطبة السحب ما عادت تضعف في الصباح بانتظار حرارة الظهر','السحب صارت مربوطة بدرجة الحرارة مثل الواقع: في الحر الشديد (فوق 40°) يتبخر المطر الخفيف بسرعة وتضعف العواصف ويقل تكوّن السحب، وفي الجو المعتدل والبارد تطوّل'],fix:['شلنا خانة "قوة السحب (اختيار سريع)"','تحت الطبقات صار مكتوب اسم كرت الشاشة اللي يشتغل عليه المحاكي، عشان تتأكد إنه الكرت القوي']},
   {v:62,title:'ذيل السحابة يتمايل حول العواصف الكبيرة فقط',add:['حركة تمايل المطر الخفيف (ذيل السحابة) رجعت، لكن حول العواصف الكبيرة والقوية فقط: الخلية العملاقة، والعواصف الرعدية المتحدة أو كثيرة الخلايا','كل ما كانت العاصفة أقوى زاد التمايل، والسحب العادية والصغيرة تمشي بهدوء مع الرياح']},
   {v:61,title:'حركة أهدأ واختيار سريع لقوة السحب',add:['خانة جديدة "قوة السحب" فوق خصائص الجو المتقدمة بثلاث خيارات: ممطر، غزير، عاصف','الوضع السلس صار 24 إطار بالثانية في كل السرعات (كان 10 في السرعات الأقل من 16)','أداء أخف على الجهاز: تحديث صورة الرادار يتخطى المناطق الفاضية'],fix:['المطر الخفيف ما عاد ينزل جهة الجنوب عن السحابة: يمشي بنفس اتجاهها','حلقات المدى ودوران الهوائي والصدى الأرضي وتنعيم الصورة صارت مطفية من البداية (تقدر تشغلها من الطبقات)','المطر الخفيف (الأزرق والأخضر) ما عاد يرقص ويروح ويرجع: يمشي مع الرياح بهدوء وباتجاه واحد','سرعة المطر الخفيف صارت قريبة من سرعة السحابة نفسها بدل ما يسبقها']},
   {v:60,title:'إعادة بناء محرك السحب (المحرك 2)',add:['محرك سحب جديد: المطر الخفيف صار حقل له ذاكرة تحمله الرياح العليا، مو قطع ملصقة بالسحابة','السحابة تترك وراها ذيل مطر ممتد مع اتجاه الرياح، وخصوصاً السحب الثابتة فوق الجبال','المطر يبقى فترة بعد ما تموت العاصفة ويتلاشى بالتدريج حسب رطوبة الجو (يتبخر بسرعة في الجو الجاف ويطوّل في الرطب)','الخلايا القديمة تنسحب مع الرياح وهي تضعف، والجديدة تتكون جهة الرطوبة','مناطق المطر تتشكل وتتمدد وتتغير مع دوامات الرياح مثل صور الرادار الحقيقية','المحرك الجديد أسرع من القديم'],fix:['ما عاد فيه مطر يطلع أو يختفي فجأة','المطر الخفيف ما عاد يتحرك كقطعة وحدة مع السحابة','دوائر الإنذار المبكر صارت أصغر','النسخة القديمة 0.54 محفوظة على GitHub في فرع classic-0.54']},
