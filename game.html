@@ -1179,6 +1179,7 @@ function spawnBand(prob,type,x,y){const st=spawn(type,x,y);if(!st||(type!=='stor
 function spawn(type,x,y,o={}){
   const w=windVec();let hx=w.x,hy=w.y,m=Math.hypot(hx,hy);
   if(m<1e-4){hx=0.7071;hy=-0.7071}else{hx/=m;hy/=m}
+  let oro=0;if((type==='shower'||type==='storm')&&elevAt(x,y)>0.28){const rg=ridgeAt(x,y);if(rg){const sg=rg.x*hx+rg.y*hy>=0?1:-1;hx=sg*rg.x;hy=sg*rg.y;oro=1}}
   if(type==='super'){const a=0.52*(o.sd||1),c=Math.cos(a),s=Math.sin(a);[hx,hy]=[hx*c-hy*s,hx*s+hy*c]}
   const s={id:nextId(),grow:(type==='super'?R(0.15,0.35):R(0.3,0.85))*env.growth/1.5,merged:0,type,x,y,vx:w.x,vy:w.y,hx,hy,age:0,life:60,blobs:[],boost:0,kill:false,killF:1,nextD:R(12,20),jx:R(-.06,.06),jy:R(-.06,.06)};
   const bl=s.blobs;
@@ -1273,7 +1274,7 @@ function spawn(type,x,y,o={}){
   if(type==='mega'||type==='mcs')s.type='storm';
   s.blobs=bl.filter(b=>!b.halo);
   s.rad=0;for(const b of bl)if(b.g>1.1)s.rad=Math.max(s.rad,Math.hypot(b.rx,b.ry)+Math.max(b.ax,b.ay));
-  s.rad0=s.rad;s.life*=(0.6+0.8*env.moist)*env.lifeM;s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
+  s.rad0=s.rad;s.oro=oro;s.life*=(0.6+0.8*env.moist)*env.lifeM;s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
   s.hailRoll=s.variant==='lp'?R(0,0.5):rnd();
   storms.push(s);return s;
 }
@@ -1338,7 +1339,7 @@ function memStep(dt,EM){memOk();atmOk();const{M,T,A,D,RU,RV,w,h,G,cw,ch}=MEM,n=w
     // 4) fill toward the source over minutes; evaporate by the humidity of the air mass, faster where air sinks behind mountains
     const fade=simT<MEM.fadeT,kf=1-Math.exp(-dt/9),ev=1.3-0.8*env.evap,B=ATM.B,UP=ATM.UP,TT=ATM.T,aw=ATM.w,ah=ATM.h;
     for(let j=0;j<h;j++){const Y=(j-1)*G+MEM.oy,gy=clamp((Y/MG)|0,0,ah-1)*aw;for(let i=0;i<w;i++){const q=j*w+i;let m=M[q];const t=T[q];if(m<0.5&&t<=0){M[q]=0;continue}
-      const g=gy+clamp((((i-1)*G+MEM.ox)/MG)|0,0,aw-1),tau=fade?4:(16+52*B[g])*ev*clamp(1+(UP[g]<0?5:2.5)*UP[g],0.28,1.7)*clamp(1.25-(TT[g]-30)/22,0.4,1.25);m/=1+dt/tau;if(t>m)m+=(t-m)*kf;M[q]=m}}
+      const g=gy+clamp((((i-1)*G+MEM.ox)/MG)|0,0,aw-1),tau=fade?4:(30+85*B[g])*ev*clamp(1+(UP[g]<0?5:2.5)*UP[g],0.28,1.7)*clamp(1.25-(TT[g]-30)/22,0.4,1.25);m/=1+dt/tau;if(t>m)m+=(t-m)*kf;M[q]=m}}
     // 5) it spreads out sideways (turbulent mixing and the spread of falling rain)
     let p=4*(1.1*env.shieldK/((G*PX)*(G*PX)))*dt;if(p>10)p=10;while(p>0){memBlur(Math.min(1,p));p-=1}}
   // 6) what the radar shows of it: streaks and patches along the flow that travel with the rain and slowly change, thinner in dry air
@@ -1605,7 +1606,7 @@ function atmDiag(){const {w,h,Q,CP,U,V,LF,EL,I,T,TX,TN,R,UP,DI}=ATM,hour=atmHour
     const up=(U[i]*(EL[xp]-EL[xm])+V[i]*(EL[yp]-EL[ym]))/(2*MG*PX)*60;UP[i]=clamp(up*4,-0.25,0.35);
     const oro=0.35*clamp((EL[i]-0.2)/0.55,0,1)*hc+UP[i];
     const cv=clamp(-((U[xp]-U[xm])+(V[yp]-V[ym]))/(2*MG)*90,-0.25,0.4),edge=clamp(Math.hypot(CP[xp]-CP[xm],CP[yp]-CP[ym])*3,0,0.45)*(1-CP[i]);
-    I[i]=clamp(Q[i]*(0.3+0.7*heat)+Q[i]*(oro+cv+edge)+(env.inst-0.5)*0.3-0.85*CP[i],0,1)}}
+    I[i]=clamp(Q[i]*(0.3+0.7*heat)+Q[i]*(oro+cv+edge)+(env.inst-0.5)*0.3-0.55*CP[i],0,1)}}
   let cold=false;for(let i=0;i<w*h;i++)if(T[i]<2){cold=true;break}ATM.cold=cold;ATM.ver=(ATM.ver||0)+1}
 function atmStep(dt){if(!ATM.Q||ATM.w!==Math.ceil(W/MG))atmInit();const {w,h,Q,CP,U,V,LF,T1,T2}=ATM,hour=atmHour();
   atmWinds();const k=dt/MG;
@@ -1621,8 +1622,8 @@ function atmStep(dt){if(!ATM.Q||ATM.w!==Math.ceil(W/MG))atmInit();const {w,h,Q,C
     {const DU=ATM.DU;if(LF[i]>=0.5){const xm=gy*w+Math.max(0,gx-1),xp=gy*w+Math.min(w-1,gx+1),ym=Math.max(0,gy-1)*w+gx,yp=Math.min(h-1,gy+1)*w+gx,gf=Math.hypot(CP[xp]-CP[xm],CP[yp]-CP[ym]),dry=clamp((0.5-Q[i])/0.25,0,1);
       DU[i]=0}DU[i]*=Math.exp(-dt/(R>1?25:200))}
     {const sn=ATM.SN,t=ATM.T[i];if(t<=1&&R>0)sn[i]=Math.min(80,sn[i]+R*dt/60*1.2);else if(sn[i]>0&&t>2)sn[i]=Math.max(0,sn[i]-(t-2)*0.02*dt)}
-    ATM.R[i]=R;const bs=ATM.B[i]=atmBase(i,gx*MG+4,gy*MG+4),q=T1[i]+(bs-T1[i])*(LF[i]<0.5?ts:tq)-0.009*R*dt/60;Q[i]=clamp(q,0.02,1);
-    CP[i]=Math.min(1,T2[i]*cpd+0.018*R*dt/60*(1.25-Q[i]))}
+    ATM.R[i]=R;const bs=ATM.B[i]=atmBase(i,gx*MG+4,gy*MG+4),q=T1[i]+(bs-T1[i])*(LF[i]<0.5?ts:tq)-0.004*R*dt/60;Q[i]=clamp(q,0.02,1);
+    CP[i]=Math.min(1,T2[i]*cpd+0.011*R*dt/60*(1.25-Q[i]))}
   // 3) the cold pool spreads out along the ground (gust front)
   {let any=false;for(const v of ATM.SN)if(v>0.5){any=true;break}ATM.snowAny=any}
   const a=Math.min(0.5,dt*0.02);T1.set(CP);for(let gy=1;gy<h-1;gy++)for(let gx=1;gx<w-1;gx++){const i=gy*w+gx;CP[i]=T1[i]*(1-a)+a*0.25*(T1[i-1]+T1[i+1]+T1[i-w]+T1[i+w])}
@@ -1785,7 +1786,7 @@ function step(dt,rdt=0){
     let anc=0;if(s.type!=='line'&&s.type!=='low'&&s.type!=='trail'&&pS<0.8){const el=elevAt(s.x,s.y),up=ATM.UP?atmSamp(ATM.UP,s.x,s.y):0;s.tl=(s.tl||0)+dt;anc=clamp((el-0.25)/0.3,0,1)*clamp(0.65+up*3,0,1)*(1-sst(45,140,s.tl));if(anc>0){tx*=1-0.75*anc;ty*=1-0.75*anc}}s.anc=anc;
     if(!s.mega&&s.type!=='low'&&s.type!=='line')for(const m of storms){if(!m.mega||m.kill||m===s)continue;const dx=m.x-s.x,dy=m.y-s.y,d=Math.hypot(dx,dy),Rr=megaReach(m)+(s.rad||10)*(s.gf||1)*0.6+14/PX;
       if(d<Rr&&d>1){const pull=0.3*(Math.hypot(ws.x,ws.y)*env.speedK+0.05/PX)*(1-d/Rr);tx+=dx/d*pull;ty+=dy/d*pull}}
-    if(s.megaT){const mt=s.mt||0,a=0.8*Math.sin(mt/210+s.mph)+0.4*Math.sin(mt/95+s.mph*2.1)+0.15*Math.sin(mt/41+s.mph*3),c=Math.cos(a),sn=Math.sin(a),f=0.85+0.3*Math.sin(mt/150+s.mph*1.4);[tx,ty]=[(tx*c-ty*sn)*f,(tx*sn+ty*c)*f]}
+    if(s.megaT){const mt=s.mt||0,a=0.42*Math.sin(mt/260+s.mph)+0.18*Math.sin(mt/120+s.mph*2.1),c=Math.cos(a),sn=Math.sin(a),f=0.85+0.3*Math.sin(mt/150+s.mph*1.4);[tx,ty]=[(tx*c-ty*sn)*f,(tx*sn+ty*c)*f]}
     if(s.type==='low'){tx*=0.7;ty*=0.7}
     if(s.type==='line'){const wm=Math.hypot(w.x,w.y);if(wm>1e-3&&(w.x*s.hx+w.y*s.hy)>0){const k3=Math.min(1,dt*0.01);s.hx+=(w.x/wm-s.hx)*k3;s.hy+=(w.y/wm-s.hy)*k3;const n=Math.hypot(s.hx,s.hy);s.hx/=n;s.hy/=n}
       const sp=Math.max(tx*s.hx+ty*s.hy,0.25)*(1.05+0.15*lifeF(pS,0.2));tx=s.hx*sp;ty=s.hy*sp}else{tx+=s.jx;ty+=s.jy}
@@ -1806,9 +1807,9 @@ function step(dt,rdt=0){
         s.evU=Math.cos(a)*m*spd;s.evV=Math.sin(a)*m*spd;s.evEnd=s.age+R(20,70)}
       if(s.evU!=null){const f=sst(0,8,s.evEnd-s.age)*(1-0.7*anc);tx+=s.evU*f;ty+=s.evV*f}}
     const k=Math.min(1,dt*(s.evU!=null?0.13:0.08));s.vx+=(tx-s.vx)*k;s.vy+=(ty-s.vy)*k;s.x+=s.vx*dt;s.y+=s.vy*dt;
-    if(s.anc>0.2&&!s.megaT&&!s.hookR){const rg=ridgeAt(s.x,s.y);if(rg){const sg=rg.x*s.hx+rg.y*s.hy>=0?1:-1,kr=Math.min(1,dt*0.03*s.anc);s.hx+=(sg*rg.x-s.hx)*kr;s.hy+=(sg*rg.y-s.hy)*kr;const n=Math.hypot(s.hx,s.hy)||1;s.hx/=n;s.hy/=n}
+    if(s.anc>0.2&&!s.megaT&&!s.hookR){
       if(!s.kill&&pS<0.8){s.rad=Math.min((s.rad0||s.rad||12)*2.6,(s.rad||12)+dt*0.05*s.anc/PX);s.maxCores=Math.min(13,Math.max(s.maxCores||0,6+((s.rad-(s.rad0||s.rad))*PX/5|0)))}}
-    if(s.type!=='line'){const m=Math.hypot(bhx,bhy);if(m>0.02){const k2=Math.min(1,dt*0.015*(1-0.9*(s.megaT||s.hookR?0:s.anc||0)));s.hx+=(bhx/m-s.hx)*k2;s.hy+=(bhy/m-s.hy)*k2;const n=Math.hypot(s.hx,s.hy);s.hx/=n;s.hy/=n}}
+    if(s.type!=='line'){const m=Math.hypot(bhx,bhy);if(m>0.02){const k2=Math.min(1,dt*(s.oro?0.0006:0.004));s.hx+=(bhx/m-s.hx)*k2;s.hy+=(bhy/m-s.hy)*k2;const n=Math.hypot(s.hx,s.hy);s.hx/=n;s.hy/=n}}
     s.age+=dt*(1+(0.5-s.mc)*0.9*env.moistFx)*(1-0.4*(s.anc||0));
     // a giant stays at full strength for a limited run (about 280-370 km of travel, or 10-14 hours if it hardly moves, or until the air dries); then it ages and dies like any thunderstorm
     if(s.mega&&!s.kill){s.trav=(s.trav||0)+Math.hypot(s.vx,s.vy)*dt*PX;s.ht=(s.ht||0)+dt;s.maxTrav=s.maxTrav||R(280,370);s.maxT=s.maxT||R(600,840);s.hold=s.mc>0.27&&s.trav<s.maxTrav&&s.ht<s.maxT;if(s.hold&&s.age>s.life*0.5)s.age=s.life*0.5;if(!s.hold&&s.held&&!s.rel){s.rel=1;s.age=Math.max(s.age,s.life*(1-Math.min(0.4,170/s.life)))}if(s.hold)s.held=1}const p=s.age/s.life;for(const b of s.blobs)b.t=(b.t||0)+dt;cellDynamics(s,dt);if(s.merged>0)coalesce(s,dt);
@@ -2371,8 +2372,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=83,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=84,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:84,title:'السحابة ما تلف، والمطر يطوّل',fix:['السحابة كانت تميل وتلف كاملة مثل السيارة: الحين تحافظ على اتجاهها اللي تكونت فيه، وتغيّر شكلها يجي من تكوّن أنوية جديدة مو من دوران السحابة كلها','سحب الجبال تتكون من البداية مصطفّة على السلسلة بدل ما تلف عليها بعدين','مسار العاصفة العملاقة يتمايل بهدوء بدل الانعطاف الحاد','المطر صار ياخذ وقت أطول لين يختفي: التبخر أبطأ، والسحب تستهلك الرطوبة وتبرّد الجو تحتها بنصف السرعة السابقة']},
   {v:83,title:'السحب ما عادت تعلق فوق الجبال',fix:['السحب كانت تعلق فوق الجبال وتنبض مكانها طول اليوم بدون ما تتحرك: الحين السحابة تتكون وتكبر فوق الجبل أول ساعة إلى ساعتين من عمرها، ثم تتحرر وتمشي مع الرياح','خففنا إعاقة الجبال للأنوية وللمطر الخفيف: تبطّئ السحب بدون ما توقفها']},
   {v:82,title:'العاصفة العملاقة لها عمر',fix:['العاصفة الرعدية العملاقة كانت تقطع أكثر من ألف كيلو وما تضعف: الحين تبقى في قوتها حوالي 280 إلى 370 كم، وبعدها تضعف وتتلاشى مثل العاصفة الرعدية العادية (المجموع تقريباً 430 كم)','لو كانت شبه واقفة مكانها تعيش 10 إلى 14 ساعة ثم تبدأ تضعف، يعني أطول من العاصفة العادية لكن مو للأبد']},
   {v:81,title:'سحب الجبال مثل مقاطع الرادار',add:['من المقاطع اللي أرسلتها: سحب الجبال صارت تتمدد على طول سلسلة الجبل نفسها (مو مع اتجاه الرياح)','السحابة الثابتة فوق الجبل تكبر مكانها: تطلع أنوية جديدة على أطرافها وتتوسع لين تصير كتلة كبيرة، بدل ما تمشي','العواصف الجديدة فوق المرتفعات تطلع صف على طول السلسلة','خلف الجبال (ظل المطر) المطر يتلاشى بسرعة والأنوية تضعف، فالمنخفض الجاي من البحر ينضغط على السلسلة ويضعف بعدها']},
