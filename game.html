@@ -1682,7 +1682,7 @@ function megaDynamics(s,dt){s.mt=(s.mt||0)+dt;const a=s.mt,L=s.tailL,ph=s.tph,k=
     const dx=wx-s.x,dy=wy-s.y,tx=(dx*s.hx+dy*s.hy)/gf,ty=(-dx*s.hy+dy*s.hx)/gf,kk=b.pl?Math.min(1,dt*0.25):1;b.pl=1;
     b.rx+=(tx-b.rx)*kk;b.ry+=(ty-b.ry)*kk;b.ang=Math.atan2(tgy,tgx)-hang;
     b.P=b.P0+3*Math.sin(a/70+t*9+ph);b.ay=b.ay0*(1+0.22*Math.sin(a/160+t*4+ph))}
-  {let live=0;for(const b of s.blobs)if(b.g>1.1&&!b.out&&!b.hook&&!b.abs&&(b.age2||0)<(b.life2||1)*0.8)live++;if(live<3&&!s.kill&&a>=(s.nextFix||0)){s.nextFix=a+R(10,20);const th=R(0,6.28),d=s.r0*R(0,0.4),r=s.r0*R(0.6,0.8),e=R(1,1.25);
+  {let live=0;for(const b of s.blobs)if(b.g>1.1&&!b.out&&!b.hook&&!b.abs&&(b.age2||0)<(b.life2||1)*0.8)live++;if(live<3&&!s.kill&&s.hold&&a>=(s.nextFix||0)){s.nextFix=a+R(10,20);const th=R(0,6.28),d=s.r0*R(0,0.4),r=s.r0*R(0.6,0.8),e=R(1,1.25);
     const nb=B(Math.cos(th)*d,Math.sin(th)*d,r*e,r/e,R(62,66),2,{k:2.4,ang:R(-1.5,1.5)});nb.fv=0;nb.life2=cellLife()*1.5;nb.age2=0;nb.t=0;s.blobs.push(nb)}}
   // its cores stay gathered in one mass (they are replaced where they die instead of scattering)
   for(const b of s.blobs)if(b.g>1.1&&!b.out&&!b.abs){const q=Math.hypot(b.rx,b.ry)/(s.r0*0.75);if(q>1){const kk=Math.min(1,dt*0.03);b.rx+=(b.rx/q-b.rx)*kk;b.ry+=(b.ry/q-b.ry)*kk}}
@@ -1710,7 +1710,7 @@ function cellDynamics(s,dt){
     const w=(b.fv||0)*b.P;cx+=b.rx*w;cy+=b.ry*w;ws+=w;
     const q=b.age2/b.life2;
     if(q>=0.55&&!b.spawned&&!s.kill&&p<0.9&&!s.hookR){b.spawned=1;
-      let n=rnd()<(s.mega?0.97:clamp((0.25+0.9*b.m+env.inst*0.25)*(0.4+env.regen),0,0.97))?1:0;if(s.mega&&!s.megaT&&n&&rnd()<0.22)n=2;if(n&&b.m>0.7&&rnd()<0.12*env.regen)n=2;
+      let n=rnd()<(s.mega&&s.hold?0.97:clamp((0.25+0.9*b.m+env.inst*0.25)*(0.4+env.regen),0,0.97))?1:0;if(s.mega&&!s.megaT&&n&&rnd()<0.22)n=2;if(n&&b.m>0.7&&rnd()<0.12*env.regen)n=2;
       s.maxCores=s.maxCores||Math.max(4,ncore+3);if(!s.mega&&(s.anc||0)>0.3){if(!n&&rnd()<0.3*s.anc)n=1;if(n===1&&rnd()<0.18*s.anc)n=2}
       for(let k=0;k<n&&ncore<(s.megaT?6:s.spin||s.hookR||s.mega?s.maxCores:Math.min(s.maxCores,(s.anc||0)>0.3?13:10));k++){const r=(b.ax+b.ay)/2;let best=[r,0],bm=-1;
         for(let a=0;a<8;a++){const th=a*Math.PI/4+R(-.3,.3),d=r*R(0.7,1.3),ru=Math.cos(th)*d,rr=Math.sin(th)*d;
@@ -1809,7 +1809,9 @@ function step(dt,rdt=0){
     if(s.anc>0.2&&!s.megaT&&!s.hookR){const rg=ridgeAt(s.x,s.y);if(rg){const sg=rg.x*s.hx+rg.y*s.hy>=0?1:-1,kr=Math.min(1,dt*0.03*s.anc);s.hx+=(sg*rg.x-s.hx)*kr;s.hy+=(sg*rg.y-s.hy)*kr;const n=Math.hypot(s.hx,s.hy)||1;s.hx/=n;s.hy/=n}
       if(!s.kill&&pS<0.8){s.rad=Math.min((s.rad0||s.rad||12)*2.6,(s.rad||12)+dt*0.05*s.anc/PX);s.maxCores=Math.min(13,Math.max(s.maxCores||0,6+((s.rad-(s.rad0||s.rad))*PX/5|0)))}}
     if(s.type!=='line'){const m=Math.hypot(bhx,bhy);if(m>0.02){const k2=Math.min(1,dt*0.015*(1-0.9*(s.megaT||s.hookR?0:s.anc||0)));s.hx+=(bhx/m-s.hx)*k2;s.hy+=(bhy/m-s.hy)*k2;const n=Math.hypot(s.hx,s.hy);s.hx/=n;s.hy/=n}}
-    s.age+=dt*(1+(0.5-s.mc)*0.9*env.moistFx)*(1-0.4*(s.anc||0));if(s.mega&&!s.kill&&s.mc>0.27&&s.age>s.life*0.5)s.age=s.life*0.5;const p=s.age/s.life;for(const b of s.blobs)b.t=(b.t||0)+dt;cellDynamics(s,dt);if(s.merged>0)coalesce(s,dt);
+    s.age+=dt*(1+(0.5-s.mc)*0.9*env.moistFx)*(1-0.4*(s.anc||0));
+    // a giant stays at full strength for a limited run (about 280-370 km of travel, or 10-14 hours if it hardly moves, or until the air dries); then it ages and dies like any thunderstorm
+    if(s.mega&&!s.kill){s.trav=(s.trav||0)+Math.hypot(s.vx,s.vy)*dt*PX;s.ht=(s.ht||0)+dt;s.maxTrav=s.maxTrav||R(280,370);s.maxT=s.maxT||R(600,840);s.hold=s.mc>0.27&&s.trav<s.maxTrav&&s.ht<s.maxT;if(s.hold&&s.age>s.life*0.5)s.age=s.life*0.5;if(!s.hold&&s.held&&!s.rel){s.rel=1;s.age=Math.max(s.age,s.life*(1-Math.min(0.4,170/s.life)))}if(s.hold)s.held=1}const p=s.age/s.life;for(const b of s.blobs)b.t=(b.t||0)+dt;cellDynamics(s,dt);if(s.merged>0)coalesce(s,dt);
     if(s.scen){
       // scenario clouds keep their water through the night (weakening to lighter rain); from 8 AM the sun eats them away over 2-3 hours
       {const dy=Math.floor((START_H+simT/60)/24);if(s.kd!==dy&&hour>=8&&hour<12&&simT-(s.bornT??simT)>120){s.kd=dy;s.keep=rnd()<clamp(1.3*env.moist+(s.merged>0?0.3:0),0.2,0.95)*clamp(1.4-(atmSamp(ATM.TX,s.x,s.y)-28)/14,0.25,1.1)}}
@@ -2369,8 +2371,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=81,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=82,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:82,title:'العاصفة العملاقة لها عمر',fix:['العاصفة الرعدية العملاقة كانت تقطع أكثر من ألف كيلو وما تضعف: الحين تبقى في قوتها حوالي 280 إلى 370 كم، وبعدها تضعف وتتلاشى مثل العاصفة الرعدية العادية (المجموع تقريباً 430 كم)','لو كانت شبه واقفة مكانها تعيش 10 إلى 14 ساعة ثم تبدأ تضعف، يعني أطول من العاصفة العادية لكن مو للأبد']},
   {v:81,title:'سحب الجبال مثل مقاطع الرادار',add:['من المقاطع اللي أرسلتها: سحب الجبال صارت تتمدد على طول سلسلة الجبل نفسها (مو مع اتجاه الرياح)','السحابة الثابتة فوق الجبل تكبر مكانها: تطلع أنوية جديدة على أطرافها وتتوسع لين تصير كتلة كبيرة، بدل ما تمشي','العواصف الجديدة فوق المرتفعات تطلع صف على طول السلسلة','خلف الجبال (ظل المطر) المطر يتلاشى بسرعة والأنوية تضعف، فالمنخفض الجاي من البحر ينضغط على السلسلة ويضعف بعدها']},
   {v:80,title:'العاصفة العملاقة أندر',fix:['ظهور العاصفة الرعدية العملاقة لحالها صار نادر جداً: حتى لو اتحدت أربع عواصف رعدية، فرصة تحولها لعملاقة 8% فقط (كانت تتحول كل مرة)']},
   {v:79,title:'الجبال تعيق حركة السحب',add:['فوق الجبال والمرتفعات السحب تتعطل: الأنوية اللي فوق الجبل تتأخر عن باقي العاصفة، فالعاصفة تتمدد ويتغير شكلها وهي تعبر الجبال','المطر الخفيف يعبر الجبال أبطأ من الأرض المنبسطة، فيتراكم فوقها ويترك ذيل وراها','في المناطق اللي ما فيها جبال السحب تاخذ راحتها وتمشي بحرية مع الرياح']},
