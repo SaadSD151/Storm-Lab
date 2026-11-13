@@ -1272,7 +1272,7 @@ function spawn(type,x,y,o={}){
   if(type==='mega'||type==='mcs')s.type='storm';
   s.blobs=bl.filter(b=>!b.halo);
   s.rad=0;for(const b of bl)if(b.g>1.1)s.rad=Math.max(s.rad,Math.hypot(b.rx,b.ry)+Math.max(b.ax,b.ay));
-  s.life*=(0.6+0.8*env.moist)*env.lifeM;s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
+  s.rad0=s.rad;s.life*=(0.6+0.8*env.moist)*env.lifeM;s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
   s.hailRoll=s.variant==='lp'?R(0,0.5):rnd();
   storms.push(s);return s;
 }
@@ -1672,10 +1672,10 @@ function megaDynamics(s,dt){s.mt=(s.mt||0)+dt;const a=s.mt,L=s.tailL,ph=s.tph,k=
     const wave=s.twob*(0.6+1.6*t)*Math.sin(ph+t*5.5-a/200)+s.twob*0.7*t*Math.sin(ph*3+t*11-a/120),tx=b.x0*(0.25+0.75*len)+b.jx,ty=b.y0+cuD*t*t*L+wave*t+b.jy;
     b.rx+=(tx-b.rx)*k;b.ry+=(ty-b.ry)*k;b.ang=b.a0+Math.atan2(2*cuD*t*L+s.twob*(0.6+1.6*t)*5.5*Math.cos(ph+t*5.5-a/200)*t,L)*0.8;
     b.P=b.P0+3*Math.sin(a/70+t*9+ph)+(len<1?(len-1)*14*t:0);b.ay=b.ay0*(1+0.22*Math.sin(a/160+t*4+ph))}
-  {let live=0;for(const b of s.blobs)if(b.g>1.1&&!b.out&&!b.hook&&(b.age2||0)<(b.life2||1)*0.8)live++;if(live<3&&!s.kill&&a>=(s.nextFix||0)){s.nextFix=a+R(10,20);const th=R(0,6.28),d=s.r0*R(0,0.4),r=s.r0*R(0.6,0.8),e=R(1,1.25);
+  {let live=0;for(const b of s.blobs)if(b.g>1.1&&!b.out&&!b.hook&&!b.abs&&(b.age2||0)<(b.life2||1)*0.8)live++;if(live<3&&!s.kill&&a>=(s.nextFix||0)){s.nextFix=a+R(10,20);const th=R(0,6.28),d=s.r0*R(0,0.4),r=s.r0*R(0.6,0.8),e=R(1,1.25);
     const nb=B(Math.cos(th)*d,Math.sin(th)*d,r*e,r/e,R(62,66),2,{k:2.4,ang:R(-1.5,1.5)});nb.fv=0;nb.life2=cellLife()*1.5;nb.age2=0;nb.t=0;s.blobs.push(nb)}}
   // its cores stay gathered in one mass (they are replaced where they die instead of scattering)
-  for(const b of s.blobs)if(b.g>1.1&&!b.out){const q=Math.hypot(b.rx,b.ry)/(s.r0*0.75);if(q>1){const kk=Math.min(1,dt*0.03);b.rx+=(b.rx/q-b.rx)*kk;b.ry+=(b.ry/q-b.ry)*kk}}
+  for(const b of s.blobs)if(b.g>1.1&&!b.out&&!b.abs){const q=Math.hypot(b.rx,b.ry)/(s.r0*0.75);if(q>1){const kk=Math.min(1,dt*0.03);b.rx+=(b.rx/q-b.rx)*kk;b.ry+=(b.ry/q-b.ry)*kk}}
 }
 function cellDynamics(s,dt){
   if(s.hookR)superDynamics(s,dt);if(s.megaT)megaDynamics(s,dt);
@@ -1727,25 +1727,26 @@ function coalesce(st,dt){
     const kid=B((a.rx+b.rx)/2+R(-2,2),(a.ry+b.ry)/2+R(-2,2),r*e,r/e,Math.max(a.P,b.P)-R(0,2),2,{k:2.1,ang:Math.atan2(b.ry-a.ry,b.rx-a.rx)+R(-.4,.4)});
     kid.kid=1;kid.fv=0;kid.from=a.from+'+'+b.from;kid.t=0;st.blobs.push(kid)}
 }
+const megaReach=s=>Math.min(s.r0||s.rad0||s.rad||20,45/PX);
 function mergeStorms(){
   const ok=s=>!s.kill&&!s.dead&&s.type!=='low'&&!(s.noMergeUntil>s.age)&&s.age/s.life<0.88&&s.age/s.life>0.08;
   for(let i=0;i<storms.length;i++){const a=storms[i];if(!ok(a))continue;
     for(let j=i+1;j<storms.length;j++){const b=storms[j];if(!ok(b)||!ok(a))continue;
-      if(a.blobs.length+b.blobs.length>90)continue;const d=Math.hypot(a.x-b.x,a.y-b.y);if(env.merge<=0.01||d>((a.rad||10)*(a.gf||1)+(b.rad||10)*(b.gf||1))*(a.mega||b.mega?0.95:0.5)*env.merge)continue;
+      if(a.blobs.length+b.blobs.length>90)continue;const d=Math.hypot(a.x-b.x,a.y-b.y);const mg=a.mega?a:b.mega?b:null,ot=mg===a?b:a;if(env.merge<=0.01||d>(mg?megaReach(mg)+(ot.mega?megaReach(ot):(ot.rad||10)*(ot.gf||1)*0.5):((a.rad||10)*(a.gf||1)+(b.rad||10)*(b.gf||1))*0.5)*env.merge)continue;
       const sz=s=>(s.rad||10)*(s.gf||1)*(s.type==='line'||s.hookR?3:1);
       const big=a.mega&&!b.mega?a:b.mega&&!a.mega?b:sz(a)>=sz(b)?a:b,sm=big===a?b:a,gB=big.gf||1,gS=sm.gf||1;
       let nh=big.blobs.filter(h=>h.halo&&!h.out).length;
       for(const q of sm.blobs){if(q.halo&&!q.out){if(nh>=8)q.out=1;else nh++}
         const wx=sm.x+(q.rx*sm.hx-q.ry*sm.hy)*gS,wy=sm.y+(q.rx*sm.hy+q.ry*sm.hx)*gS,dx=wx-big.x,dy=wy-big.y;
         q.rx=(dx*big.hx+dy*big.hy)/gB;q.ry=(-dx*big.hy+dy*big.hx)/gB;q.ax*=gS/gB;q.ay*=gS/gB;if(q.tax){q.tax*=gS/gB;q.tay*=gS/gB}q.bow=0;
-        q.ang+=Math.atan2(sm.hy,sm.hx)-Math.atan2(big.hy,big.hx);q.from=q.from||sm.id;q.rx0=null;big.blobs.push(q)}
+        q.ang+=Math.atan2(sm.hy,sm.hx)-Math.atan2(big.hy,big.hx);q.from=q.from||sm.id;q.rx0=null;if(big.mega&&q.g>1.1){q.abs=1;q.spawned=1}big.blobs.push(q)}
       for(const q of big.blobs)if(!q.from)q.from=big.id;
       // keep the merged storm in full maturity and give it extra life
       const remB=Math.max(0,0.85*big.life-big.age),remS=Math.max(0,0.85*sm.life-sm.age),keepM=Math.min(Math.max(remB,remS)+0.35*Math.min(remB,remS),Math.max(remB,remS,0.7*Math.max(big.life0||big.life,sm.life0||sm.life)));
       big.life=Math.max(big.life,(big.age+keepM)/0.85);big.g0=Math.min(0.15,15/big.life);if(big.age<big.g0*big.life)big.age=big.g0*big.life;if(hailOK(sm)&&!hailOK(big)){big.hailRoll=0}
       if(big.mega){big.megaB=Math.min(6,(big.megaB||3)+0.5);big.maxCores=Math.min(34,(big.maxCores||22)+2)}
       if(sm.type==='storm'&&big.type==='storm'){big.sj=(big.sj||0)+(sm.sj||0)+1;if(big.sj>=3&&!big.mega&&!big.kill){big.mega=1;big.megaB=3;big.maxCores=22;big.life=Math.max(big.life,300);megaTail(big,28);for(const q of big.blobs)if(q.ti!=null)q.fv=0;alert(`اتحدت أربع عواصف رعدية وتكوّنت عاصفة رعدية عملاقة (${big.id})`,'bad')}}
-      big.merged++;big.rad=Math.max(big.rad||10,(d+(sm.rad||10)*gS)/gB);sm.dead=true;
+      big.merged++;if(!big.mega)big.rad=Math.max(big.rad||10,(d+(sm.rad||10)*gS)/gB);sm.dead=true;
       if(big.merged<=3)alert(`اندماج العاصفتين ${big.id} و ${sm.id}: ستعيش أطول`,'');}}
   if(storms.some(s=>s.dead))storms=storms.filter(s=>!s.dead);
 }
@@ -1770,6 +1771,8 @@ function step(dt,rdt=0){
       if(gm>1e-4){const pm=0.28*Math.hypot(ws.x,ws.y)*env.speedK*Math.min(1,gm*12);tx+=gx/gm*pm;ty+=gy/gm*pm}}
     // orographic anchoring: while moist air keeps being forced up the slope, new cells keep forming over the mountain and the storm stays there
     let anc=0;if(s.type!=='line'&&s.type!=='low'&&s.type!=='trail'&&pS<0.8){const el=elevAt(s.x,s.y),up=ATM.UP?atmSamp(ATM.UP,s.x,s.y):0;anc=clamp((el-0.25)/0.3,0,1)*clamp(0.65+up*3,0,1);if(anc>0){tx*=1-0.85*anc;ty*=1-0.85*anc}}s.anc=anc;
+    if(!s.mega&&s.type!=='low'&&s.type!=='line')for(const m of storms){if(!m.mega||m.kill||m===s)continue;const dx=m.x-s.x,dy=m.y-s.y,d=Math.hypot(dx,dy),Rr=megaReach(m)+(s.rad||10)*(s.gf||1)*0.6+14/PX;
+      if(d<Rr&&d>1){const pull=0.3*(Math.hypot(ws.x,ws.y)*env.speedK+0.05/PX)*(1-d/Rr);tx+=dx/d*pull;ty+=dy/d*pull}}
     if(s.megaT){const mt=s.mt||0,a=0.3*Math.sin(mt/240+s.mph)+0.12*Math.sin(mt/105+s.mph*2),c=Math.cos(a),sn=Math.sin(a),f=0.88+0.18*Math.sin(mt/170+s.mph*1.4);[tx,ty]=[(tx*c-ty*sn)*f,(tx*sn+ty*c)*f]}
     if(s.type==='low'){tx*=0.7;ty*=0.7}
     if(s.type==='line'){const wm=Math.hypot(w.x,w.y);if(wm>1e-3&&(w.x*s.hx+w.y*s.hy)>0){const k3=Math.min(1,dt*0.01);s.hx+=(w.x/wm-s.hx)*k3;s.hy+=(w.y/wm-s.hy)*k3;const n=Math.hypot(s.hx,s.hy);s.hx/=n;s.hy/=n}
@@ -2352,8 +2355,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=76,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=77,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:77,title:'بلع العواصف صار منطقي',fix:['العاصفة العملاقة كانت تبلع العواصف من آخر الخريطة لأن مداها كان يكبر مع كل عاصفة تبلعها: الحين مداها ثابت على حجم كتلتها الحمراء فقط (أقصى شي 45 كم) وما تبلع إلا اللي يلامسها','العاصفة الصغيرة القريبة تنجذب لها بالتدريج وتقرّب شوي شوي قبل ما تندمج','أنوية العاصفة المبلوعة ما عادت تنسحب لمركز العملاقة: تبقى مكانها وتتلاشى بهدوء']},
   {v:76,title:'تصنيف الرعد وأصوات أقوى',add:['3 أصوات رعد جديدة للعاصفة الرعدية العملاقة، أقوى من السابقة، من تسجيل حقيقي لعاصفة رعدية كبيرة','الرعد صار ثلاث درجات: ضعيف يطلع طول الوقت، متوسط أندر، وقوي نادر وهو الأعلى','أكثر من رعد بنفس الوقت: ممكن رعد ضعيف يدحرج في الخلفية والرعد القوي شغال (إلى 5 أصوات)','مدى سماع الرعد صار 65 كم','العاصفة الرعدية العملاقة ممكن تتكون لحالها، لكن نادر جداً: إذا اتحدت أربع عواصف رعدية مع بعض تتحول لعاصفة رعدية عملاقة بذيلها الطويل ويطلع لك تنبيه'],fix:['الرعد القوي للعاصفة العملاقة صار أعلى من قبل','العاصفة الرعدية العملاقة ما عادت تتحرك كقطعة وحدة: صارت مثل العاصفة الرعدية العادية، أنويتها تولد وتموت وتتجدد فيتغير شكلها ومكانها، لكنها ما تتفكك بسهولة','كل جزء من ذيلها يتحرك لحاله شوي بدل ما يتحرك الذيل كله مع بعض']},
   {v:75,title:'حركة العاصفة الرعدية العملاقة أهدأ',fix:['ذيل العاصفة الرعدية العملاقة كان يرفرف بسرعة لما تسرّع الوقت: الحين تموّجه وانحناؤه ياخذ ساعات مثل الواقع','مسارها يتعرّج ببطء، والدائرة الحمراء تتغير بهدوء، والأنوية الجديدة تطلع على أطرافها كل 35 إلى 70 دقيقة']},
   {v:74,title:'المطر يقوى بعد الرعد',add:['مثل الواقع: المطر يهدأ، تسمع الرعد، وبعدها يقوى المطر أكثر من قبل لفترة ثم يرجع طبيعي (مع كل أنواع السحب)'],fix:['شلنا الرعد من اليمين واليسار (3D)، رجع ينسمع من الجهتين بالتساوي']},
