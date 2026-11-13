@@ -699,6 +699,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
           <label class="chk"><input type="checkbox" id="lLabels" checked><span>أسماء المدن</span></label>
           <label class="chk"><input type="checkbox" id="lTracks" checked><span>مسارات العواصف</span></label>
           <label class="chk"><input type="checkbox" id="lStreets" checked><span>الشوارع والأحياء</span></label>
+          <label class="chk"><input type="checkbox" id="lMm" checked><span>مجموع المطر تحت المدن</span></label>
           <label class="chk"><input type="checkbox" id="lMoist"><span>خريطة الرطوبة</span></label>
         </div>
         <div class="btns">
@@ -1125,8 +1126,18 @@ function buildAccLut(){const st=ACC_STEPS;for(let k=0;k<301;k++){const v=k/2;let
 buildAccLut();
 const Z_LUT=new Float32Array(400);for(let i=0;i<400;i++)Z_LUT[i]=Math.pow(10,(i/4)/10);
 // Ground rain: Marshall-Palmer (Z=200R^1.6) capped at 50 dBZ, times the share that survives evaporation under high, dry cloud bases
-const RR_LUT=new Float32Array(111);
-function buildRR(){const top=0.95-0.8*env.evap,lo=top*0.73,light=clamp(1-env.evap*1.6,0,1);for(let i=0;i<111;i++){const v=Math.min(i/2,50),ev=v<15?0:v<35?((v-15)/20*lo)+light*0.3*(1-(v-15)/20):Math.min(top,lo+(v-35)/15*(top-lo));RR_LUT[i]=v<15?0:Math.pow(Math.pow(10,v/10)/200,0.625)*ev}}
+const RR_LUT=new Float32Array(141);
+// Rain reaching the ground, the way it works in an arid country:
+//  - the radar sees rain aloft; under high cloud bases in dry air most light rain evaporates on the way down (virga), so weak echoes give
+//    almost nothing at the surface, while the short heavy cores give nearly all of a station's total;
+//  - very strong echoes are capped (hail contamination), as radar rainfall estimates do.
+// Base table = mm/h at the ground in moist air; the "evaporation" setting and the local humidity then cut the light and moderate rain, hardly the cores.
+const RR_BASE=[[18,0],[20,0.05],[25,0.13],[30,0.33],[35,0.9],[40,2.6],[45,6.5],[50,12],[55,15],[60,12.5],[66,10]],RR_HUM=new Float32Array(141);
+function buildRR(){const es=clamp(1.25-env.evap,0.25,1);for(let i=0;i<141;i++){const v=i/2;let r=0;if(v>=66)r=10;else if(v>18){let k=0;while(v>=RR_BASE[k+1][0])k++;const a=RR_BASE[k],b=RR_BASE[k+1];r=a[1]+(b[1]-a[1])*(v-a[0])/(b[0]-a[0])}
+    const w=clamp((50-v)/20,0.2,1);RR_LUT[i]=r*Math.pow(es,0.35+1.4*w);RR_HUM[i]=w}}
+// share of the rain aloft that survives the fall through the local air (dry air below the cloud eats the lighter rain)
+const humFac=q=>clamp(0.3+1.4*(q-0.3),0.22,1);
+function rainAt(v,x,y){if(!(v>=18))return 0;const k=v>=70?140:(v*2)|0,w=RR_HUM[k];return RR_LUT[k]*(w>0&&ATM.Q?Math.pow(humFac(atmSamp(ATM.Q,x,y)),w):1)}
 const rainRate=dbz=>RR_LUT[Math.min(110,Math.max(0,(dbz*2)|0))];
 
 /* ---------- state ---------- */
@@ -1147,7 +1158,7 @@ const PRESET_INFO={calm:'جو مستقر: سحب قليلة ومطر خفيف، 
   summer:'صيف حار: هواء جاف وحرارة، عواصف رعدية متفرقة وبرق كثير، وأغلب المطر يتبخر قبل وصوله للأرض.',
   winter:'منخفض شتوي: مطر واسع ومستمر يتحرك بسرعة، وعواصف رعدية قليلة.',dry:'جفاف: هواء جاف جداً، والعواصف ضعيفة وتتلاشى بسرعة.',
   supercell:'تفشي خلايا عملاقة: قص رياح قوي، خلايا عملاقة تتكون من نفسها، وبرد كبير متكرر.'};
-const layers={flood:true,moist:false,streets:true,tracks:true,rings:false,sweep:false,light:true,clutter:false,smooth:false,labels:true};
+const layers={mm:true,flood:true,moist:false,streets:true,tracks:true,rings:false,sweep:false,light:true,clutter:false,smooth:false,labels:true};
 let storms=[],strikes=[],alerts=[],hailMk=[];
 let START_H=13,simT=0,speed=1,paused=false,product='ref',tool='storm',mode='free';
 const mission={on:false,budget:24,elapsed:0,dur:480,done:false,started:false};
@@ -1301,10 +1312,10 @@ function raster(cx,cy,ax,ay,ang,P,fl,bk,bm,ns,ox,oy,ox2,oy2,hk=0){
 // Nothing pops in or out: rain appears over minutes and lingers after its storm has died, as on real radar loops.
 const MEM={M:null,T:null,A:null,D:null,RU:null,RV:null,w:0,h:0,G:2,ox:0,oy:0,tx:0,ty:0,res:0,fadeT:-1e9};
 const memG=()=>Math.max(2,Math.round(3.2/PX));
-function memInit(){const G=MEM.G=memG(),w=MEM.w=Math.ceil(W/G)+3,h=MEM.h=Math.ceil(H/G)+3,n=w*h;MEM.M=new Float32Array(n);MEM.T=new Float32Array(n);MEM.A=new Float32Array(n);MEM.D=new Float32Array(n);
+function memInit(){const G=MEM.G=memG(),w=MEM.w=Math.ceil(W/G)+3,h=MEM.h=Math.ceil(H/G)+3,n=w*h;MEM.M=new Float32Array(n);MEM.C=new Float32Array(n);MEM.T=new Float32Array(n);MEM.A=new Float32Array(n);MEM.D=new Float32Array(n);
   MEM.cw=Math.ceil(w/6)+2;MEM.ch=Math.ceil(h/6)+2;MEM.RU=new Float32Array(MEM.cw*MEM.ch);MEM.RV=new Float32Array(MEM.cw*MEM.ch);MEM.ox=MEM.oy=0;MEM.res=0}
 const memOk=()=>{if(!MEM.M||MEM.G!==memG()||MEM.w!==Math.ceil(W/MEM.G)+3||MEM.h!==Math.ceil(H/MEM.G)+3)memInit()};
-function memClear(){if(MEM.M)MEM.M.fill(0)}
+function memClear(){if(MEM.M){MEM.M.fill(0);MEM.C.fill(0)}}
 function memErase(x,y,r){if(!MEM.M)return;const{M,w,h,G}=MEM;for(let j=0;j<h;j++){const Y=(j-1)*G+MEM.oy;if(Math.abs(Y-y)>r)continue;for(let i=0;i<w;i++){const X=(i-1)*G+MEM.ox,d=Math.hypot(X-x,Y-y);if(d<r)M[j*w+i]*=sst(0.55,1,d/r)}}}
 // wind aloft that carries the lighter rain: a little faster than the cells and veered from them
 function upWind(x,y){const st=steerAt(x,y),c=1,sn=0,k=1.04*env.speedK;return{x:(st.x*c-st.y*sn)*k,y:(st.x*sn+st.y*c)*k}}
@@ -1317,7 +1328,7 @@ function memStep(dt,EM){memOk();atmOk();const{M,T,A,D,RU,RV,w,h,G,cw,ch}=MEM,n=w
   if(dt>0){
     // 1) carried by the mean wind aloft: whole-cell shifts are exact and the rest is a sub-cell offset, so the rain glides without blurring
     MEM.ox+=u.x*dt;MEM.oy+=u.y*dt;MEM.tx+=u.x*dt;MEM.ty+=u.y*dt;const sx=Math.floor(MEM.ox/G),sy=Math.floor(MEM.oy/G);
-    if(sx||sy){MEM.ox-=sx*G;MEM.oy-=sy*G;A.fill(0);for(let j=0;j<h;j++){const sj=j-sy;if(sj<0||sj>=h)continue;for(let i=0;i<w;i++){const si=i-sx;if(si>=0&&si<w)A[j*w+i]=M[sj*w+si]}}M.set(A)}
+    if(sx||sy){MEM.ox-=sx*G;MEM.oy-=sy*G;A.fill(0);for(let j=0;j<h;j++){const sj=j-sy;if(sj<0||sj>=h)continue;for(let i=0;i<w;i++){const si=i-sx;if(si>=0&&si<w)A[j*w+i]=M[sj*w+si]}}M.set(A);const C=MEM.C;A.fill(0);for(let j=0;j<h;j++){const sj=j-sy;if(sj<0||sj>=h)continue;for(let i=0;i<w;i++){const si=i-sx;if(si>=0&&si<w)A[j*w+i]=C[sj*w+si]}}C.set(A)}
     // 2) every few minutes: bends and speed changes of the flow, plus slow large eddies, deform the rain areas
     MEM.res+=dt;if(MEM.res>=2.5){const d=Math.min(MEM.res,40);MEM.res=0;const t=simT,amp=0.035*um*(0.6+1.4*env.morph),ampB=(0.14*um+0.02/PX)*(0.6+1.4*env.morph),BIG=[];
       // only big, strong storms (supercells, merged or many-celled severe storms) stir the rain around them: their tails swirl and sway
@@ -1342,7 +1353,10 @@ function memStep(dt,EM){memOk();atmOk();const{M,T,A,D,RU,RV,w,h,G,cw,ch}=MEM,n=w
     for(let j=0;j<h;j++){const Y=(j-1)*G+MEM.oy,gy=clamp((Y/MG)|0,0,ah-1)*aw;for(let i=0;i<w;i++){const q=j*w+i;let m=M[q];const t=T[q];if(m<0.5&&t<=0){M[q]=0;continue}
       const g=gy+clamp((((i-1)*G+MEM.ox)/MG)|0,0,aw-1),tau=fade?4:(30+85*B[g])*ev*clamp(1+(UP[g]<0?5:2.5)*UP[g],0.28,1.7)*clamp(1.25-(TT[g]-30)/22,0.4,1.25);m/=1+dt/tau;if(t>m)m+=(t-m)*kf;M[q]=m}}
     // 5) it spreads out sideways (turbulent mixing and the spread of falling rain)
-    let p=4*(1.1*env.shieldK/((G*PX)*(G*PX)))*dt;if(p>10)p=10;while(p>0){memBlur(Math.min(1,p));p-=1}}
+    let p=4*(1.1*env.shieldK/((G*PX)*(G*PX)))*dt;if(p>10)p=10;while(p>0){memBlur(Math.min(1,p));p-=1}
+    // cloud cover: fed by the rain areas, it spreads out several times wider than the rain and thins slowly over hours
+    {const C=MEM.C,kc=1-Math.exp(-dt/18),dc=1/(1+dt/(fade?6:230));for(let q=0;q<n;q++){const m=M[q];let c=C[q]*dc;if(m>1.3){const t=Math.min(1,Math.log10(m)/3+0.2);if(t>c)c+=(t-c)*kc}C[q]=c<0.004?0:c}
+      let pc=4*(14/((G*PX)*(G*PX)))*dt;if(pc>14)pc=14;MEM.M=C;while(pc>0){memBlur(Math.min(1,pc));pc-=1}MEM.M=M}}
   // 6) what the radar shows of it: streaks and patches along the flow that travel with the rain and slowly change, thinner in dry air
   const t=simT,gw=windVec(),wa=Math.hypot(gw.x,gw.y)>1e-4?Math.atan2(gw.y,gw.x):-0.785,wc=Math.cos(wa),ws=Math.sin(wa),L=Math.LN10/10,B=ATM.B,aw=ATM.w,ah=ATM.h;
   for(let j=0;j<h;j++){const Y=(j-1)*G+MEM.oy,gy=clamp((Y/MG)|0,0,ah-1)*aw;for(let i=0;i<w;i++){const q=j*w+i,m=M[q];if(m<1.2){D[q]=0;continue}
@@ -1530,12 +1544,12 @@ function paint(){if(product==='wind')return;
   else if(product==='cloud'){
     // cloud cover as a satellite would see it: thick bright cloud over the storms, a wider shield of thinner cloud around the rain (the anvil and
     // the remembered light rain), and patchy thin cloud where the air is very humid even without rain
-    memOk();atmOk();const M=MEM.M,mw=MEM.w,iG=1/MEM.G,ox=MEM.ox,oy=MEM.oy,tx=MEM.tx|0,ty=MEM.ty|0,Q=ATM.Q,aw=ATM.w,ah=ATM.h,A=Math.round(255*radarAlpha);
+    memOk();atmOk();const M=MEM.C,mw=MEM.w,iG=1/MEM.G,ox=MEM.ox,oy=MEM.oy,tx=MEM.tx|0,ty=MEM.ty|0,Q=ATM.Q,aw=ATM.w,ah=ATM.h,A=Math.round(255*radarAlpha);
     for(let y=0;y<H;y++){const gy=(y-oy)*iG+1,y0=gy|0,fy=gy-y0,r=y*W,jr=y0*mw,qr=Math.min(ah-1,(y/MG)|0)*aw,nr=(((y-ty)>>1)&255)<<8;
       for(let x=0;x<W;x++){const i=r+x,gx=(x-ox)*iG+1,x0=gx|0,fx=gx-x0,j=jr+x0,m=(M[j]*(1-fx)+M[j+1]*fx)*(1-fy)+(M[j+mw]*(1-fx)+M[j+mw+1]*fx)*fy,v=DBZ[i];
-        let c=m>1.3?Math.min(1,Math.log10(m)/3.2+0.12):0;if(v>5){const cz=0.35+v/45;if(cz>c)c=cz>1?1:cz}
-        const q=Q[qr+Math.min(aw-1,(x/MG)|0)];if(q>0.6){const ch=Math.min(0.5,(q-0.6)*1.6)*(0.55+0.45*TEX[nr|(((x-tx)>>1)&255)]);if(ch>c)c=ch}
-        if(c<0.06){r32[i]=0;continue}const g=(150+105*c)|0;r32[i]=pack(g,g,Math.min(255,g+6),(Math.min(1,c*1.25)*A*0.94)|0)}}}
+        const nz=TEX[nr|(((x-tx)>>1)&255)];let c=m>0.02?Math.max(0,m*3-0.2*(0.5-0.5*nz)-0.04):0;if(v>5){const cz=0.5+v/50;if(cz>c)c=cz}if(c>1)c=1;
+        const q=Q[qr+Math.min(aw-1,(x/MG)|0)];if(q>0.6){const ch=Math.min(0.5,(q-0.6)*1.6)*(0.55+0.45*nz);if(ch>c)c=ch}
+        if(c<0.05){r32[i]=0;continue}const g=(150+105*c)|0;r32[i]=pack(g,g,Math.min(255,g+6),(Math.min(1,c*1.25)*A*0.94)|0)}}}
   else if(product==='hacc'){if(!HAIL_PK.length)buildHailPk();for(let i=0;i<N;i++){const h=HACC[i];r32[i]=h>0?HAIL_PK[HAIL_CAT.indexOf(hailCat(h))]:0}}
   else{for(let i=0;i<N;i++){const a=ACC[i];r32[i]=a<0.5?0:ACC_LUT[a>=150?300:(a*2)|0]}}
   rCtx.putImageData(rImg,0,0);
@@ -1856,8 +1870,9 @@ function step(dt,rdt=0){
   fieldClock+=rdt;pendDt+=dt;
   if(rdt===0||(radarFps<0?scanNo!==fieldScan:fieldClock>=(radarFps?1/radarFps:document.body.classList.contains('mob')?1/20:1/24))){fieldScan=scanNo;fieldClock=0;computeField(pendDt,1);fieldDirty=true;
   const f=pendDt/60;pendDt=0;
-  for(let i=0;i<N;i++){const v=DBZ[i];if(v>=58){const hs=hailSizeAt(i);if(hs>HACC[i])HACC[i]=hs}if(v>=10)ACC[i]+=RR_LUT[v>=55?110:(v*2)|0]*f}
-  for(const c of CITIES){const v=DBZ[c.i];c.rate=rainRate(v);const before=c.total;c.total+=c.rate*f;
+  {const Q=ATM.Q,aw=ATM.w,ah=ATM.h;for(let y=0;y<H;y++){const r=y*W,qr=Math.min(ah-1,(y/MG)|0)*aw;for(let x=0;x<W;x++){const i=r+x,v=DBZ[i];if(v<18)continue;if(v>=58){const hs=hailSizeAt(i);if(hs>HACC[i])HACC[i]=hs}
+    const k=v>=70?140:(v*2)|0,w=RR_HUM[k];ACC[i]+=RR_LUT[k]*f*(w>0?Math.pow(humFac(Q[qr+Math.min(aw-1,(x/MG)|0)]),w):1)}}}
+  for(const c of CITIES){const v=DBZ[c.i];c.rate=rainAt(v,c.x,c.y);const before=c.total;c.total+=c.rate*f;
     {const hs=hailSizeAt(c.i);if(hs>=0.5&&simT-(c.al.hail??-99)>30){c.al.hail=simT;c.hail++;const hc=hailCat(hs);alert(`${hc[2]} على ${c.n}: حبات ≈ ${hs.toFixed(1)} سم (${hc[3]})`,'bad')}}
     if(c.rate>=40&&simT-(c.al.heavy??-99)>40){c.al.heavy=simT;alert(`أمطار غزيرة على ${c.n}: ${c.rate.toFixed(0)} مم/س`,'warn')}
     if(before<50&&c.total>=50){alert(`خطر سيول في ${c.n}: تجاوز المجموع 50 مم`,'bad')}
@@ -2089,7 +2104,8 @@ function draw(now){
     ctx.beginPath();ctx.arc(x,y,3.6,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();ctx.lineWidth=1.6;ctx.strokeStyle=dk?'#04070a':'#ffffff';ctx.stroke();
     if(c.rate>0.5){ctx.beginPath();ctx.arc(x,y,7+Math.sin(now/220)*1.5,0,Math.PI*2);ctx.strokeStyle='rgba(143,216,255,.7)';ctx.lineWidth=1.2;ctx.stroke()}
     if(product==='temp'&&ATM.T)label(Math.round(tempAt(c.x,c.y))+'°',x,y+15,'600 12px "IBM Plex Mono",monospace',dk?'#fff':'#111');
-    if(c.total>=0.1&&product!=='fcst')label(c.total.toFixed(c.total<10?1:0)+' مم',x,y+(product==='temp'?28:15),'600 11px "IBM Plex Sans Arabic",sans-serif',c.total>=50?'#ff7a7a':c.total>=10?'#7fe0a8':dk?'#8fd8ff':'#1b6fa8');
+    if(layers.mm&&c.total>=0.1&&product!=='fcst'){let my=y+(product==='temp'?28:15);if(layers.labels)for(const RD of RADARS){const[rx,ry]=toScreen(RD.x,RD.y);if(Math.abs(x-(rx+24))<70&&Math.abs(my-(ry+12))<13){my=ry+12+14;break}}
+      label(c.total.toFixed(c.total<10?1:0)+' مم',x,my,'600 11px "IBM Plex Sans Arabic",sans-serif',c.total>=50?'#ff7a7a':c.total>=10?'#7fe0a8':dk?'#8fd8ff':'#1b6fa8')}
     if(layers.labels){label(c.n,x,y-13,'600 12.5px "IBM Plex Sans Arabic",sans-serif',ink());
       if(mission.on&&c.m)label(c.total.toFixed(1)+' مم',x,y+14,'500 10.5px "IBM Plex Mono",monospace',col)}}
   if(layers.labels)for(const RD of RADARS){const[x,y]=toScreen(RD.x,RD.y);label('رادار '+RD.n,x+24,y+12,'500 10px "IBM Plex Sans Arabic",sans-serif',dk?'rgba(143,216,255,.85)':'#155d86')}
@@ -2193,7 +2209,7 @@ const ro=document.getElementById('readout');let lastRead=null;
 function updateReadout(w){lastRead=w;
   if(!w||w.x<0||w.y<0||w.x>=W||w.y>=H){ro.innerHTML='<span class="ar">خارج نطاق الخريطة</span>';return}
   const RN=nearestRadar(w.x,w.y),i=(w.y|0)*W+(w.x|0),dx=w.x-RN.x,dy=w.y-RN.y,rng=Math.hypot(dx,dy),az=(Math.atan2(dx,-dy)*180/Math.PI+360)%360;
-  const v=DBZ[i],rr=rainRate(v),hs=hailSizeAt(i),hc=hs>0?hailCat(hs):null,gw=windAt(w,v);
+  const v=DBZ[i],rr=rainAt(v,w.x,w.y),hs=hailSizeAt(i),hc=hs>0?hailCat(hs):null,gw=windAt(w,v);
   const wv=product==='wind'?windSample(w.x,w.y):null,wsp=wv?Math.hypot(wv[0],wv[1]):0,wfrom=wv?(Math.atan2(-wv[0],wv[1])*180/Math.PI+360)%360:0;
   ro.innerHTML=(wv?`<span class="ar hailtxt">رياح ${windSpeedName(wsp)} · ${Math.round(wsp)} كم/س</span><span class="ar">من ${DIRS[Math.round(wfrom/45)%8]} (${String(Math.round(wfrom)).padStart(3,'0')}°)</span>`:'')+(hc?`<span class="ar hailtxt">${hc[2]} ≈ ${hs.toFixed(1)} سم · ${hc[3]}</span>`:'')+(!wv&&gw>0.05?`<span class="ar">هبات الرياح ≈ ${Math.round(env.windSpd+95*gw)} كم/س</span>`:'')+`<span class="dim">${y2lat(w.y).toFixed(2)}°N ${x2lon(w.x).toFixed(2)}°E</span>`+
    `<span class="dim">${RN.c} ${(rng*PX).toFixed(0)} km · ${az.toFixed(0).padStart(3,'0')}°${rng>RANGE?' · no data':''}</span>`+
@@ -2243,7 +2259,7 @@ $('natural').addEventListener('change',e=>{env.natural=e.target.checked});
   dial.addEventListener('pointerdown',e=>{on=true;dial.setPointerCapture(e.pointerId);set(e)});
   dial.addEventListener('pointermove',e=>{if(on)set(e)});dial.addEventListener('pointerup',()=>on=false);
   dial.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowDown'){env.windFrom=(env.windFrom+350)%360;syncEnv();e.preventDefault()}if(e.key==='ArrowRight'||e.key==='ArrowUp'){env.windFrom=(env.windFrom+10)%360;syncEnv();e.preventDefault()}});}
-const LMAP={lMoist:'moist',lStreets:'streets',lTracks:'tracks',lRings:'rings',lSweep:'sweep',lLight:'light',lClutter:'clutter',lSmooth:'smooth',lLabels:'labels'};
+const LMAP={lMm:'mm',lMoist:'moist',lStreets:'streets',lTracks:'tracks',lRings:'rings',lSweep:'sweep',lLight:'light',lClutter:'clutter',lSmooth:'smooth',lLabels:'labels'};
 for(const[id,k]of Object.entries(LMAP)){$(id).checked=layers[k];$(id).addEventListener('change',e=>{layers[k]=e.target.checked;stDirty=true;if(k==='moist'){moistT=0;renderLegend()}})}
 $('bClear').addEventListener('click',()=>{storms.forEach(s=>s.kill=true);MEM.fadeT=simT+30;toast('تتبدد السحب الآن')});
 $('bReset').addEventListener('click',()=>{if(mission.on){toast('لا يمكن التصفير أثناء المهمة');return}ACC.fill(0);HACC.fill(0);CITIES.forEach(c=>{c.total=0;c.hail=0});toast('تم تصفير مجاميع الأمطار')});
@@ -2384,9 +2400,10 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=85,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=86,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
-  {v:85,title:'مجموع المطر على الخريطة ورادار الغيوم',add:['مجموع الأمطار (مم) صار مكتوب تحت اسم كل مدينة على الخريطة: أزرق للقليل، أخضر من 10 مم، وأحمر من 50 مم','رادار جديد "الغيوم": يعرض غطاء السحب مثل صورة القمر الصناعي، الغيوم الكثيفة فوق العواصف وغيوم أخف حولها وفي المناطق الرطبة']},
+  {v:86,title:'حساب المطر على طريقة الأجواء الجافة',add:['حساب المليمتر تغيّر من أساسه ليناسب السعودية: المطر الخفيف أغلبه يتبخر قبل ما يوصل الأرض في الجو الجاف، والمجموع يجي أساساً من الأنوية الغزيرة القصيرة','الرطوبة المحلية تأثر: نفس السحابة تعطي مطر أقل على الأرض إذا الجو تحتها جاف','الأنوية اللي فيها برد ما عادت تعطي أرقام مطر مبالغ فيها','خيار جديد في الطبقات: "مجموع المطر تحت المدن" تقدر تخفيه','رادار الغيوم: الغيوم صارت أوسع بكثير حول السحابة مثل الواقع، تنتشر حول العواصف ومع الرياح وتبقى ساعات بعد المطر'],fix:['المجاميع كانت توصل 140 مم في يوم واحد في كذا مدينة: الحين اليوم الربيعي يعطي غالباً أقل من 15 مم، وموسم الأمطار إلى حدود 40 مم، والأرقام فوق 60 مم صارت للأجواء الشديدة فقط','رقم المطر ما عاد ينكتب فوق اسم الرادار']},
+  {v:85,title:'مجموع المطر على الخريطة ورادار الغيوم',add:['مجموع الأمطار (مم) صار مكتوب تحت اسم كل مدينة على الخريطة: أزرق للقليل، أخضر من 10 مم، وأحمر من 50 مم','رادار جديد "الغيوم": يعرض غطاء السحب مثل صورة القمر الصناعي']},
   {v:84,title:'السحابة ما تلف، والمطر يطوّل',fix:['السحابة كانت تميل وتلف كاملة مثل السيارة: الحين تحافظ على اتجاهها اللي تكونت فيه، وتغيّر شكلها يجي من تكوّن أنوية جديدة مو من دوران السحابة كلها','سحب الجبال تتكون من البداية مصطفّة على السلسلة بدل ما تلف عليها بعدين','مسار العاصفة العملاقة يتمايل بهدوء بدل الانعطاف الحاد','المطر صار ياخذ وقت أطول لين يختفي: التبخر أبطأ، والسحب تستهلك الرطوبة وتبرّد الجو تحتها بنصف السرعة السابقة']},
   {v:83,title:'السحب ما عادت تعلق فوق الجبال',fix:['السحب كانت تعلق فوق الجبال وتنبض مكانها طول اليوم بدون ما تتحرك: الحين السحابة تتكون وتكبر فوق الجبل أول ساعة إلى ساعتين من عمرها، ثم تتحرر وتمشي مع الرياح','خففنا إعاقة الجبال للأنوية وللمطر الخفيف: تبطّئ السحب بدون ما توقفها']},
   {v:82,title:'العاصفة العملاقة لها عمر',fix:['العاصفة الرعدية العملاقة كانت تقطع أكثر من ألف كيلو وما تضعف: الحين تبقى في قوتها حوالي 280 إلى 370 كم، وبعدها تضعف وتتلاشى مثل العاصفة الرعدية العادية (المجموع تقريباً 430 كم)','لو كانت شبه واقفة مكانها تعيش 10 إلى 14 ساعة ثم تبدأ تضعف، يعني أطول من العاصفة العادية لكن مو للأبد']},
