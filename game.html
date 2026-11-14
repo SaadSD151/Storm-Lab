@@ -1197,7 +1197,7 @@ const layers={fc:false,mm:true,flood:true,moist:false,streets:true,tracks:true,r
 let storms=[],strikes=[],alerts=[],hailMk=[];
 let START_H=13,simT=0,speed=1,paused=false,product='ref',tool='storm',mode='free';
 const mission={on:false,budget:24,elapsed:0,dur:480,done:false,started:false};
-const COST={mini:2,mcs:8,mega:8,shower:1,storm:2,super:4,line:4,strat:3,low:6};
+const COST={lstrat:2,mini:2,mcs:8,mega:8,shower:1,storm:2,super:4,line:4,strat:3,low:6};
 
 function windVec(){const t=(env.windFrom+180)*Math.PI/180,s=env.windSpd/60/PX;return{x:Math.sin(t)*s,y:-Math.cos(t)*s}}
 // steering flow: the deep-layer (≈0-6 km) mean wind that carries storms. Smooth on a few-hundred-km scale and slowly evolving
@@ -1314,6 +1314,10 @@ function spawn(type,x,y,o={}){
       else{const cu=R(-0.8,0.8),L=R(16,24);for(let k=0;k<3;k++){const t=(k-1)*L/2,bd=cu*t*t/L;bl.push(core(Math.cos(a0)*t-Math.sin(a0)*bd,Math.sin(a0)*t+Math.cos(a0)*bd,R(4.5,6.5),k===1?P0:R(50,58)))}}
       for(const b of bl)b.persist=1;
       break;}
+    case'lstrat':{s.life=R(300,420);
+      // light widespread rain: a broad, gentle sheet of drizzle and light rain (about 15-30 dBZ), no thunder, lasting for hours
+      const n=8+(rnd()*5|0),sx=R(1.1,1.6),a0=R(-0.6,0.6);for(let k=0;k<n;k++){const a=R(0,6.28),d=R(0,55);bl.push(blob(Math.cos(a)*d*sx,Math.sin(a)*d,R(26,44),R(18,32),R(20,29),0.8,{k:1,m:1,ang:a0+R(-.5,.5)}))}
+      break;}
     case'strat':s.life=R(200,280);for(let k=0,n=7+(rnd()*4|0);k<n;k++){const a=R(0,6.28),d=R(0,45);bl.push(blob(Math.cos(a)*d,Math.sin(a)*d,R(24,42),R(18,32),R(25,37),0.8,{k:1,m:1,ang:R(-1,1)}))}
       for(let k=0,n=3+(rnd()*4|0);k<n;k++)bl.push(core(R(-28,28),R(-28,28),R(6,10),R(38,48)));halo(30,R(2,2.5),R(15,19));break;
     case'low':{s.life=R(320,420);s.spin=1;s.maxCores=22;
@@ -1334,7 +1338,7 @@ function spawn(type,x,y,o={}){
         bl.push(B(-R(5,14)*Zs,t*sgn,R(28,36)*Zs,R(22,30)*Zs,R(17,21),0.75,{k:1,m:1.35,late:.25,halo:1,bow:1-(2*t/L)**2}))}
       s.hx=o.hx;s.hy=o.hy;break;}
   }
-  if(type==='mega'||type==='mcs'||type==='mini')s.type='storm';
+  if(type==='mega'||type==='mcs'||type==='mini')s.type='storm';if(type==='lstrat')s.type='strat';
   s.blobs=bl.filter(b=>!b.halo);
   s.rad=0;for(const b of bl)if(b.g>1.1)s.rad=Math.max(s.rad,Math.hypot(b.rx,b.ry)+Math.max(b.ax,b.ay));
   s.rad0=s.rad;s.oro=oro;s.life*=s.mini?1:(0.6+0.8*env.moist)*env.lifeM;if(NATF){s.nat=1;s.life*=s.mini?1.1:1.6}if(s.mini){s.jx=R(-.1,.1)/PX;s.jy=R(-.1,.1)/PX}s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
@@ -2148,28 +2152,28 @@ function floodInit(){const g=FL.g=PX>1?2:3,w=FL.w=Math.ceil(W/g),h=FL.h=Math.cei
   ord.reverse();FL.ord=Int32Array.from(ord);FL.rc=rc;FL.land=land;
   const tau=FL.tau=new Float32Array(n),inf=FL.inf=new Float32Array(n),cell=g*PX*1000;
   for(const i of ord){const r=rc[i],d=r<0?cell:cell*(((i%w)!==(r%w)&&((i/w)|0)!==((r/w)|0))?1.414:1),sl=r<0?0.002:Math.max(0.0006,(E[i]-Math.min(E[i],E[r]))/d),v=clamp(0.5+7*Math.sqrt(sl),0.5,3.2);tau[i]=d/v/60;inf[i]=clamp(15-70*Math.sqrt(sl),3.5,15)}
-  FL.up=null;FL.S=new Float32Array(n);FL.Q=new Float32Array(n);FL.Qd=new Float32Array(n);FL.SM=new Float32Array(n);FL.acc=0;FL.max=0;for(const c of CITIES){c.flQ=0;c.flL=0}}
+  FL.up=null;FL.Dv=new Float32Array(n);FL.S=new Float32Array(n);FL.Q=new Float32Array(n);FL.Qd=new Float32Array(n);FL.SM=new Float32Array(n);FL.acc=0;FL.max=0;for(const c of CITIES){c.flQ=0;c.flL=0}}
 function floodStep(dt){if(!elevM||!layers.flood)return;if(FL.key!==regionKey||!FL.rc||FL.w!==Math.ceil(W/FL.g))floodInit();FL.acc+=dt;if(FL.acc<2)return;const d=Math.min(FL.acc,30);FL.acc=0;
-  const{w,h,g,rc,ord,land,S,Q,Qd,SM,tau,inf}=FL,toQ=1e-3*(g*PX*1000)*(g*PX*1000)/(d*60),kl=Math.exp(-d/380),ks=Math.exp(-d/900),o=g>>1;let mx=0;
+  const{w,h,g,rc,ord,land,S,Q,Qd,SM,tau,inf,Dv}=FL,toQ=1e-3*(g*PX*1000)*(g*PX*1000)/(d*60),kl=Math.exp(-d/650),kd=Math.exp(-d/150),ks=Math.exp(-d/900),o=g>>1;let mx=0;
   for(let k=0;k<ord.length;k++){const i=ord[k],x=Math.min(W-1,(i%w)*g+o),y=Math.min(H-1,((i/w)|0)*g+o),v=DBZ[y*W+x];if(SM[i]>0.01)SM[i]*=ks;
     if(v>=18){const r=rainAt(v,x,y);if(r>0){const cap=inf[i]*(1-0.75*Math.min(1,SM[i]/25));SM[i]+=Math.min(r,cap)*d/60;if(r>cap)S[i]+=(r-cap)*d/60}}
-    const st=S[i];if(st<2e-4){S[i]=0;Q[i]=0;Qd[i]*=0.6;continue}const out=st*(1-Math.exp(-d/tau[i]));S[i]=(st-out)*kl;Q[i]=out*toQ;const r=rc[i];if(r>=0&&land[r])S[r]+=out;
-    const qd=Qd[i]+=(Q[i]-Qd[i])*0.5;if(qd>mx)mx=qd}
-  FL.max=mx;
+    const st=S[i];if(st<2e-4){S[i]=0;Q[i]=0;Qd[i]*=0.6;Dv[i]=Dv[i]*kd>Qd[i]?Dv[i]*kd:Qd[i];if(Dv[i]<FLQ[0]*0.6)Dv[i]=0;continue}const out=st*(1-Math.exp(-d/tau[i]));S[i]=(st-out)*kl;Q[i]=out*toQ;const r=rc[i];if(r>=0&&land[r])S[r]+=out;
+    const qd=Qd[i]+=(Q[i]-Qd[i])*0.5;if(qd>mx)mx=qd;const dv=Dv[i]*kd;Dv[i]=qd>dv?qd:dv<FLQ[0]*0.6?0:dv}
+  FL.max=mx;{let dm=0;for(let i=0;i<Dv.length;i++)if(Dv[i]>dm)dm=Dv[i];FL.dmax=dm}
   for(const c of CITIES){const cx=clamp((c.x/g)|0,2,w-3),cy=clamp((c.y/g)|0,2,h-3);let q=0;for(let oy=-2;oy<=2;oy++)for(let ox=-2;ox<=2;ox++){const v=Qd[(cy+oy)*w+cx+ox];if(v>q)q=v}c.flQ=q;
     const L=q>=FLQ[3]?4:q>=FLQ[2]?3:q>=FLQ[1]?2:q>=FLQ[0]?1:0;if(q>DAY.fl){DAY.fl=q;DAY.flC=c.n}
     if(L>(c.flL||0)&&L>=2&&simT-(c.al.fl??-999)>45){c.al.fl=simT;alert(`${FLN[L-1]} في الأودية قرب ${c.n}: ≈ ${q<100?q.toFixed(0):Math.round(q/10)*10} م³/ث`,L>=3?'bad':'warn')}
     if(L>(c.flL||0)||q<FLQ[0]*0.5)c.flL=L}}
 const floodAt=(x,y)=>FL.Qd&&FL.key===regionKey?FL.Qd[Math.min(FL.h-1,(y/FL.g)|0)*FL.w+Math.min(FL.w-1,(x/FL.g)|0)]:0;
-function drawFloods(){if(!layers.flood||!FL.Qd||FL.key!==regionKey||FL.max<FLQ[0])return;const{w,h,g,rc,Qd}=FL,a=toWorld(0,0),b=toWorld(cw,ch),x0=clamp(((a.x/g)|0)-1,0,w-1),x1=clamp(((b.x/g)|0)+1,0,w-1),y0=clamp(((a.y/g)|0)-1,0,h-1),y1=clamp(((b.y/g)|0)+1,0,h-1),zs=clamp(0.75+view.s*0.12,1,2.4),hg=g/2;
+function drawFloods(){if(!layers.flood||!FL.Dv||FL.key!==regionKey||!(FL.dmax>=FLQ[0]))return;const{w,h,g,rc,Qd,Dv}=FL,a=toWorld(0,0),b=toWorld(cw,ch),x0=clamp(((a.x/g)|0)-1,0,w-1),x1=clamp(((b.x/g)|0)+1,0,w-1),y0=clamp(((a.y/g)|0)-1,0,h-1),y1=clamp(((b.y/g)|0)+1,0,h-1),zs=clamp(0.75+view.s*0.12,1,2.4),hg=g/2;
   ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
   // each stretch is drawn as a smooth bend through the cell (from the middle of the incoming link to the middle of the outgoing one), so the wadis curve instead of zig-zagging
-  const up=FL.up||(FL.up=new Uint8Array(w*h));up.fill(0);for(let gy=y0;gy<=y1;gy++)for(let gx=x0;gx<=x1;gx++){const i=gy*w+gx;if(Qd[i]>=FLQ[0]&&rc[i]>=0)up[rc[i]]=1}
+  const up=FL.up||(FL.up=new Uint8Array(w*h));up.fill(0);for(let gy=y0;gy<=y1;gy++)for(let gx=x0;gx<=x1;gx++){const i=gy*w+gx;if(Dv[i]>=FLQ[0]&&rc[i]>=0)up[rc[i]]=1}
   const P=i=>toScreen((i%w)*g+hg,((i/w)|0)*g+hg);
-  for(let pass=0;pass<2;pass++)for(let c=0;c<4;c++){const lo=FLQ[c],hi=c<3?FLQ[c+1]:1e12;ctx.beginPath();let any=false;
-    for(let gy=y0;gy<=y1;gy++)for(let gx=x0;gx<=x1;gx++){const i=gy*w+gx,q=Qd[i];if(q<lo||q>=hi)continue;const r=rc[i];if(r<0)continue;any=true;const[sx,sy]=P(i),[ex,ey]=P(r),mx=(sx+ex)/2,my=(sy+ey)/2;
+  for(let dry=1;dry>=0;dry--)for(let pass=0;pass<2;pass++)for(let c=0;c<4;c++){const lo=FLQ[c],hi=c<3?FLQ[c+1]:1e12;ctx.beginPath();let any=false;
+    for(let gy=y0;gy<=y1;gy++)for(let gx=x0;gx<=x1;gx++){const i=gy*w+gx,q=Dv[i];if(q<lo||q>=hi)continue;if((Qd[i]<q*0.45?1:0)!==dry)continue;const r=rc[i];if(r<0)continue;any=true;const[sx,sy]=P(i),[ex,ey]=P(r),mx=(sx+ex)/2,my=(sy+ey)/2;
       if(!up[i]){ctx.moveTo(sx,sy);ctx.lineTo(mx,my)}const r2=rc[r];ctx.moveTo(mx,my);if(r2>=0){const[fx,fy]=P(r2);ctx.quadraticCurveTo(ex,ey,(ex+fx)/2,(ey+fy)/2)}else ctx.lineTo(ex,ey)}
-    if(!any)continue;const wd=[1.5,2.3,3.3,4.8][c]*zs;if(pass===0){ctx.strokeStyle='rgba(4,10,20,.8)';ctx.lineWidth=wd+2.2}else{ctx.strokeStyle=FLC[c];ctx.lineWidth=wd}ctx.stroke()}
+    if(!any)continue;const wd=[1.5,2.3,3.3,4.8][c]*zs;ctx.globalAlpha=dry?0.45:1;if(pass===0){ctx.strokeStyle='rgba(4,10,20,.8)';ctx.lineWidth=wd+2.2}else{ctx.strokeStyle=FLC[c];ctx.lineWidth=wd}ctx.stroke()}ctx.globalAlpha=1;
   ctx.restore()}
 // ---------- (5) warnings: yellow / orange / red per city, in the style of the met service ----------
 const WARN_C=['','#f2d43b','#f39a2a','#e8392c'],WARN_N=['','تنبيه أصفر','إنذار برتقالي','إنذار أحمر'];
@@ -2287,13 +2291,14 @@ const ICON={
   mega:'<path d="M6 13h12a4.5 4.5 0 0 0 .6-9 6.5 6.5 0 0 0-12.2-1.2A5 5 0 0 0 6 13z"/><path d="M9 13l-2 4h3l-2 4M15 13l-2 4h3l-2 4"/>',
   super:'<path d="M12 12a1.5 1.5 0 1 1 1.5 1.5"/><path d="M13.5 13.5A4 4 0 1 1 16 9"/><path d="M16 9a7 7 0 1 1-10 9"/><path d="M6 18a9.5 9.5 0 0 1 2-14"/>',
   line:'<path d="M3 18l4-7 4 4 4-8 6 6"/><path d="M14 20l3-3 3 3" opacity=".6"/>',
+  lstrat:'<path d="M4 8h12M3 12h17M5 16h13" opacity=".55"/><path d="M8 19.5l-.6 1.5M12 19.5l-.6 1.5M16 19.5l-.6 1.5"/>',
   mcs:'<path d="M4 6h12M3 10h17M5 14h13"/><path d="M12 14l-2.5 4h3.5l-2.5 4"/>',
   strat:'<path d="M4 8h12M3 12h17M5 16h13"/><path d="M8 20h8" opacity=".6"/>',
   erase:'<path d="M15 4l5 5-10 10H5l-2-2a1.5 1.5 0 0 1 0-2z"/><path d="M9 10l5 5M11 19h9"/>',
   low:'<path d="M12 12m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0"/><path d="M3.5 10A9 9 0 0 1 17 4.5"/><path d="M20.5 14A9 9 0 0 1 7 19.5"/><path d="M6 6.5A6.5 6.5 0 0 1 18.5 11" opacity=".6"/><path d="M18 17.5A6.5 6.5 0 0 1 5.5 13" opacity=".6"/>',
   pan:'<path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>',
 };
-const TOOLS=[['shower','خلية مطرية'],['mini','عاصفة رعدية صغيرة'],['storm','عاصفة رعدية'],['super','خلية عملاقة'],['mega','عاصفة رعدية عملاقة'],['line','خط عواصف'],['strat','مطر واسع'],['mcs','مطر واسع عاصف'],['low','منخفض جوي'],['erase','ممحاة'],['pan','تحريك']];
+const TOOLS=[['shower','خلية مطرية'],['mini','عاصفة رعدية صغيرة'],['storm','عاصفة رعدية'],['super','خلية عملاقة'],['mega','عاصفة رعدية عملاقة'],['line','خط عواصف'],['strat','مطر واسع'],['lstrat','مطر واسع خفيف'],['mcs','مطر واسع عاصف'],['low','منخفض جوي'],['erase','ممحاة'],['pan','تحريك']];
 const toolsEl=document.getElementById('tools');
 toolsEl.innerHTML=`<div class="zbtns"><button class="tool zb" id="zIn" title="تكبير" aria-label="تكبير"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button class="tool zb" id="zOut" title="تصغير" aria-label="تصغير"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button></div>`+TOOLS.map(([k,n],i)=>`<button class="tool" data-t="${k}" aria-pressed="${k===tool}" title="${n} (${i+1})"><kbd>${i+1}</kbd><span class="cost"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg><span class="l">${n}</span></button>`).join('');
 function pickTool(t){if(t===tool&&t!=='pan'){setTool('pan');toast('أُلغي التحديد: الخريطة تتحرك بالسحب')}else setTool(t)}
@@ -2303,7 +2308,7 @@ function updateCosts(){toolsEl.querySelectorAll('.tool[data-t]').forEach(b=>{b.q
 
 function pay(t){if(!mission.on)return true;if(mission.done){toast('انتهت المهمة. ابدأ جولة جديدة.');return false}
   if(mission.budget<COST[t]){toast('الميزانية لا تكفي لهذه الأداة');return false}mission.budget-=COST[t];return true}
-const SPACING={mini:22,mcs:1e9,mega:1e9,shower:18,storm:32,super:45,strat:55,low:110};
+const SPACING={lstrat:60,mini:22,mcs:1e9,mega:1e9,shower:18,storm:32,super:45,strat:55,low:110};
 function trySpawn(t,x,y){if(x<0||y<0||x>W||y>H)return;if(storms.length>=70){toast('السماء ممتلئة. امسح بعض العواصف أولاً');return}if(!pay(t))return;spawn(t,x,y)}
 function lineHeading(a,b){const L=Math.hypot(b.x-a.x,b.y-a.y)||1,lx=(b.x-a.x)/L,ly=(b.y-a.y)/L;let hx=ly,hy=-lx;const w=windVec();
   if(Math.hypot(w.x,w.y)>1e-4){if(hx*w.x+hy*w.y<0){hx=-hx;hy=-hy}}else{hx=0.7071;hy=-0.7071;}return{hx,hy,lx,ly,L}}
@@ -2543,8 +2548,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=100,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=101,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:101,title:'مطر واسع خفيف، والسيول تكمل لين تنشف',add:['أداة رسم جديدة: "مطر واسع خفيف" — مطر خفيف ورذاذ على مساحة واسعة بدون رعد، يبقى ساعات'],fix:['السيول ما عادت تختفي فجأة: الوادي يكمل مرسوم على طول مجراه والسيل يمشي فيه لين ينشف، ولما يمر السيل يبهت الوادي بالتدريج','السيل يوصل أبعد في مجرى الوادي قبل ما يضعف']},
   {v:100,title:'السيول والأودية',add:['السيول رجعت بنظام جديد كامل: المطر اللي ما تشربه الأرض يجري على التضاريس الحقيقية ويتجمع في الأودية','الأرض تشرب حسب نوعها: الصخر في الجبال يشرب قليل فيسيل بسرعة، والرمل والسهول تشرب كثير، والأرض المبلولة من مطر سابق تسيل أسرع','موجة السيل تمشي بسرعة واقعية (ساعات من الجبل للسهل) والوادي الجاف يشرب جزء منها في الطريق','الجريان بالمتر المكعب في الثانية، بأربع درجات: جريان خفيف، متوسط، سيل، سيل جارف','تنبيهات لما يسيل وادي قرب مدينة، وتدخل في الإنذارات، وتطلع قيمة الجريان لما تحط المؤشر على الوادي','أقوى سيل في اليوم ينكتب في ملخص اليوم والأرقام القياسية','خيار "السيول والأودية" في الطبقات لإخفائها']},
   {v:99,title:'العاصفة الصغيرة تطوّل',fix:['العاصفة الرعدية الصغيرة كانت تتفتت وتختفي بسرعة: الحين تعيش من 4 إلى 6 ساعات على الأقل','صارت تاكل الرطوبة اللي حولها: تتغذى عليها وتبقى قوية، وتشوف الجو يجف في المكان اللي تمر عليه على خريطة الرطوبة','عمرها ما عاد يقصر كثير في الجو الجاف']},
   {v:98,title:'سحب تلقائية أقل',fix:['السحب اللي تطلع لحالها كانت كثيرة بزيادة على أجواء السعودية: قللنا ظهورها لحوالي الخُمس في الأجواء الربيعية','السحب التلقائية صارت تطلع فرادى أكثر من مجموعات، وتولّد سحب جديدة حولها أقل','لو تبيها أكثر: ارفع "تكرار العواصف التلقائية" من خصائص الجو المتقدمة']},
