@@ -322,8 +322,10 @@ body.mob .sheet{max-height:calc(100dvh - 40px);overflow:auto}
 #verTag{font:600 11px var(--f-mono);color:var(--accent);background:var(--accent-dim);border:1px solid var(--line);border-radius:999px;padding:2px 8px;vertical-align:middle;letter-spacing:0;direction:ltr;display:inline-block}
 #tl{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;width:min(560px,calc(100% - 560px));min-width:340px;direction:ltr}
 #tl button{all:unset;cursor:pointer;font:600 12px var(--f-ui);color:var(--fg);padding:4px 8px;border-radius:7px;border:1px solid var(--line);white-space:nowrap}#tl button:hover{background:var(--accent-dim)}#tl button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+#tl select{font:600 12px var(--f-ui);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:3px 4px;cursor:pointer}
 #tl input{flex:1 1 auto;min-width:60px}#tlTxt{font:500 11.5px var(--f-ui);color:var(--muted);white-space:nowrap;direction:rtl}#tl.rp{outline:2px solid var(--warn,#ffb547)}#tl.rp #tlTxt{color:var(--warn,#ffb547)}
 body.mob #tl{display:none}
+body:not(.mob) .clock{display:none}
 #setPanel{position:absolute;inset:0;display:grid;place-items:center;background:rgba(3,6,9,.6);z-index:5;padding:16px}#setPanel[hidden]{display:none}
 .setBox{width:min(460px,100%);max-height:100%;overflow:auto;border-radius:14px;padding:14px 16px 18px;background:var(--panel)}.setHead{display:flex;justify-content:space-between;align-items:center;font-size:17px;margin-bottom:6px;position:sticky;top:-14px;background:var(--panel);padding:8px 0;z-index:1}
 .setBox section{padding:12px 0 4px;border-top:1px solid var(--line);margin-top:10px}#setGpuBox .chk{font-size:14.5px;margin:8px 0 4px}
@@ -622,7 +624,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
           <div class="sc-row"><button class="btn sm" id="scBack">رجوع للمحاكاة الأساسية</button><button class="btn sm ghost" id="scAcc">مجموع الأمطار</button><button class="btn sm ghost" id="scEditAgain">تعديل التوقعات وإعادة</button></div>
         </div>
       </div>
-      <div id="tl" class="glass"><button id="tlRev" title="تشغيل للخلف (مثل فيديو مسجل)" aria-label="تشغيل للخلف">◀◀</button><button id="tlPlay" title="تشغيل للأمام" aria-label="تشغيل للأمام">▶</button><input type="range" id="tlBar" min="0" max="0" step="1" value="0" aria-label="شريط الوقت"><button id="tlLive" title="الرجوع للوقت الحالي">مباشر</button><span id="tlTxt"></span></div>
+      <div id="tl" class="glass"><button id="tlRev" title="تشغيل للخلف (مثل فيديو مسجل)" aria-label="تشغيل للخلف">◀◀</button><button id="tlPlay" title="تشغيل للأمام" aria-label="تشغيل للأمام">▶</button><input type="range" id="tlBar" min="0" max="0" step="1" value="0" aria-label="شريط الوقت"><select id="tlSpd" title="سرعة الإعادة" aria-label="سرعة الإعادة"><option value="1">×1</option><option value="2">×2</option><option value="4" selected>×4</option><option value="8">×8</option><option value="16">×16</option><option value="32">×32</option></select><button id="tlLive" title="الرجوع للوقت الحالي">مباشر</button><span id="tlTxt"></span></div>
       <div id="modal" hidden><div class="sheet" id="sheet"></div></div>
       <div id="setPanel" hidden><div class="setBox glass"><div class="setHead"><b>الإعدادات</b><button class="btn sm ghost" id="setX">إغلاق</button></div><div id="setGpuBox"></div><div id="setBody"></div></div></div>
     </div>
@@ -1917,18 +1919,19 @@ function dateStr(tm){const d=simDate(tm);return WDAYS[d.getDay()]+' '+d.getDate(
 function dateRebase(m,d){const cur=simDate();SD.y=cur.getFullYear();SD.m=m;SD.d=Math.min(28,d??cur.getDate());SD.base=dayIdx()}
 function dateTick(){const d=simDate();if(d.getMonth()+1!==env.month&&!scen.world){env.month=d.getMonth()+1;env.season=MONTH_SEASON[env.month-1];const ms=document.getElementById('monthSel');if(ms)ms.value=String(env.month);if(ATM.Q)atmDiag();renderLegend();toast('دخل شهر '+MONTHS[env.month-1]+' · '+seasonOf().n)}}
 const hhmm=tm=>{const m=((Math.floor(tm)%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
-// Replay: the radar picture is recorded every 10 simulated minutes (older history is kept more coarsely), so the time bar can run
-// the whole simulation backwards and forwards like a recorded video. While replaying, the simulation itself waits.
-const RP={on:false,f:1,w:0,h:0,fr:[],step:10,last:-1e9,idx:0,play:0,acc:0,can:null,cx:null,img:null,u32:null};
-function rpInit(){RP.f=Math.max(1,Math.ceil(Math.sqrt(N/80000)));RP.w=Math.ceil(W/RP.f);RP.h=Math.ceil(H/RP.f);RP.can=document.createElement('canvas');RP.can.width=RP.w;RP.can.height=RP.h;RP.cx=RP.can.getContext('2d');RP.img=RP.cx.createImageData(RP.w,RP.h);RP.u32=new Uint32Array(RP.img.data.buffer)}
+// Replay: the radar picture is recorded every 5 simulated minutes and the last full day is kept, so the time bar can run
+// the past 24 hours backwards and forwards like a recorded video. While replaying, the simulation itself waits.
+const RP={on:false,spd:4,f:1,w:0,h:0,fr:[],step:5,last:-1e9,idx:0,play:0,acc:0,can:null,cx:null,img:null,u32:null};
+function rpInit(){RP.f=N>600000?2:1;RP.buf=null;RP.zb=null;RP.w=Math.ceil(W/RP.f);RP.h=Math.ceil(H/RP.f);RP.can=document.createElement('canvas');RP.can.width=RP.w;RP.can.height=RP.h;RP.cx=RP.can.getContext('2d');RP.img=RP.cx.createImageData(RP.w,RP.h);RP.u32=new Uint32Array(RP.img.data.buffer)}
 function rpReset(){RP.fr=[];RP.last=-1e9;RP.can=null;if(RP.on)rpLive();tlSync()}
-function rpRecord(){if(RP.on||simT-RP.last<RP.step)return;if(!RP.can||RP.w!==Math.ceil(W/RP.f))rpInit();const{w,h,f}=RP,a=new Uint8Array(w*h),o=f>>1;
-  for(let y=0;y<h;y++){const y0=Math.min(H-1,y*f),y1=Math.min(H-1,y*f+o),r=y*w;for(let x=0;x<w;x++){const x0=Math.min(W-1,x*f),x1=Math.min(W-1,x*f+o),v=Math.max(DBZ[y0*W+x0],DBZ[y0*W+x1],DBZ[y1*W+x0],DBZ[y1*W+x1]);a[r+x]=v<5?0:v>=90?180:(v*2)|0}}
-  RP.fr.push({t:simT,tm:START_H*60+simT,a});RP.last=simT;if(RP.fr.length>420){const k=RP.fr.length>>1;RP.fr=RP.fr.filter((q,i)=>i>=k||i%2===0)}}
-function rpShow(i){const n=RP.fr.length;if(!n)return;RP.idx=i=clamp(i|0,0,n-1);const a=RP.fr[i].a,u=RP.u32;for(let k=0;k<a.length;k++)u[k]=a[k]?DBZ_LUT[a[k]]:0;RP.cx.putImageData(RP.img,0,0);tlSync()}
+function rpRecord(){if(RP.on||simT-RP.last<RP.step)return;if(!RP.can||RP.w!==Math.ceil(W/RP.f))rpInit();const{w,h,f}=RP,a=RP.buf||(RP.buf=new Uint8Array(w*h)),o=f>>1;
+  for(let y=0;y<h;y++){const y0=Math.min(H-1,y*f),y1=Math.min(H-1,y*f+o),r=y*w;for(let x=0;x<w;x++){const x0=Math.min(W-1,x*f),x1=Math.min(W-1,x*f+o),i0=y0*W+x0,v=f===1?DBZ[i0]:Math.max(DBZ[i0],DBZ[y0*W+x1],DBZ[y1*W+x0],DBZ[y1*W+x1]);let q=v<5?0:v>=90?180:(v*2)|0;if(v>=63){const hs=hailSizeAt(i0);if(hs>0)q=181+HAIL_CAT.indexOf(hailCat(hs))}a[r+x]=q}}
+  const z=RP.zb||(RP.zb=new Uint8Array(w*h*2+4));let n=0;for(let k=0;k<a.length;){const q=a[k];if(q){z[n++]=q;k++}else{let c=1;while(c<255&&k+c<a.length&&!a[k+c])c++;z[n++]=0;z[n++]=c;k+=c}}
+  RP.fr.push({t:simT,tm:START_H*60+simT,a:z.slice(0,n)});RP.last=simT;while(RP.fr.length>1&&simT-RP.fr[0].t>1440)RP.fr.shift()}
+function rpShow(i){const n=RP.fr.length;if(!n)return;RP.idx=i=clamp(i|0,0,n-1);const a=RP.fr[i].a,u=RP.u32;if(!HAIL_PK.length)buildHailPk();u.fill(0);for(let k=0,j=0;k<a.length;k++){const q=a[k];if(q)u[j++]=q>180?HAIL_PK[q-181]:DBZ_LUT[q];else j+=a[++k]}RP.cx.putImageData(RP.img,0,0);tlSync()}
 function rpEnter(i){if(!RP.fr.length){toast('ما فيه تسجيل بعد: خل المحاكاة تمشي شوي');return false}if(scen.world||product==='fcst'){toast('الإعادة تشتغل في المحاكاة الأساسية فقط');return false}if(product!=='ref')setProduct('ref');RP.on=true;document.getElementById('tl').classList.add('rp');rpShow(i);return true}
 function rpLive(){RP.on=false;RP.play=0;document.getElementById('tl').classList.remove('rp');fieldDirty=true;tlSync()}
-function rpStep(rdt){if(!RP.on||!RP.play)return;RP.acc+=rdt*14;while(RP.acc>=1){RP.acc-=1;const i=RP.idx+RP.play;if(i<0){RP.play=0;break}if(i>=RP.fr.length){rpLive();return}rpShow(i)}}
+function rpStep(rdt){if(!RP.on||!RP.play)return;RP.acc+=rdt*2.5*RP.spd;while(RP.acc>=1){RP.acc-=1;const i=RP.idx+RP.play;if(i<0){RP.play=0;break}if(i>=RP.fr.length){rpLive();return}rpShow(i)}}
 function tlSync(){const bar=document.getElementById('tlBar');if(!bar)return;const n=RP.fr.length;bar.max=n;if(!RP.on)bar.value=n;else bar.value=RP.idx;
   const fr=RP.on?RP.fr[RP.idx]:null,tm=fr?fr.tm:START_H*60+simT;document.getElementById('tlTxt').textContent=(RP.on?'إعادة · ':'')+dateStr(tm)+' · '+hhmm(tm);
   document.getElementById('dateTxt').textContent=dateStr(tm)+(RP.on?' · إعادة':'');document.getElementById('clock').textContent=hhmm(tm);
@@ -2113,7 +2116,7 @@ function draw(now){
   if(product==='temp'){if(!tempCan||tempCan.ver!==ATM.ver)buildTempCan();ctx.imageSmoothingEnabled=true;ctx.globalAlpha=0.82;ctx.drawImage(tempCan,0,0,ATM.w*MG,ATM.h*MG);ctx.globalAlpha=1}
   if(product!=='wind'&&product!=='terr'&&product!=='temp'){ctx.imageSmoothingEnabled=true;ctx.drawImage(maskCan,0,0,W,H)}
   if(product==='wind'){if(wCan){ctx.imageSmoothingEnabled=true;ctx.globalAlpha=layers.streets?1-0.4*sst(8,60,s):1;ctx.drawImage(wCan,0,0,WGW*WG,WGH*WG);ctx.globalAlpha=1}}
-  else{ctx.imageSmoothingEnabled=layers.smooth||RP.on;ctx.globalAlpha=(layers.streets?1-0.45*sst(8,60,s):1)*(product==='temp'?0.32:product==='terr'?0.8:1);ctx.drawImage(RP.on&&RP.can?RP.can:rCan,0,0,W,H);ctx.globalAlpha=1;}
+  else{ctx.imageSmoothingEnabled=layers.smooth||(RP.on&&RP.f>1);ctx.globalAlpha=(layers.streets?1-0.45*sst(8,60,s):1)*(product==='temp'?0.32:product==='terr'?0.8:1);ctx.drawImage(RP.on&&RP.can?RP.can:rCan,0,0,W,H);ctx.globalAlpha=1;}
   if(product==='ref'&&!RP.on)drawWarn(now);
   if(product==='fcst')scenEnsure();if(product==='fcst'&&!scen.running&&scen.fc){scenRender();if(scen.can){ctx.imageSmoothingEnabled=true;ctx.drawImage(scen.can,0,0,scen.fgw*FG,scen.fgh*FG)}}
   const lw=1/s;
@@ -2449,8 +2452,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=92,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=93,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:93,title:'سرعة الإعادة',add:['سرعة الإعادة في شريط الوقت: ×1 ×2 ×4 ×8 ×16 ×32','الإعادة صارت تحفظ آخر يوم كامل بدقة ثابتة (صورة كل 5 دقائق) بدل ما تتباعد الصور القديمة'],fix:['جودة صورة الإعادة كانت أقل من الصورة المباشرة: الحين تتسجل بنفس دقة الرادار بالضبط في الخرائط الصغيرة والساحل الغربي (ونصف الدقة مع تنعيم في خريطة المملكة ومنطقة الرياض والقصيم)، ومعها ألوان البرد','شلنا خانة الساعة ورقم المسح من فوق لأن شريط الوقت يعرض التاريخ والساعة']},
   {v:92,title:'التاريخ وشريط الوقت',add:['المحاكي صار له تاريخ: اليوم والتاريخ والشهر مكتوبين فوق مع الساعة، والأيام تمشي','لما يدخل شهر جديد يتغير الموسم لحاله','شريط الوقت فوق الخريطة: اسحبه ورا لين بداية المحاكاة وشوف صورة الرادار مثل فيديو مسجل','زر ◀◀ يشغّل السحب بالعكس، و▶ للأمام، و"مباشر" يرجعك للوقت الحالي (المحاكاة توقف وقت الإعادة وتكمل بعدها)','تقدر تسوي زوم لبرّا الخريطة أكثر بثلاث مرات']},
   {v:91,title:'العاصفة الصغيرة تندمج',add:['العاصفة الرعدية الصغيرة صارت تندمج مع السحب الثانية مثل كل الغيوم','إذا اندمجت يطول عمرها: تتحول لعاصفة رعدية عادية تتجدد أنويتها وتعيش ساعات زيادة']},
   {v:90,title:'العاصفة الصغيرة تعيش أطول',fix:['العاصفة الرعدية الصغيرة كانت تختفي بسرعة زايدة (أقل من ساعة): الحين تعيش من ساعة ونص إلى ساعتين تقريباً، ولسا تطلع فجأة وأقصر عمراً من العاصفة الرعدية العادية']},
@@ -2534,6 +2538,7 @@ placeSet();new MutationObserver(placeSet).observe(document.body,{attributes:true
 $('tlBar').addEventListener('input',e=>{const i=+e.target.value;RP.play=0;if(i>=RP.fr.length){if(RP.on)rpLive()}else if(RP.on)rpShow(i);else rpEnter(i)});
 $('tlRev').addEventListener('click',()=>{if(!RP.on&&!rpEnter(RP.fr.length-1))return;RP.play=RP.play<0?0:-1;RP.acc=0;tlSync()});
 $('tlPlay').addEventListener('click',()=>{if(!RP.on)return;RP.play=RP.play>0?0:1;RP.acc=0;tlSync()});
+$('tlSpd').addEventListener('change',e=>{RP.spd=+e.target.value});
 $('tlLive').addEventListener('click',()=>{if(RP.on)rpLive()});
 $('setX').addEventListener('click',()=>{$('setPanel').hidden=true});$('setPanel').addEventListener('pointerdown',e=>{if(e.target===$('setPanel'))$('setPanel').hidden=true});
 $('setBtn').addEventListener('click',async()=>{const A=window.stormApp;let on=true;if(A){try{on=await A.gpuGet()}catch(e){}}
