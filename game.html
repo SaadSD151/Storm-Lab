@@ -1906,7 +1906,7 @@ function step(dt,rdt=0){
     if(s.type==='line'&&p>0.18&&p<0.9)for(const b of s.blobs){b.rx+=b.bow*0.075*dt;if(b.rx0!=null)b.rx0+=b.bow*0.075*dt}
     if((s.type==='storm'||s.type==='super')&&!s.megaT&&!s.mini&&p>0.22&&p<0.72&&s.age>=s.nextD&&!s.kill&&storms.length<70){
       s.nextD=s.age+R(12,22);
-      if(rnd()<env.inst*0.95*(0.6+0.8*env.sev)){const fw=R(-6,10)*env.size/PX,side=R(16,28)*env.size/PX*(s.type==='super'||rnd()<.7?1:-1);
+      if(rnd()<env.inst*0.95*(0.6+0.8*env.sev)*(s.nat?0.45:1)){const fw=R(-6,10)*env.size/PX,side=R(16,28)*env.size/PX*(s.type==='super'||rnd()<.7?1:-1);
         NATF=s.nat?1:0;const ch=spawn(!s.scen&&env.sev>0.8&&rnd()<0.15?'super':env.inst>0.65&&rnd()<0.35?'storm':'shower',s.x+fw*s.hx-side*s.hy,s.y+fw*s.hy+side*s.hx);NATF=0;if(ch){s.root=s.root||s.id;ch.root=s.root}
         if(ch&&s.scen){ch.scen=1;ch.bornT=simT;ch.fcBoost=s.fcBoost}}}
     if(rdt>0&&layers.light&&hailOK(s))for(const b of s.blobs)if(b.g>1.1&&b.Pe>=60){let n=(b.Pe-58)*0.02*rdt*(0.6+0.4*Math.sqrt(speed));while(n>0){if(rnd()<n){const a=R(0,6.28),r=R(0,Math.max(b.ax,b.ay)*0.5),x=b.cx+Math.cos(a)*r,y=b.cy+Math.sin(a)*r;if(x>=0&&y>=0&&x<W&&y<H){const hs=hailSizeAt((y|0)*W+(x|0));if(hs>0)hailMk.push({x,y,lt:liveT,hs}),hs>DAY.hail&&(DAY.hail=hs)}}n-=1}}
@@ -1918,9 +1918,9 @@ function step(dt,rdt=0){
   }
   storms=storms.filter(s=>((s.age<s.life*1.2&&s.killF>0)||s.vis!==false)&&s.x>-80&&s.x<W+80&&s.y>-80&&s.y<H+80);
   liveT+=rdt;strikes=strikes.filter(k=>liveT-k.lt<6);if(hailMk.length)hailMk=hailMk.filter(k=>liveT-k.lt<6);if(hailMk.length>300)hailMk.splice(0,hailMk.length-300);if(strikes.length>350)strikes.splice(0,strikes.length-350);while(boltLog.length&&simT-boltLog[0]>60)boltLog.shift();
-  if(env.natural&&!mission.on&&!scen.world&&storms.length<(REGION.maxStorms||45)&&rnd()<dt*env.inst*env.moist*0.5*env.natRate*(REGION.natMul||1)){
+  if(env.natural&&!mission.on&&!scen.world&&storms.length<(REGION.maxStorms||45)&&rnd()<dt*env.inst*env.moist*0.13*env.natRate*(REGION.natMul||1)){
     let bx=0,by=0,bv=-1;for(let t=0;t<16;t++){const x=R(20,W-20),y=R(20,H-20),v=moistAt(x,y)+R(0,0.05);if(v>bv){bv=v;bx=x;by=y}}
-    for(let t=0;t<1;t++){const x=bx,y=by;if(rnd()<clamp((bv-0.5)/0.25,0,1)*(1-0.8*clamp((atmSamp(ATM.T,x,y)-40)/7,0,1))){NATF=1;spawnBand(0.5,env.inst>0.45&&rnd()<0.12?'mini':env.inst<0.35&&env.moist>0.6?(rnd()<0.6?'strat':'shower'):env.sev>0.85&&env.shear>0.7&&rnd()<0.25?'super':env.inst>0.7&&rnd()<0.3?'storm':'shower',x,y);NATF=0;break}}}
+    for(let t=0;t<1;t++){const x=bx,y=by;if(rnd()<clamp((bv-0.5)/0.25,0,1)*(1-0.8*clamp((atmSamp(ATM.T,x,y)-40)/7,0,1))){NATF=1;spawnBand(0.22,env.inst>0.45&&rnd()<0.12?'mini':env.inst<0.35&&env.moist>0.6?(rnd()<0.6?'strat':'shower'):env.sev>0.85&&env.shear>0.7&&rnd()<0.25?'super':env.inst>0.7&&rnd()<0.3?'storm':'shower',x,y);NATF=0;break}}}
   mergeStorms();
   fieldClock+=rdt;pendDt+=dt;
   if(rdt===0||(radarFps<0?scanNo!==fieldScan:fieldClock>=(radarFps?1/radarFps:document.body.classList.contains('mob')?1/20:1/24))){fieldScan=scanNo;fieldClock=0;computeField(pendDt,1);fieldDirty=true;rpRecord();
@@ -2508,8 +2508,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=97,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=98,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:98,title:'سحب تلقائية أقل',fix:['السحب اللي تطلع لحالها كانت كثيرة بزيادة على أجواء السعودية: قللنا ظهورها لحوالي الخُمس في الأجواء الربيعية','السحب التلقائية صارت تطلع فرادى أكثر من مجموعات، وتولّد سحب جديدة حولها أقل','لو تبيها أكثر: ارفع "تكرار العواصف التلقائية" من خصائص الجو المتقدمة']},
   {v:97,title:'عمر السحب المندمجة',fix:['السحابة كانت تولّد سحب صغيرة حولها ثم تبلعها، وكل مرة يتمدد عمرها، فبعض السحب عاشت أكثر من يوم كامل: الحين بلع السحب اللي ولّدتها ما يزيد عمرها','الاندماج مع سحب ثانية يطوّل العمر لحد الضعف كأقصى شي','أي سحابة تعدّت نصف يوم تقريباً (11 ساعة، و15 للمطر الواسع، و26 للمنخفض) تبدأ تضعف بسرعة مهما كانت الإعدادات','رقم "أطول سحابة عمراً" في الملخص والأرقام القياسية صار منطقي']},
   {v:96,title:'تحسين ملخص اليوم',fix:['ملخص اليوم ما عاد يطلع وأنت ترسم التوقعات أو تسحب على الخريطة']},
   {v:95,title:'ملخص اليوم، حفظ الجلسة، التوقع الآلي، الأرقام القياسية',add:['ملخص اليوم: عند منتصف الليل يطلع لك أعلى المدن مطراً، عدد الصواعق، أكبر برد، أقوى سحابة، وعدد السحب (وتقدر تشوفه أي وقت من زر تحت الطبقات)','حفظ الجلسة: المحاكي يحفظ جلستك كل دقيقة، ولما تفتحه مرة ثانية تلقى زر "متابعة جلستي السابقة" في شاشة الترحيب','توقع آلي: خيار "توقع السحب بعد ساعة" في الطبقات يرسم وين متوقع توصل كل سحابة قوية خلال ساعة','الأرقام القياسية: أعلى مطر يومي، أكثر صواعق، أكبر برد، أقوى سحابة، وأطول سحابة عمراً، محفوظة لك بين الجلسات']},
