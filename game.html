@@ -1830,10 +1830,10 @@ function mergeStorms(){
       for(const q of big.blobs)if(!q.from)q.from=big.id;
       // keep the merged storm in full maturity and give it extra life
       const remB=Math.max(0,0.85*big.life-big.age),remS=Math.max(0,0.85*sm.life-sm.age),keepM=Math.min(Math.max(remB,remS)+0.35*Math.min(remB,remS),Math.max(remB,remS,0.7*Math.max(big.life0||big.life,sm.life0||sm.life)));
-      big.life=Math.max(big.life,(big.age+keepM)/0.85);big.g0=Math.min(0.15,15/big.life);if(big.age<big.g0*big.life)big.age=big.g0*big.life;if(hailOK(sm)&&!hailOK(big)){big.hailRoll=0}
+      if(!(big.root&&big.root===sm.root))big.life=Math.min(Math.max(big.life,(big.age+keepM)/0.85),Math.max(big.life,(big.life0||big.life)*2));big.g0=Math.min(0.15,15/big.life);if(big.age<big.g0*big.life)big.age=big.g0*big.life;if(hailOK(sm)&&!hailOK(big)){big.hailRoll=0}
       // a small thunderstorm that joins another cloud stops being a short-lived pulse: the merged storm lives on like any thunderstorm, with cores that renew
       if(big.mini||sm.mini){big.mini=0;for(const q of big.blobs)if(q.persist&&!q.ax0&&q.g>1.1&&!q.hook){q.persist=0;q.life2=cellLife();q.age2=q.life2*R(0.15,0.45)}
-        big.life=Math.max(big.life,(big.age+R(120,190)*(0.6+0.8*env.moist))/0.85);big.g0=Math.min(0.15,15/big.life);big.maxCores=Math.max(big.maxCores||0,6)}
+        if(!(big.root&&big.root===sm.root)||big.age>big.life*0.7)big.life=Math.max(big.life,(big.age+R(120,190)*(0.6+0.8*env.moist))/0.85);big.g0=Math.min(0.15,15/big.life);big.maxCores=Math.max(big.maxCores||0,6)}
       if(big.mega){big.megaB=Math.min(6,(big.megaB||3)+0.5);big.maxCores=Math.min(34,(big.maxCores||22)+2)}
       if(sm.type==='storm'&&big.type==='storm'){big.sj=(big.sj||0)+(sm.sj||0)+1;if(big.sj>=3&&!big.mega&&!big.kill&&!big.megaTried&&(big.megaTried=1)&&rnd()<0.08){big.mega=1;big.megaB=3;big.maxCores=22;big.life=Math.max(big.life,300);megaTail(big,28);for(const q of big.blobs)if(q.ti!=null)q.fv=0;alert(`اتحدت أربع عواصف رعدية وتكوّنت عاصفة رعدية عملاقة (${big.id})`,'bad')}}
       big.merged++;if(!big.mega)big.rad=Math.max(big.rad||10,(d+(sm.rad||10)*gS)/gB);sm.dead=true;
@@ -1888,6 +1888,8 @@ function step(dt,rdt=0){
       if(!s.kill&&pS<0.8){s.rad=Math.min((s.rad0||s.rad||12)*2.6,(s.rad||12)+dt*0.05*s.anc/PX);s.maxCores=Math.min(13,Math.max(s.maxCores||0,6+((s.rad-(s.rad0||s.rad))*PX/5|0)))}}
     if(s.type!=='line'){const m=Math.hypot(bhx,bhy);if(m>0.02){const k2=Math.min(1,dt*(s.oro?0.0006:0.004));s.hx+=(bhx/m-s.hx)*k2;s.hy+=(bhy/m-s.hy)*k2;const n=Math.hypot(s.hx,s.hy);s.hx/=n;s.hy/=n}}
     s.age+=dt*(1+(0.5-s.mc)*0.9*env.moistFx)*(1-0.4*(s.anc||0));
+    // no single cloud system lasts for ever: past about half a day (longer for wide rain and lows) it runs down quickly, whatever the settings
+    if(!s.scen&&!s.hold&&s.t0!=null){const over=(simT-s.t0)/60-(s.type==='low'?26:s.type==='strat'?15:11);if(over>0)s.age+=dt*Math.min(4,1+over)}
     // a giant stays at full strength for a limited run (about 280-370 km of travel, or 10-14 hours if it hardly moves, or until the air dries); then it ages and dies like any thunderstorm
     if(s.mega&&!s.kill){s.trav=(s.trav||0)+Math.hypot(s.vx,s.vy)*dt*PX;s.ht=(s.ht||0)+dt;s.maxTrav=s.maxTrav||R(280,370);s.maxT=s.maxT||R(600,840);s.hold=s.mc>0.27&&s.trav<s.maxTrav&&s.ht<s.maxT;if(s.hold&&s.age>s.life*0.5)s.age=s.life*0.5;if(!s.hold&&s.held&&!s.rel){s.rel=1;s.age=Math.max(s.age,s.life*(1-Math.min(0.4,170/s.life)))}if(s.hold)s.held=1}const p=s.age/s.life;for(const b of s.blobs)b.t=(b.t||0)+dt;cellDynamics(s,dt);if(s.merged>0)coalesce(s,dt);
     if(s.scen){
@@ -1905,7 +1907,7 @@ function step(dt,rdt=0){
     if((s.type==='storm'||s.type==='super')&&!s.megaT&&!s.mini&&p>0.22&&p<0.72&&s.age>=s.nextD&&!s.kill&&storms.length<70){
       s.nextD=s.age+R(12,22);
       if(rnd()<env.inst*0.95*(0.6+0.8*env.sev)){const fw=R(-6,10)*env.size/PX,side=R(16,28)*env.size/PX*(s.type==='super'||rnd()<.7?1:-1);
-        NATF=s.nat?1:0;const ch=spawn(!s.scen&&env.sev>0.8&&rnd()<0.15?'super':env.inst>0.65&&rnd()<0.35?'storm':'shower',s.x+fw*s.hx-side*s.hy,s.y+fw*s.hy+side*s.hx);NATF=0;
+        NATF=s.nat?1:0;const ch=spawn(!s.scen&&env.sev>0.8&&rnd()<0.15?'super':env.inst>0.65&&rnd()<0.35?'storm':'shower',s.x+fw*s.hx-side*s.hy,s.y+fw*s.hy+side*s.hx);NATF=0;if(ch){s.root=s.root||s.id;ch.root=s.root}
         if(ch&&s.scen){ch.scen=1;ch.bornT=simT;ch.fcBoost=s.fcBoost}}}
     if(rdt>0&&layers.light&&hailOK(s))for(const b of s.blobs)if(b.g>1.1&&b.Pe>=60){let n=(b.Pe-58)*0.02*rdt*(0.6+0.4*Math.sqrt(speed));while(n>0){if(rnd()<n){const a=R(0,6.28),r=R(0,Math.max(b.ax,b.ay)*0.5),x=b.cx+Math.cos(a)*r,y=b.cy+Math.sin(a)*r;if(x>=0&&y>=0&&x<W&&y<H){const hs=hailSizeAt((y|0)*W+(x|0));if(hs>0)hailMk.push({x,y,lt:liveT,hs}),hs>DAY.hail&&(DAY.hail=hs)}}n-=1}}
     // lightning jump: flashes follow the updraft — a cell that is strengthening (echo rising) produces a burst of lightning,
@@ -2506,8 +2508,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=96,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=97,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:97,title:'عمر السحب المندمجة',fix:['السحابة كانت تولّد سحب صغيرة حولها ثم تبلعها، وكل مرة يتمدد عمرها، فبعض السحب عاشت أكثر من يوم كامل: الحين بلع السحب اللي ولّدتها ما يزيد عمرها','الاندماج مع سحب ثانية يطوّل العمر لحد الضعف كأقصى شي','أي سحابة تعدّت نصف يوم تقريباً (11 ساعة، و15 للمطر الواسع، و26 للمنخفض) تبدأ تضعف بسرعة مهما كانت الإعدادات','رقم "أطول سحابة عمراً" في الملخص والأرقام القياسية صار منطقي']},
   {v:96,title:'تحسين ملخص اليوم',fix:['ملخص اليوم ما عاد يطلع وأنت ترسم التوقعات أو تسحب على الخريطة']},
   {v:95,title:'ملخص اليوم، حفظ الجلسة، التوقع الآلي، الأرقام القياسية',add:['ملخص اليوم: عند منتصف الليل يطلع لك أعلى المدن مطراً، عدد الصواعق، أكبر برد، أقوى سحابة، وعدد السحب (وتقدر تشوفه أي وقت من زر تحت الطبقات)','حفظ الجلسة: المحاكي يحفظ جلستك كل دقيقة، ولما تفتحه مرة ثانية تلقى زر "متابعة جلستي السابقة" في شاشة الترحيب','توقع آلي: خيار "توقع السحب بعد ساعة" في الطبقات يرسم وين متوقع توصل كل سحابة قوية خلال ساعة','الأرقام القياسية: أعلى مطر يومي، أكثر صواعق، أكبر برد، أقوى سحابة، وأطول سحابة عمراً، محفوظة لك بين الجلسات']},
   {v:94,title:'خريطتين جديدتين وسحب تلقائية أطول',add:['خريطة كبيرة جديدة: "المنطقة الشرقية والخليج" — الدمام والجبيل والأحساء وحفر الباطن، إلى الكويت والبحرين وقطر، بثلاثة رادارات','خريطة كبيرة جديدة: "المنطقة الجنوبية" — أبها والباحة وجازان ونجران وبيشة والقنفذة إلى الطائف، بأربعة رادارات','الخريطتين بسواحل وتضاريس حقيقية'],fix:['السحب التلقائية (اللي تطلع لحالها) صارت تعيش أطول بـ60% تقريباً، والسحب اللي ترسمها أنت ما تغيّرت']},
