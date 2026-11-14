@@ -320,6 +320,10 @@ body.mob .sheet{max-height:calc(100dvh - 40px);overflow:auto}
 #scChal.pulse{box-shadow:0 0 0 2px var(--accent);animation:recP 0.8s 5}@keyframes recP{50%{opacity:.55}}
 .cchev{display:inline-block;width:7px;height:7px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);margin:0 2px 3px 6px;transition:transform .15s}#cityTog[aria-expanded=false] .cchev{transform:rotate(45deg);margin-bottom:1px}
 #verTag{font:600 11px var(--f-mono);color:var(--accent);background:var(--accent-dim);border:1px solid var(--line);border-radius:999px;padding:2px 8px;vertical-align:middle;letter-spacing:0;direction:ltr;display:inline-block}
+#tl{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;width:min(560px,calc(100% - 560px));min-width:340px;direction:ltr}
+#tl button{all:unset;cursor:pointer;font:600 12px var(--f-ui);color:var(--fg);padding:4px 8px;border-radius:7px;border:1px solid var(--line);white-space:nowrap}#tl button:hover{background:var(--accent-dim)}#tl button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+#tl input{flex:1 1 auto;min-width:60px}#tlTxt{font:500 11.5px var(--f-ui);color:var(--muted);white-space:nowrap;direction:rtl}#tl.rp{outline:2px solid var(--warn,#ffb547)}#tl.rp #tlTxt{color:var(--warn,#ffb547)}
+body.mob #tl{display:none}
 #setPanel{position:absolute;inset:0;display:grid;place-items:center;background:rgba(3,6,9,.6);z-index:5;padding:16px}#setPanel[hidden]{display:none}
 .setBox{width:min(460px,100%);max-height:100%;overflow:auto;border-radius:14px;padding:14px 16px 18px;background:var(--panel)}.setHead{display:flex;justify-content:space-between;align-items:center;font-size:17px;margin-bottom:6px;position:sticky;top:-14px;background:var(--panel);padding:8px 0;z-index:1}
 .setBox section{padding:12px 0 4px;border-top:1px solid var(--line);margin-top:10px}#setGpuBox .chk{font-size:14.5px;margin:8px 0 4px}
@@ -582,7 +586,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
     <button class="seg wbtn uibtn" id="setBtn" title="الإعدادات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg><span>الإعدادات</span></button>
     <button class="seg wbtn uibtn" id="toMob" title="التبديل إلى نسخة الجوال"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/></svg><span>نسخة الجوال</span></button>
     <button class="sndbtn" id="sndBtn" aria-pressed="true" title="الصوت" aria-label="الصوت"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w1" d="M16.5 9.5a3.5 3.5 0 0 1 0 5"/><path class="w2" d="M19 7a7 7 0 0 1 0 10"/><path class="x" d="M17 9l5 6M22 9l-5 6"/></svg><i id="sndMeter"></i></button>
-    <div class="clock"><b id="clock">13:00</b><small id="scan">مسح رقم 1</small></div>
+    <div class="clock"><b id="clock">13:00</b><small id="dateTxt"></small><small id="scan">مسح رقم 1</small></div>
     <button class="sndbtn" id="mMenu" aria-label="الإعدادات" title="الإعدادات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><i id="mDot" hidden></i></button>
   </header>
   <div id="mBack"></div>
@@ -618,6 +622,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
           <div class="sc-row"><button class="btn sm" id="scBack">رجوع للمحاكاة الأساسية</button><button class="btn sm ghost" id="scAcc">مجموع الأمطار</button><button class="btn sm ghost" id="scEditAgain">تعديل التوقعات وإعادة</button></div>
         </div>
       </div>
+      <div id="tl" class="glass"><button id="tlRev" title="تشغيل للخلف (مثل فيديو مسجل)" aria-label="تشغيل للخلف">◀◀</button><button id="tlPlay" title="تشغيل للأمام" aria-label="تشغيل للأمام">▶</button><input type="range" id="tlBar" min="0" max="0" step="1" value="0" aria-label="شريط الوقت"><button id="tlLive" title="الرجوع للوقت الحالي">مباشر</button><span id="tlTxt"></span></div>
       <div id="modal" hidden><div class="sheet" id="sheet"></div></div>
       <div id="setPanel" hidden><div class="setBox glass"><div class="setHead"><b>الإعدادات</b><button class="btn sm ghost" id="setX">إغلاق</button></div><div id="setGpuBox"></div><div id="setBody"></div></div></div>
     </div>
@@ -1013,7 +1018,7 @@ function loadRegion(key){
   for(const RD of RADARS)for(let k=0;k<150;k++){const a=R(0,6.283),r=2+20*Math.sqrt(rnd());const x=clamp((RD.x+Math.cos(a)*r)|0,0,W-1),y=clamp((RD.y+Math.sin(a)*r)|0,0,H-1);CLUTTER.push({i:y*W+x,d:R(10,38)})}
   for(let k=0,t=0;k<Math.round(N/6000)&&t<4000;t++){const x=R(0,W)|0,y=R(0,H)|0;if(elevKm[y*W+x]>0.62){CLUTTER.push({i:y*W+x,d:R(8,26)});k++}}
   rCan=document.createElement('canvas');rCan.width=W;rCan.height=H;rCtx=rCan.getContext('2d');rImg=rCtx.createImageData(W,H);r32=new Uint32Array(rImg.data.buffer);
-  storms=[];strikes=[];hailMk=[];fieldDirty=true;stDirty=true;ATM.Q=null;MEM.M=null;scen.fc=null;scen.running=false;scen.world=false;scen.editing=false;scen.main=null;if(document.getElementById('scEdit'))scenUI();{const o=document.getElementById('oScR');if(o)o.textContent=Math.round(scen.r*PX)+' كم'}
+  storms=[];strikes=[];hailMk=[];fieldDirty=true;stDirty=true;ATM.Q=null;MEM.M=null;RP.fr=[];RP.last=-1e9;RP.can=null;RP.on=false;RP.play=0;scen.fc=null;scen.running=false;scen.world=false;scen.editing=false;scen.main=null;if(document.getElementById('scEdit'))scenUI();{const o=document.getElementById('oScR');if(o)o.textContent=Math.round(scen.r*PX)+' كم'}
 }
 const elevAt=(x,y)=>elevKm[clamp(y|0,0,H-1)*W+clamp(x|0,0,W-1)];
 const landAt=(x,y)=>landKm[clamp(y|0,0,H-1)*W+clamp(x|0,0,W-1)];
@@ -1526,9 +1531,9 @@ function scenSpawnStep(dt){
 function scenUI(){const done=scen.world&&!scen.running&&!scen.editing;$('scEdit').hidden=scen.running||done;$('scRun').hidden=!scen.running;$('scDone').hidden=!done;$('scIso').hidden=!scen.world;$('scBack2').hidden=!scen.world;
   $('scen').hidden=product!=='fcst'&&!scen.world;if(done)$('scDoneTxt').textContent=scen.doneTxt||''}
 function scenEnterWorld(){atmOk();if(!scen.world){scen.main={mem:MEM.M?MEM.M.slice():null,memO:[MEM.ox,MEM.oy,MEM.tx,MEM.ty],atmQ:ATM.Q.slice(),atmCP:ATM.CP.slice(),storms,strikes,boltLog,alerts,acc:ACC.slice(),cities:CITIES.map(c=>({total:c.total,rate:c.rate,hail:c.hail,al:c.al})),simT,scanNo,scanAcc,speed,paused};scen.world=true}
-  memClear();storms=[];strikes=[];hailMk=[];boltLog=[];alerts=[];ACC.fill(0);HACC.fill(0);CITIES.forEach(c=>{c.total=0;c.rate=0;c.hail=0;c.al={}});simT=0;scanNo=1;scanAcc=0;atmReset();fieldDirty=true;WP.key='';renderAlerts();computeField()}
+  rpReset();if(!scen.main.sd)scen.main.sd={...SD};memClear();storms=[];strikes=[];hailMk=[];boltLog=[];alerts=[];ACC.fill(0);HACC.fill(0);CITIES.forEach(c=>{c.total=0;c.rate=0;c.hail=0;c.al={}});{const cd=simDate();simT=0;SD.y=cd.getFullYear();SD.m=cd.getMonth()+1;SD.d=Math.min(28,cd.getDate());SD.base=dayIdx()}scanNo=1;scanAcc=0;atmReset();fieldDirty=true;WP.key='';renderAlerts();computeField()}
 function scenBack(){const m=scen.main;scen.running=false;scen.editing=false;scen.world=false;scen.main=null;
-  if(m){if(m.mem&&MEM.M&&MEM.M.length===m.mem.length){MEM.M.set(m.mem);[MEM.ox,MEM.oy,MEM.tx,MEM.ty]=m.memO}else memClear();if(m.atmQ&&ATM.Q&&ATM.Q.length===m.atmQ.length){ATM.Q.set(m.atmQ);ATM.CP.set(m.atmCP)}storms=m.storms;strikes=m.strikes;boltLog=m.boltLog;alerts=m.alerts;ACC.set(m.acc);CITIES.forEach((c,k)=>Object.assign(c,m.cities[k]));simT=m.simT;scanNo=m.scanNo;scanAcc=m.scanAcc;speed=m.speed;paused=m.paused}
+  if(m){if(m.mem&&MEM.M&&MEM.M.length===m.mem.length){MEM.M.set(m.mem);[MEM.ox,MEM.oy,MEM.tx,MEM.ty]=m.memO}else memClear();if(m.atmQ&&ATM.Q&&ATM.Q.length===m.atmQ.length){ATM.Q.set(m.atmQ);ATM.CP.set(m.atmCP)}storms=m.storms;strikes=m.strikes;boltLog=m.boltLog;alerts=m.alerts;ACC.set(m.acc);CITIES.forEach((c,k)=>Object.assign(c,m.cities[k]));simT=m.simT;if(m.sd)Object.assign(SD,m.sd);rpReset();scanNo=m.scanNo;scanAcc=m.scanAcc;speed=m.speed;paused=m.paused}
   fieldDirty=true;WP.key='';renderAlerts();computeField();syncSpeed();if(!modal.hidden)hideModal();scenUI();scenSync();toast('رجعت للمحاكاة الأساسية كما تركتها')}
 // ---------- (6) forecast challenge: paint where rain will fall in the next 3 hours, then the real simulation scores you (CSI) ----------
 const chal={on:false};
@@ -1887,7 +1892,7 @@ function step(dt,rdt=0){
     for(let t=0;t<1;t++){const x=bx,y=by;if(rnd()<clamp((bv-0.5)/0.25,0,1)*(1-0.8*clamp((atmSamp(ATM.T,x,y)-40)/7,0,1))){spawnBand(0.5,env.inst>0.45&&rnd()<0.12?'mini':env.inst<0.35&&env.moist>0.6?(rnd()<0.6?'strat':'shower'):env.sev>0.85&&env.shear>0.7&&rnd()<0.25?'super':env.inst>0.7&&rnd()<0.3?'storm':'shower',x,y);break}}}
   mergeStorms();
   fieldClock+=rdt;pendDt+=dt;
-  if(rdt===0||(radarFps<0?scanNo!==fieldScan:fieldClock>=(radarFps?1/radarFps:document.body.classList.contains('mob')?1/20:1/24))){fieldScan=scanNo;fieldClock=0;computeField(pendDt,1);fieldDirty=true;
+  if(rdt===0||(radarFps<0?scanNo!==fieldScan:fieldClock>=(radarFps?1/radarFps:document.body.classList.contains('mob')?1/20:1/24))){fieldScan=scanNo;fieldClock=0;computeField(pendDt,1);fieldDirty=true;rpRecord();
   const f=pendDt/60;pendDt=0;
   {const Q=ATM.Q,aw=ATM.w,ah=ATM.h;for(let y=0;y<H;y++){const r=y*W,qr=Math.min(ah-1,(y/MG)|0)*aw;for(let x=0;x<W;x++){const i=r+x,v=DBZ[i];if(v<18)continue;if(v>=58){const hs=hailSizeAt(i);if(hs>HACC[i])HACC[i]=hs}
     const k=v>=70?140:(v*2)|0,w=RR_HUM[k];ACC[i]+=RR_LUT[k]*f*(w>0?Math.pow(humFac(Q[qr+Math.min(aw-1,(x/MG)|0)]),w):1)}}}
@@ -1904,6 +1909,30 @@ function step(dt,rdt=0){
 }
 
 /* ---------- alerts / toast ---------- */
+// Calendar: the simulation has a real date that advances with the days; passing into a new month changes the season by itself.
+const WDAYS=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'],SD={y:new Date().getFullYear(),m:0,d:Math.min(28,new Date().getDate()),base:0};
+const dayIdx=(tm=START_H*60+simT)=>Math.floor(tm/1440);
+function simDate(tm){if(!SD.m)SD.m=env.month||4;return new Date(SD.y,SD.m-1,SD.d+dayIdx(tm)-SD.base)}
+function dateStr(tm){const d=simDate(tm);return WDAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]}
+function dateRebase(m,d){const cur=simDate();SD.y=cur.getFullYear();SD.m=m;SD.d=Math.min(28,d??cur.getDate());SD.base=dayIdx()}
+function dateTick(){const d=simDate();if(d.getMonth()+1!==env.month&&!scen.world){env.month=d.getMonth()+1;env.season=MONTH_SEASON[env.month-1];const ms=document.getElementById('monthSel');if(ms)ms.value=String(env.month);if(ATM.Q)atmDiag();renderLegend();toast('دخل شهر '+MONTHS[env.month-1]+' · '+seasonOf().n)}}
+const hhmm=tm=>{const m=((Math.floor(tm)%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
+// Replay: the radar picture is recorded every 10 simulated minutes (older history is kept more coarsely), so the time bar can run
+// the whole simulation backwards and forwards like a recorded video. While replaying, the simulation itself waits.
+const RP={on:false,f:1,w:0,h:0,fr:[],step:10,last:-1e9,idx:0,play:0,acc:0,can:null,cx:null,img:null,u32:null};
+function rpInit(){RP.f=Math.max(1,Math.ceil(Math.sqrt(N/80000)));RP.w=Math.ceil(W/RP.f);RP.h=Math.ceil(H/RP.f);RP.can=document.createElement('canvas');RP.can.width=RP.w;RP.can.height=RP.h;RP.cx=RP.can.getContext('2d');RP.img=RP.cx.createImageData(RP.w,RP.h);RP.u32=new Uint32Array(RP.img.data.buffer)}
+function rpReset(){RP.fr=[];RP.last=-1e9;RP.can=null;if(RP.on)rpLive();tlSync()}
+function rpRecord(){if(RP.on||simT-RP.last<RP.step)return;if(!RP.can||RP.w!==Math.ceil(W/RP.f))rpInit();const{w,h,f}=RP,a=new Uint8Array(w*h),o=f>>1;
+  for(let y=0;y<h;y++){const y0=Math.min(H-1,y*f),y1=Math.min(H-1,y*f+o),r=y*w;for(let x=0;x<w;x++){const x0=Math.min(W-1,x*f),x1=Math.min(W-1,x*f+o),v=Math.max(DBZ[y0*W+x0],DBZ[y0*W+x1],DBZ[y1*W+x0],DBZ[y1*W+x1]);a[r+x]=v<5?0:v>=90?180:(v*2)|0}}
+  RP.fr.push({t:simT,tm:START_H*60+simT,a});RP.last=simT;if(RP.fr.length>420){const k=RP.fr.length>>1;RP.fr=RP.fr.filter((q,i)=>i>=k||i%2===0)}}
+function rpShow(i){const n=RP.fr.length;if(!n)return;RP.idx=i=clamp(i|0,0,n-1);const a=RP.fr[i].a,u=RP.u32;for(let k=0;k<a.length;k++)u[k]=a[k]?DBZ_LUT[a[k]]:0;RP.cx.putImageData(RP.img,0,0);tlSync()}
+function rpEnter(i){if(!RP.fr.length){toast('ما فيه تسجيل بعد: خل المحاكاة تمشي شوي');return false}if(scen.world||product==='fcst'){toast('الإعادة تشتغل في المحاكاة الأساسية فقط');return false}if(product!=='ref')setProduct('ref');RP.on=true;document.getElementById('tl').classList.add('rp');rpShow(i);return true}
+function rpLive(){RP.on=false;RP.play=0;document.getElementById('tl').classList.remove('rp');fieldDirty=true;tlSync()}
+function rpStep(rdt){if(!RP.on||!RP.play)return;RP.acc+=rdt*14;while(RP.acc>=1){RP.acc-=1;const i=RP.idx+RP.play;if(i<0){RP.play=0;break}if(i>=RP.fr.length){rpLive();return}rpShow(i)}}
+function tlSync(){const bar=document.getElementById('tlBar');if(!bar)return;const n=RP.fr.length;bar.max=n;if(!RP.on)bar.value=n;else bar.value=RP.idx;
+  const fr=RP.on?RP.fr[RP.idx]:null,tm=fr?fr.tm:START_H*60+simT;document.getElementById('tlTxt').textContent=(RP.on?'إعادة · ':'')+dateStr(tm)+' · '+hhmm(tm);
+  document.getElementById('dateTxt').textContent=dateStr(tm)+(RP.on?' · إعادة':'');document.getElementById('clock').textContent=hhmm(tm);
+  document.getElementById('tlRev').setAttribute('aria-pressed',RP.on&&RP.play<0);document.getElementById('tlPlay').setAttribute('aria-pressed',RP.on&&RP.play>0);document.getElementById('tlLive').setAttribute('aria-pressed',!RP.on)}
 const clockStr=()=>{const m=Math.floor(START_H*60+simT)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
 function alert(msg,level){alerts.unshift({t:clockStr(),msg,level});alerts.length=Math.min(alerts.length,6);renderAlerts();if(document.body.classList.contains('mob')&&!document.body.classList.contains('sheet')){const d=document.getElementById('mDot');if(d)d.hidden=false;if(level==='warn'&&liveT-(window.__mTo||-99)>8){window.__mTo=liveT;toast(msg)}}}
 function renderAlerts(){const el=document.getElementById('alerts');
@@ -1914,7 +1943,7 @@ let toastT=0;function toast(m){const t=document.getElementById('toast');t.textCo
 const scope=document.getElementById('scope'),cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 let dpr=1,cw=0,ch=0;const view={s:1,ox:0,oy:0,min:0.5,max:10};
 function homeView(){fit();const h=REGION.home;if(!h)return;const[sx,sy]=toScreen(lon2x(h[0]),lat2y(h[1]));zoomAt(sx,sy,h[2]);view.ox+=cw/2-sx;view.oy+=ch/2-sy}
-function fit(){const s=Math.min(cw/W,ch/H)*0.98;view.s=s;view.min=s*0.9;view.max=Math.max(s*9,600);view.ox=(cw-W*s)/2;view.oy=(ch-H*s)/2}
+function fit(){const s=Math.min(cw/W,ch/H)*0.98;view.s=s;view.min=s*0.3;view.max=Math.max(s*9,600);view.ox=(cw-W*s)/2;view.oy=(ch-H*s)/2}
 function resize(){if(!REGION)return;const r=scope.getBoundingClientRect();dpr=Math.min(2,window.devicePixelRatio||1);const first=!cw;cw=r.width;ch=r.height;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);if(first)homeView();else fit()}
 new ResizeObserver(resize).observe(scope);
 const toWorld=(sx,sy)=>({x:(sx-view.ox)/view.s,y:(sy-view.oy)/view.s});
@@ -2084,8 +2113,8 @@ function draw(now){
   if(product==='temp'){if(!tempCan||tempCan.ver!==ATM.ver)buildTempCan();ctx.imageSmoothingEnabled=true;ctx.globalAlpha=0.82;ctx.drawImage(tempCan,0,0,ATM.w*MG,ATM.h*MG);ctx.globalAlpha=1}
   if(product!=='wind'&&product!=='terr'&&product!=='temp'){ctx.imageSmoothingEnabled=true;ctx.drawImage(maskCan,0,0,W,H)}
   if(product==='wind'){if(wCan){ctx.imageSmoothingEnabled=true;ctx.globalAlpha=layers.streets?1-0.4*sst(8,60,s):1;ctx.drawImage(wCan,0,0,WGW*WG,WGH*WG);ctx.globalAlpha=1}}
-  else{ctx.imageSmoothingEnabled=layers.smooth;ctx.globalAlpha=(layers.streets?1-0.45*sst(8,60,s):1)*(product==='temp'?0.32:product==='terr'?0.8:1);ctx.drawImage(rCan,0,0,W,H);ctx.globalAlpha=1;}
-  if(product==='ref')drawWarn(now);
+  else{ctx.imageSmoothingEnabled=layers.smooth||RP.on;ctx.globalAlpha=(layers.streets?1-0.45*sst(8,60,s):1)*(product==='temp'?0.32:product==='terr'?0.8:1);ctx.drawImage(RP.on&&RP.can?RP.can:rCan,0,0,W,H);ctx.globalAlpha=1;}
+  if(product==='ref'&&!RP.on)drawWarn(now);
   if(product==='fcst')scenEnsure();if(product==='fcst'&&!scen.running&&scen.fc){scenRender();if(scen.can){ctx.imageSmoothingEnabled=true;ctx.drawImage(scen.can,0,0,scen.fgw*FG,scen.fgh*FG)}}
   const lw=1/s;
   const dk=isDark(),ringC=dk?'150,195,225':'25,55,85';
@@ -2105,7 +2134,7 @@ function draw(now){
   // radar site
   for(const RD of RADARS){const[x,y]=toScreen(RD.x,RD.y);ctx.fillStyle='#8fd8ff';ctx.beginPath();ctx.moveTo(x,y-6);ctx.lineTo(x+5,y);ctx.lineTo(x,y+6);ctx.lineTo(x-5,y);ctx.closePath();ctx.fill();ctx.strokeStyle='#04070a';ctx.lineWidth=1.5;ctx.stroke()}
   // storm tracks
-  if(layers.tracks&&product==='ref')for(const st of storms){if(st.kill||st.trail)continue;let mx=0,cx=0,cy=0,n=0;
+  if(layers.tracks&&product==='ref'&&!RP.on)for(const st of storms){if(st.kill||st.trail)continue;let mx=0,cx=0,cy=0,n=0;
     for(const b of st.blobs)if(b.g>1.1&&b.Pe>0){mx=Math.max(mx,b.Pe);cx+=b.cx;cy+=b.cy;n++}
     if(mx<42||!n)continue;cx/=n;cy/=n;const[x0,y0]=toScreen(cx,cy),[x1,y1]=toScreen(cx+st.vx*60,cy+st.vy*60);
     ctx.setLineDash([5,4]);ctx.strokeStyle=dk?'rgba(235,245,255,.75)':'rgba(20,30,45,.75)';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();ctx.setLineDash([]);
@@ -2129,7 +2158,7 @@ function draw(now){
       if(mission.on&&c.m)label(c.total.toFixed(1)+' مم',x,y+14,'500 10.5px "IBM Plex Mono",monospace',col)}}
   if(layers.labels)for(const RD of RADARS){const[x,y]=toScreen(RD.x,RD.y);label('رادار '+RD.n,x+24,y+12,'500 10px "IBM Plex Sans Arabic",sans-serif',dk?'rgba(143,216,255,.85)':'#155d86')}
   // lightning & hail
-  if(layers.light&&product==='ref'){
+  if(layers.light&&product==='ref'&&!RP.on){
     {const bs=clamp(5+view.s*3.2,7,15),cell=Math.max(13,bs*1.35),occ=new Set(),zoomed=view.s>2.5,ga=zoomed?1:0.85;
     for(let i=strikes.length-1;i>=0;i--){const k=strikes[i];const[x,y]=toScreen(k.x,k.y);if(x<-20||y<-20||x>cw+20||y>ch+20)continue;
       const key=((x/cell)|0)+','+((y/cell)|0);if(occ.has(key))continue;occ.add(key);const age=liveT-k.lt;
@@ -2340,7 +2369,7 @@ function renderCities(){
       (mission.on&&c.m?`<div class="track"><div class="zone" style="left:${10/60*100}%;width:${40/60*100}%"></div><div class="fill" style="width:${Math.min(100,c.total/60*100)}%;background:${c.total>=50?'var(--bad)':c.total>=10?'var(--good)':'var(--accent)'}"></div></div>`:'')+`</div>`}).join('');
   if(mission.on){const left=Math.max(0,mission.dur-mission.elapsed);$('mTime').textContent=`${Math.floor(left/60)}:${String(Math.floor(left%60)).padStart(2,'0')} متبقٍ`;
     $('mBudget').textContent=mission.budget;$('mOk').textContent=MC.filter(c=>c.total>=10&&c.total<50).length+'/'+MC.length;$('mFlood').textContent=MC.filter(c=>c.total>=50).length}
-  $('clock').textContent=clockStr();$('boltCount').textContent=`البرق: ${boltLog.length} صاعقة / ساعة`;$('scan').textContent='مسح رقم '+scanNo+(paused?' · متوقف':'');
+  dateTick();tlSync();$('boltCount').textContent=`البرق: ${boltLog.length} صاعقة / ساعة`;$('scan').textContent='مسح رقم '+scanNo+(paused?' · متوقف':'');
   if(lastRead)updateReadout(lastRead);
 }
 
@@ -2364,7 +2393,7 @@ function pickSmall(){
   sheet.querySelectorAll('.mapc').forEach(b=>b.onclick=()=>{hideModal();switchRegion(b.dataset.k)});$('mclose').onclick=hideModal;
 }
 $('mapSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.body.classList.remove('sheet');if(b.dataset.g==='nat'){if(regionKey!=='ksa')switchRegion('ksa');return}if(b.dataset.g==='big')pickBig();else pickSmall()});
-function resetWorld(){if(scen.running||scen.world){scen.running=false;scen.world=false;scen.editing=false;scen.main=null;scenUI()}memClear();storms=[];strikes=[];hailMk=[];boltLog=[];alerts=[];ACC.fill(0);HACC.fill(0);CITIES.forEach(c=>{c.total=0;c.rate=0;c.hail=0;c.al={}});simT=0;scanNo=1;if(ATM.Q)atmReset();renderAlerts();computeField()}
+function resetWorld(){if(scen.running||scen.world){scen.running=false;scen.world=false;scen.editing=false;scen.main=null;scenUI()}rpReset();{const cd=simDate();SD.y=cd.getFullYear();SD.m=cd.getMonth()+1;SD.d=Math.min(28,cd.getDate());SD.base=Math.floor(START_H*60/1440)}memClear();storms=[];strikes=[];hailMk=[];boltLog=[];alerts=[];ACC.fill(0);HACC.fill(0);CITIES.forEach(c=>{c.total=0;c.rate=0;c.hail=0;c.al={}});simT=0;scanNo=1;if(ATM.Q)atmReset();renderAlerts();computeField()}
 function briefMission(){
   resetWorld();mode='mission';mission.on=true;mission.done=false;mission.budget=REGION.budget||24;mission.elapsed=0;
   env.windFrom=Math.round(R(190,300));env.windSpd=Math.round(R(15,35));env.inst=+R(.45,.75).toFixed(2);env.moist=+R(.45,.7).toFixed(2);
@@ -2402,8 +2431,8 @@ function frame(now){const rdt=Math.min(0.1,(now-last)/1000);last=now;
   flyStep(now);if(aimOn()&&cw){const c=toWorld(cw/2,ch/2);hover=c;if(!lastRead||Math.abs(lastRead.x-c.x)+Math.abs(lastRead.y-c.y)>0.25)updateReadout(c);
     const v=c.x>=0&&c.y>=0&&c.x<W&&c.y<H?DBZ[(c.y|0)*W+(c.x|0)]:0,k=v>=45?'hot':v>=15?'wet':'';if(mAimEl.className!==k)mAimEl.className=k}
   if(product==='fcst')scenBrush(rdt);if(scen.running&&now-(scen.uiT||0)>400){scen.uiT=now;scenSync()}if(product==='ref'&&LEG.warn&&now-(window.__wlT||0)>1000){window.__wlT=now;renderLegend()}chalCheck();if(now-(SND.uT||0)>80){SND.uT=now;sndUpdate();sndBtnMeter()}
-  if(!paused&&modal.hidden&&scen.running)scenSpawnStep(rdt*speed*SIMRATE);
-  if(!paused&&modal.hidden){const sd=rdt*speed*SIMRATE,n=Math.min(12,Math.max(1,Math.ceil(sd/1.5)));for(let k=0;k<n;k++)step(sd/n,rdt/n)}
+  rpStep(rdt);if(!paused&&modal.hidden&&scen.running&&!RP.on)scenSpawnStep(rdt*speed*SIMRATE);
+  if(!paused&&modal.hidden&&!RP.on){const sd=rdt*speed*SIMRATE,n=Math.min(12,Math.max(1,Math.ceil(sd/1.5)));for(let k=0;k<n;k++)step(sd/n,rdt/n)}
   if(product==='wind'){if(now-windT>160){windT=now;windCompute()}windParticles(rdt)}
   if(fieldDirty||(layers.clutter&&product==='ref'&&now-paintT>120)){paint();fieldDirty=false;paintT=now}draw(now);
   if(now-uiT>220){uiT=now;renderCities()}
@@ -2420,8 +2449,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=91,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=92,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:92,title:'التاريخ وشريط الوقت',add:['المحاكي صار له تاريخ: اليوم والتاريخ والشهر مكتوبين فوق مع الساعة، والأيام تمشي','لما يدخل شهر جديد يتغير الموسم لحاله','شريط الوقت فوق الخريطة: اسحبه ورا لين بداية المحاكاة وشوف صورة الرادار مثل فيديو مسجل','زر ◀◀ يشغّل السحب بالعكس، و▶ للأمام، و"مباشر" يرجعك للوقت الحالي (المحاكاة توقف وقت الإعادة وتكمل بعدها)','تقدر تسوي زوم لبرّا الخريطة أكثر بثلاث مرات']},
   {v:91,title:'العاصفة الصغيرة تندمج',add:['العاصفة الرعدية الصغيرة صارت تندمج مع السحب الثانية مثل كل الغيوم','إذا اندمجت يطول عمرها: تتحول لعاصفة رعدية عادية تتجدد أنويتها وتعيش ساعات زيادة']},
   {v:90,title:'العاصفة الصغيرة تعيش أطول',fix:['العاصفة الرعدية الصغيرة كانت تختفي بسرعة زايدة (أقل من ساعة): الحين تعيش من ساعة ونص إلى ساعتين تقريباً، ولسا تطلع فجأة وأقصر عمراً من العاصفة الرعدية العادية']},
   {v:89,title:'عاصفة رعدية صغيرة',add:['أداة رسم جديدة بين الخلية المطرية والعاصفة الرعدية: "عاصفة رعدية صغيرة"','تطلع فجأة خلال دقائق، قوية وصغيرة، وتختفي بسرعة (أقل من ساعة)','رعدها أقوى من العاصفة الرعدية العادية وبرقها أكثر','شكلها عشوائي كل مرة: نواة وحدة مايلة، نواتين، نواة معها طرف أضعف، أو قوس قصير من ثلاث','تطلع لحالها أحياناً مع العواصف التلقائية']},
@@ -2501,14 +2531,18 @@ placeSet();new MutationObserver(placeSet).observe(document.body,{attributes:true
 // rain statistics list: opens and closes like a menu (remembered)
 {const tg=$('cityTog'),setC=o=>{tg.setAttribute('aria-expanded',o);$('cities').hidden=!o;try{localStorage.setItem('stormlab-cities',o?'1':'0')}catch(e){}};let o=true;try{o=localStorage.getItem('stormlab-cities')!=='0'}catch(e){}setC(o);
   const fl=()=>setC(tg.getAttribute('aria-expanded')!=='true');tg.addEventListener('click',fl);tg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fl()}})}
+$('tlBar').addEventListener('input',e=>{const i=+e.target.value;RP.play=0;if(i>=RP.fr.length){if(RP.on)rpLive()}else if(RP.on)rpShow(i);else rpEnter(i)});
+$('tlRev').addEventListener('click',()=>{if(!RP.on&&!rpEnter(RP.fr.length-1))return;RP.play=RP.play<0?0:-1;RP.acc=0;tlSync()});
+$('tlPlay').addEventListener('click',()=>{if(!RP.on)return;RP.play=RP.play>0?0:1;RP.acc=0;tlSync()});
+$('tlLive').addEventListener('click',()=>{if(RP.on)rpLive()});
 $('setX').addEventListener('click',()=>{$('setPanel').hidden=true});$('setPanel').addEventListener('pointerdown',e=>{if(e.target===$('setPanel'))$('setPanel').hidden=true});
 $('setBtn').addEventListener('click',async()=>{const A=window.stormApp;let on=true;if(A){try{on=await A.gpuGet()}catch(e){}}
   $('setGpuBox').innerHTML=`<label class="chk"><input type="checkbox" id="setGpu" ${A&&on?'checked':''} ${A?'':'disabled'}><span>تفعيل قوة كرت الشاشة</span></label>
   <p style="font-size:12.5px;color:var(--muted);line-height:1.7;margin:0">${A?'يخلي المحاكي يرسم على كرت الشاشة القوي بدل المعالج. عند تغيير الخيار يُعاد تشغيل البرنامج تلقائياً.':(/Electron/i.test(navigator.userAgent)?'<b style="color:var(--warn,#ffb547)">البرنامج اللي عندك قديم وما يدعم هذا الخيار.</b> نزّل آخر نسخة من البرنامج وشغّلها بدل القديمة.':'هذا الخيار يشتغل في برنامج الكمبيوتر فقط، مو في المتصفح.')}</p>`;
   if(A)$('setGpu').onchange=e=>{const v=e.target.checked;toast('يُعاد تشغيل البرنامج الآن…');setTimeout(()=>A.gpuSet(v),600)};placeSet();$('setPanel').hidden=false});
 {const ms=$('monthSel');ms.innerHTML=MONTHS.map((n,k)=>`<option value="${k+1}">${n}</option>`).join('');ms.value=String(env.month||4);
-  ms.addEventListener('change',()=>{env.month=+ms.value;env.season=MONTH_SEASON[env.month-1];if(ATM.Q)atmDiag();renderLegend();toast(`الشهر: ${MONTHS[env.month-1]} · ${seasonOf().n}`)});
-  $('nowBtn').addEventListener('click',()=>{const d=new Date();START_H=((d.getHours()+d.getMinutes()/60-simT/60)%24+24)%24;env.month=d.getMonth()+1;ms.value=String(env.month);env.season=MONTH_SEASON[env.month-1];if(ATM.Q)atmDiag();renderLegend();toast('الوقت والشهر الحاليين: '+clockStr()+' · '+MONTHS[env.month-1])});
+  ms.addEventListener('change',()=>{env.month=+ms.value;dateRebase(env.month);env.season=MONTH_SEASON[env.month-1];if(ATM.Q)atmDiag();renderLegend();toast(`الشهر: ${MONTHS[env.month-1]} · ${seasonOf().n}`)});
+  $('nowBtn').addEventListener('click',()=>{const d=new Date();START_H=((d.getHours()+d.getMinutes()/60-simT/60)%24+24)%24;env.month=d.getMonth()+1;SD.y=d.getFullYear();SD.m=env.month;SD.d=d.getDate();SD.base=dayIdx();ms.value=String(env.month);env.season=MONTH_SEASON[env.month-1];if(ATM.Q)atmDiag();renderLegend();toast('الوقت والشهر الحاليين: '+clockStr()+' · '+MONTHS[env.month-1])});
   // today's real weather for the middle of the map (Open-Meteo, free, no key): steering wind at 700 hPa, humidity, instability (CAPE)
   $('realWx').addEventListener('click',async()=>{toast('جارٍ جلب طقس اليوم…');try{const lat=y2lat(H/2).toFixed(3),lon=x2lon(W/2).toFixed(3);
     const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,cape&hourly=wind_speed_700hPa,wind_direction_700hPa&forecast_days=1&timezone=auto`);if(!r.ok)throw 0;const j=await r.json();
