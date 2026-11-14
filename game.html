@@ -712,6 +712,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
           <label class="chk"><input type="checkbox" id="lLabels" checked><span>أسماء المدن</span></label>
           <label class="chk"><input type="checkbox" id="lTracks" checked><span>مسارات العواصف</span></label>
           <label class="chk"><input type="checkbox" id="lStreets" checked><span>الشوارع والأحياء</span></label>
+          <label class="chk"><input type="checkbox" id="lFc"><span>توقع السحب بعد ساعة</span></label>
           <label class="chk"><input type="checkbox" id="lMm" checked><span>مجموع المطر تحت المدن</span></label>
           <label class="chk"><input type="checkbox" id="lMoist"><span>خريطة الرطوبة</span></label>
         </div>
@@ -719,6 +720,10 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
           <button class="btn sm ghost" id="bClear">مسح السماء</button>
           <button class="btn sm ghost" id="bReset">تصفير المجاميع</button>
           <button class="btn sm ghost" id="bFit">ملاءمة الخريطة</button>
+          <button class="btn sm ghost" id="bDay">ملخص اليوم</button>
+          <button class="btn sm ghost" id="bRec">الأرقام القياسية</button>
+          <button class="btn sm ghost" id="bSave">حفظ الجلسة</button>
+          <button class="btn sm ghost" id="bLoad">استرجاع الجلسة</button>
         </div>
       </section>
     </aside>
@@ -1187,7 +1192,7 @@ const PRESET_INFO={calm:'جو مستقر: سحب قليلة ومطر خفيف، 
   summer:'صيف حار: هواء جاف وحرارة، عواصف رعدية متفرقة وبرق كثير، وأغلب المطر يتبخر قبل وصوله للأرض.',
   winter:'منخفض شتوي: مطر واسع ومستمر يتحرك بسرعة، وعواصف رعدية قليلة.',dry:'جفاف: هواء جاف جداً، والعواصف ضعيفة وتتلاشى بسرعة.',
   supercell:'تفشي خلايا عملاقة: قص رياح قوي، خلايا عملاقة تتكون من نفسها، وبرد كبير متكرر.'};
-const layers={mm:true,flood:true,moist:false,streets:true,tracks:true,rings:false,sweep:false,light:true,clutter:false,smooth:false,labels:true};
+const layers={fc:false,mm:true,flood:true,moist:false,streets:true,tracks:true,rings:false,sweep:false,light:true,clutter:false,smooth:false,labels:true};
 let storms=[],strikes=[],alerts=[],hailMk=[];
 let START_H=13,simT=0,speed=1,paused=false,product='ref',tool='storm',mode='free';
 const mission={on:false,budget:24,elapsed:0,dur:480,done:false,started:false};
@@ -1211,6 +1216,11 @@ function megaTail(s,r0){const Zs=env.size/PX,bl=s.blobs,blob=(rx,ry,ax,ay,P,g,o=
       for(const b of bl)if(b.ti!=null){b.x0=b.rx;b.y0=b.ry;b.P0=b.P;b.ay0=b.ay;b.a0=b.ang}
       s.tailL=L*Zs;s.tailT=L*env.size;s.twob=wob*Zs;s.tph=ph;s.megaT=1;s.r0=r0*Zs;s.mph=R(0,6.28);
 }
+// ---- the day's statistics, all-time records, and the daily summary shown at midnight ----
+const DAY={st:0,hail:0,mx:0,born:0,idx:null,life:0};
+let REC={};try{REC=JSON.parse(localStorage.getItem('stormlab-rec')||'{}')||{}}catch(e){}
+const recSave=()=>{try{localStorage.setItem('stormlab-rec',JSON.stringify(REC))}catch(e){}};
+function recTry(k,v,what){if(!(v>0)||(REC[k]&&REC[k].v>=v))return false;REC[k]={v,what};return true}
 let NATF=0;   // set while the simulator itself (not the player) is creating a storm: those live longer
 let idc=0;const nextId=()=>{const c=idc++;return String.fromCharCode(65+c%26)+(1+(c/26|0))};
 // a band of 2-4 cells lined up along the steering flow (band-parallel organisation, as in the Najd / Eastern Province radar images)
@@ -1328,7 +1338,7 @@ function spawn(type,x,y,o={}){
   s.rad=0;for(const b of bl)if(b.g>1.1)s.rad=Math.max(s.rad,Math.hypot(b.rx,b.ry)+Math.max(b.ax,b.ay));
   s.rad0=s.rad;s.oro=oro;s.life*=s.mini?(0.8+0.4*env.moist):(0.6+0.8*env.moist)*env.lifeM;if(NATF){s.nat=1;s.life*=s.mini?1.3:1.6}if(s.mini){s.jx=R(-.1,.1)/PX;s.jy=R(-.1,.1)/PX}s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
   s.hailRoll=s.variant==='lp'?R(0,0.5):rnd();
-  storms.push(s);return s;
+  s.t0=simT;DAY.born++;storms.push(s);return s;
 }
 
 /* ---------- field ---------- */
@@ -1897,11 +1907,11 @@ function step(dt,rdt=0){
       if(rnd()<env.inst*0.95*(0.6+0.8*env.sev)){const fw=R(-6,10)*env.size/PX,side=R(16,28)*env.size/PX*(s.type==='super'||rnd()<.7?1:-1);
         NATF=s.nat?1:0;const ch=spawn(!s.scen&&env.sev>0.8&&rnd()<0.15?'super':env.inst>0.65&&rnd()<0.35?'storm':'shower',s.x+fw*s.hx-side*s.hy,s.y+fw*s.hy+side*s.hx);NATF=0;
         if(ch&&s.scen){ch.scen=1;ch.bornT=simT;ch.fcBoost=s.fcBoost}}}
-    if(rdt>0&&layers.light&&hailOK(s))for(const b of s.blobs)if(b.g>1.1&&b.Pe>=60){let n=(b.Pe-58)*0.02*rdt*(0.6+0.4*Math.sqrt(speed));while(n>0){if(rnd()<n){const a=R(0,6.28),r=R(0,Math.max(b.ax,b.ay)*0.5),x=b.cx+Math.cos(a)*r,y=b.cy+Math.sin(a)*r;if(x>=0&&y>=0&&x<W&&y<H){const hs=hailSizeAt((y|0)*W+(x|0));if(hs>0)hailMk.push({x,y,lt:liveT,hs})}}n-=1}}
+    if(rdt>0&&layers.light&&hailOK(s))for(const b of s.blobs)if(b.g>1.1&&b.Pe>=60){let n=(b.Pe-58)*0.02*rdt*(0.6+0.4*Math.sqrt(speed));while(n>0){if(rnd()<n){const a=R(0,6.28),r=R(0,Math.max(b.ax,b.ay)*0.5),x=b.cx+Math.cos(a)*r,y=b.cy+Math.sin(a)*r;if(x>=0&&y>=0&&x<W&&y<H){const hs=hailSizeAt((y|0)*W+(x|0));if(hs>0)hailMk.push({x,y,lt:liveT,hs}),hs>DAY.hail&&(DAY.hail=hs)}}n-=1}}
     // lightning jump: flashes follow the updraft — a cell that is strengthening (echo rising) produces a burst of lightning,
     // a weakening one goes quiet (Schultz et al. 2009; Gatlin 2006). Lightning is a sign of intensification, not its cause.
     for(const b of s.blobs)if(b.g>1.1){const g=b.lastPe!=null&&dt>0?(b.Pe-b.lastPe)/dt:0;b.lastPe=b.Pe;b.grw=(b.grw||0)*0.85+clamp(g,-3,3)*0.15}
-    if(rdt>0)for(const b of s.blobs)if(b.g>1.1&&b.Pe>44){const gw=b.grw||0;let n=(Math.max(0,b.Pe-50)*(s.mega?0.9:gw<0?0.3:0.55)+Math.max(0,gw)*(b.Pe-44)*3.5)*0.022*env.light*(s.mega?1.8:s.mini?1.7:1)*rdt*(0.6+0.4*Math.sqrt(speed));while(n>0){if(rnd()<n){const a=R(0,6.28),r=R(0,Math.max(b.ax,b.ay)*0.8);const k={x:b.cx+Math.cos(a)*r,y:b.cy+Math.sin(a)*r,t:simT,lt:liveT,rot:R(-.35,.35)};strikes.push(k);boltLog.push(simT);sndThunderAt(k.x,k.y,s.megaT,s.mini);if(navigator.vibrate&&window.__ug&&document.body.classList.contains('mob')&&product!=='fcst'&&liveT-(window.__vb||-9)>1.2){const sp=sndPoint();if(sp&&Math.hypot(sp.x-k.x,sp.y-k.y)<12){window.__vb=liveT;try{navigator.vibrate(Math.hypot(sp.x-k.x,sp.y-k.y)<5?[40,60,25]:25)}catch(e){}}}
+    if(rdt>0)for(const b of s.blobs)if(b.g>1.1&&b.Pe>44){const gw=b.grw||0;let n=(Math.max(0,b.Pe-50)*(s.mega?0.9:gw<0?0.3:0.55)+Math.max(0,gw)*(b.Pe-44)*3.5)*0.022*env.light*(s.mega?1.8:s.mini?1.7:1)*rdt*(0.6+0.4*Math.sqrt(speed));while(n>0){if(rnd()<n){const a=R(0,6.28),r=R(0,Math.max(b.ax,b.ay)*0.8);const k={x:b.cx+Math.cos(a)*r,y:b.cy+Math.sin(a)*r,t:simT,lt:liveT,rot:R(-.35,.35)};strikes.push(k);boltLog.push(simT);DAY.st++;sndThunderAt(k.x,k.y,s.megaT,s.mini);if(navigator.vibrate&&window.__ug&&document.body.classList.contains('mob')&&product!=='fcst'&&liveT-(window.__vb||-9)>1.2){const sp=sndPoint();if(sp&&Math.hypot(sp.x-k.x,sp.y-k.y)<12){window.__vb=liveT;try{navigator.vibrate(Math.hypot(sp.x-k.x,sp.y-k.y)<5?[40,60,25]:25)}catch(e){}}}
       for(const c of CITIES)if(Math.hypot(c.x-k.x,c.y-k.y)<9&&simT-(c.al.bolt??-99)>30){c.al.bolt=simT;alert(`صواعق رعدية قرب ${c.n}`,'warn')}}n-=1}}
   }
   storms=storms.filter(s=>((s.age<s.life*1.2&&s.killF>0)||s.vis!==false)&&s.x>-80&&s.x<W+80&&s.y>-80&&s.y<H+80);
@@ -1914,7 +1924,7 @@ function step(dt,rdt=0){
   if(rdt===0||(radarFps<0?scanNo!==fieldScan:fieldClock>=(radarFps?1/radarFps:document.body.classList.contains('mob')?1/20:1/24))){fieldScan=scanNo;fieldClock=0;computeField(pendDt,1);fieldDirty=true;rpRecord();
   const f=pendDt/60;pendDt=0;
   {const Q=ATM.Q,aw=ATM.w,ah=ATM.h;for(let y=0;y<H;y++){const r=y*W,qr=Math.min(ah-1,(y/MG)|0)*aw;for(let x=0;x<W;x++){const i=r+x,v=DBZ[i];if(v<18)continue;if(v>=58){const hs=hailSizeAt(i);if(hs>HACC[i])HACC[i]=hs}
-    const k=v>=70?140:(v*2)|0,w=RR_HUM[k];ACC[i]+=RR_LUT[k]*f*(w>0?Math.pow(humFac(Q[qr+Math.min(aw-1,(x/MG)|0)]),w):1)}}}
+    if(v>DAY.mx)DAY.mx=v;const k=v>=70?140:(v*2)|0,w=RR_HUM[k];ACC[i]+=RR_LUT[k]*f*(w>0?Math.pow(humFac(Q[qr+Math.min(aw-1,(x/MG)|0)]),w):1)}}}
   for(const c of CITIES){const v=DBZ[c.i];c.rate=rainAt(v,c.x,c.y);const before=c.total;c.total+=c.rate*f;
     {const hs=hailSizeAt(c.i);if(hs>=0.5&&simT-(c.al.hail??-99)>30){c.al.hail=simT;c.hail++;const hc=hailCat(hs);alert(`${hc[2]} على ${c.n}: حبات ≈ ${hs.toFixed(1)} سم (${hc[3]})`,'bad')}}
     if(c.rate>=40&&simT-(c.al.heavy??-99)>40){c.al.heavy=simT;alert(`أمطار غزيرة على ${c.n}: ${c.rate.toFixed(0)} مم/س`,'warn')}
@@ -1934,7 +1944,29 @@ const dayIdx=(tm=START_H*60+simT)=>Math.floor(tm/1440);
 function simDate(tm){if(!SD.m)SD.m=env.month||4;return new Date(SD.y,SD.m-1,SD.d+dayIdx(tm)-SD.base)}
 function dateStr(tm){const d=simDate(tm);return WDAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]}
 function dateRebase(m,d){const cur=simDate();SD.y=cur.getFullYear();SD.m=m;SD.d=Math.min(28,d??cur.getDate());SD.base=dayIdx()}
-function dateTick(){const d=simDate();if(d.getMonth()+1!==env.month&&!scen.world){env.month=d.getMonth()+1;env.season=MONTH_SEASON[env.month-1];const ms=document.getElementById('monthSel');if(ms)ms.value=String(env.month);if(ATM.Q)atmDiag();renderLegend();toast('دخل شهر '+MONTHS[env.month-1]+' · '+seasonOf().n)}}
+function dayStats(){const rows=CITIES.map(c=>({n:c.n,v:c.total-(c.day0||0)})).filter(o=>o.v>=0.1).sort((a,b)=>b.v-a.v);return{rows,wet:rows.filter(o=>o.v>=1).length}}
+function daySummaryHTML(title,tm,news){const{rows,wet}=dayStats(),hc=DAY.hail>0?hailCat(DAY.hail):null,tag=k=>news&&news[k]?' <b style="color:var(--warn,#ffb547)">· رقم قياسي جديد</b>':'';
+  return `<h3>${title}</h3><p style="color:var(--muted);margin-top:-6px">${dateStr(tm)} · ${REGION.name}</p>
+  <ul style="line-height:2">${rows.length?`<li>أعلى المدن مطراً: ${rows.slice(0,3).map(o=>`<b>${o.n}</b> ${o.v.toFixed(1)} مم`).join('، ')}${tag('rain')}</li><li>مدن جاها مطر (1 مم وأكثر): <b>${wet}</b> من ${CITIES.length}</li>`:'<li>ما نزل مطر على أي مدينة</li>'}
+  <li>الصواعق: <b>${DAY.st}</b>${tag('st')}</li><li>أكبر برد: ${hc?`<b>${DAY.hail.toFixed(1)} سم</b> (${hc[3]})`:'لا يوجد'}${tag('hail')}</li>
+  <li>أقوى سحابة: ${DAY.mx>=18?`<b>${DAY.mx.toFixed(0)} dBZ</b>`:'—'}${tag('dbz')}</li><li>السحب اللي تكوّنت: <b>${DAY.born}</b></li>${DAY.life>0?`<li>أطول سحابة عمراً: <b>${(DAY.life/60).toFixed(1)} ساعة</b>${tag('life')}</li>`:''}</ul>`}
+function recordsHTML(){const r=(k,f)=>REC[k]?`<b>${f(REC[k].v)}</b> <small style="color:var(--muted)">· ${REC[k].what}</small>`:'—';
+  return `<h3>الأرقام القياسية</h3><p style="color:var(--muted);margin-top:-6px">أعلى ما سجّلته في كل جلساتك (تتحدث عند نهاية كل يوم)</p><ul style="line-height:2.1">
+  <li>أعلى مطر في يوم على مدينة: ${r('rain',v=>v.toFixed(1)+' مم')}</li><li>أكثر صواعق في يوم: ${r('st',v=>v)}</li><li>أكبر برد: ${r('hail',v=>v.toFixed(1)+' سم')}</li>
+  <li>أقوى سحابة: ${r('dbz',v=>v.toFixed(0)+' dBZ')}</li><li>أطول سحابة عمراً: ${r('life',v=>(v/60).toFixed(1)+' ساعة')}</li></ul>`}
+function showRecords(){showModal(recordsHTML()+`<div class="row"><button class="btn" id="rcOk">تم</button><button class="btn ghost" id="rcClr">مسح الأرقام</button></div>`);$('rcOk').onclick=hideModal;$('rcClr').onclick=()=>{REC={};recSave();showRecords()}}
+function showDay(){showModal(daySummaryHTML('ملخص اليوم حتى الآن',START_H*60+simT)+`<div class="row"><button class="btn" id="dyOk">تم</button><button class="btn ghost" id="dyRec">الأرقام القياسية</button></div>`);$('dyOk').onclick=hideModal;$('dyRec').onclick=showRecords}
+function dayStart(){DAY.st=0;DAY.hail=0;DAY.mx=0;DAY.born=0;DAY.life=0;DAY.idx=dayIdx();for(const c of CITIES)c.day0=c.total}
+// at midnight: close the day, update the records, and show the summary (free play only; can be switched off in the summary itself)
+function dayRoll(){if(DAY.idx==null||scen.world){if(DAY.idx==null)dayStart();return}
+  for(const s of storms)if(!s.kill&&s.vis&&s.t0!=null){const d=simT-s.t0;if(d>DAY.life)DAY.life=d}
+  const di=dayIdx();if(di===DAY.idx)return;const tm=(DAY.idx+1)*1440-1,where=dateStr(tm)+' · '+REGION.name,{rows}=dayStats(),news={};
+  if(rows.length&&recTry('rain',rows[0].v,rows[0].n+' · '+where))news.rain=1;if(recTry('st',DAY.st,where))news.st=1;if(recTry('hail',DAY.hail,where))news.hail=1;if(recTry('dbz',DAY.mx,where))news.dbz=1;if(recTry('life',DAY.life,where))news.life=1;recSave();
+  let auto=true;try{auto=localStorage.getItem('stormlab-daysum')!=='0'}catch(e){}
+  if(auto&&!mission.on&&modal.hidden&&!RP.on&&(rows.length||DAY.st>0)){showModal(daySummaryHTML('ملخص اليوم',tm,news)+`<div class="row"><button class="btn" id="dyOk">متابعة</button><button class="btn ghost" id="dyRec">الأرقام القياسية</button><button class="btn ghost" id="dyOff">لا تعرضه تلقائياً</button></div>`);
+    $('dyOk').onclick=hideModal;$('dyRec').onclick=showRecords;$('dyOff').onclick=()=>{try{localStorage.setItem('stormlab-daysum','0')}catch(e){}hideModal();toast('تقدر تشوف الملخص من زر "ملخص اليوم" تحت الطبقات')}}
+  dayStart()}
+function dateTick(){dayRoll();const d=simDate();if(d.getMonth()+1!==env.month&&!scen.world){env.month=d.getMonth()+1;env.season=MONTH_SEASON[env.month-1];const ms=document.getElementById('monthSel');if(ms)ms.value=String(env.month);if(ATM.Q)atmDiag();renderLegend();toast('دخل شهر '+MONTHS[env.month-1]+' · '+seasonOf().n)}}
 const hhmm=tm=>{const m=((Math.floor(tm)%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
 // Replay: the radar picture is recorded every 5 simulated minutes and the last full day is kept, so the time bar can run
 // the past 24 hours backwards and forwards like a recorded video. While replaying, the simulation itself waits.
@@ -2154,6 +2186,11 @@ function draw(now){
   // radar site
   for(const RD of RADARS){const[x,y]=toScreen(RD.x,RD.y);ctx.fillStyle='#8fd8ff';ctx.beginPath();ctx.moveTo(x,y-6);ctx.lineTo(x+5,y);ctx.lineTo(x,y+6);ctx.lineTo(x-5,y);ctx.closePath();ctx.fill();ctx.strokeStyle='#04070a';ctx.lineWidth=1.5;ctx.stroke()}
   // storm tracks
+  // automatic forecast: where each significant storm is expected to be in one hour (its present motion carried forward, widening with uncertainty)
+  if(layers.fc&&product==='ref'&&!RP.on)for(const w of warnStorms()){const[ax,ay]=toScreen(w.cx,w.cy),[bx,by]=toScreen(w.cx+w.vx*60,w.cy+w.vy*60),r0=Math.max(6,w.r*s),r1=r0*1.3+8,L=Math.hypot(bx-ax,by-ay),col=WARN_C[w.mx>=58?3:w.mx>=50?2:1];
+    ctx.beginPath();if(L>3){const dx=(bx-ax)/L,dy=(by-ay)/L,an=Math.atan2(dy,dx);ctx.moveTo(ax-dy*r0,ay+dx*r0);ctx.lineTo(bx-dy*r1,by+dx*r1);ctx.arc(bx,by,r1,an+Math.PI/2,an-Math.PI/2,true);ctx.lineTo(ax+dy*r0,ay-dx*r0);ctx.closePath()}else ctx.arc(bx,by,r1,0,Math.PI*2);
+    ctx.fillStyle=col+'22';ctx.fill();ctx.setLineDash([6,5]);ctx.lineWidth=1.6;ctx.strokeStyle=col+'cc';ctx.stroke();ctx.setLineDash([]);
+    label('بعد ساعة',bx,by,'600 10.5px "IBM Plex Sans Arabic",sans-serif',col)}
   if(layers.tracks&&product==='ref'&&!RP.on)for(const st of storms){if(st.kill||st.trail)continue;let mx=0,cx=0,cy=0,n=0;
     for(const b of st.blobs)if(b.g>1.1&&b.Pe>0){mx=Math.max(mx,b.Pe);cx+=b.cx;cy+=b.cy;n++}
     if(mx<42||!n)continue;cx/=n;cy/=n;const[x0,y0]=toScreen(cx,cy),[x1,y1]=toScreen(cx+st.vx*60,cy+st.vy*60);
@@ -2328,10 +2365,10 @@ $('natural').addEventListener('change',e=>{env.natural=e.target.checked});
   dial.addEventListener('pointerdown',e=>{on=true;dial.setPointerCapture(e.pointerId);set(e)});
   dial.addEventListener('pointermove',e=>{if(on)set(e)});dial.addEventListener('pointerup',()=>on=false);
   dial.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowDown'){env.windFrom=(env.windFrom+350)%360;syncEnv();e.preventDefault()}if(e.key==='ArrowRight'||e.key==='ArrowUp'){env.windFrom=(env.windFrom+10)%360;syncEnv();e.preventDefault()}});}
-const LMAP={lMm:'mm',lMoist:'moist',lStreets:'streets',lTracks:'tracks',lRings:'rings',lSweep:'sweep',lLight:'light',lClutter:'clutter',lSmooth:'smooth',lLabels:'labels'};
+const LMAP={lFc:'fc',lMm:'mm',lMoist:'moist',lStreets:'streets',lTracks:'tracks',lRings:'rings',lSweep:'sweep',lLight:'light',lClutter:'clutter',lSmooth:'smooth',lLabels:'labels'};
 for(const[id,k]of Object.entries(LMAP)){$(id).checked=layers[k];$(id).addEventListener('change',e=>{layers[k]=e.target.checked;stDirty=true;if(k==='moist'){moistT=0;renderLegend()}})}
 $('bClear').addEventListener('click',()=>{storms.forEach(s=>s.kill=true);MEM.fadeT=simT+30;toast('تتبدد السحب الآن')});
-$('bReset').addEventListener('click',()=>{if(mission.on){toast('لا يمكن التصفير أثناء المهمة');return}ACC.fill(0);HACC.fill(0);CITIES.forEach(c=>{c.total=0;c.hail=0});toast('تم تصفير مجاميع الأمطار')});
+$('bReset').addEventListener('click',()=>{DAY.idx=null;if(mission.on){toast('لا يمكن التصفير أثناء المهمة');return}ACC.fill(0);HACC.fill(0);CITIES.forEach(c=>{c.total=0;c.hail=0});toast('تم تصفير مجاميع الأمطار')});
 $('bFit').addEventListener('click',fit);
 $('wideBtn').addEventListener('click',()=>{const on=document.body.classList.toggle('wide');$('wideBtn').setAttribute('aria-pressed',on);$('wideBtn').firstChild.textContent=on?'إظهار اللوحة':'توسيع الخريطة'});
 
@@ -2413,7 +2450,7 @@ function pickSmall(){
   sheet.querySelectorAll('.mapc').forEach(b=>b.onclick=()=>{hideModal();switchRegion(b.dataset.k)});$('mclose').onclick=hideModal;
 }
 $('mapSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.body.classList.remove('sheet');if(b.dataset.g==='nat'){if(regionKey!=='ksa')switchRegion('ksa');return}if(b.dataset.g==='big')pickBig();else pickSmall()});
-function resetWorld(){if(scen.running||scen.world){scen.running=false;scen.world=false;scen.editing=false;scen.main=null;scenUI()}rpReset();{const cd=simDate();SD.y=cd.getFullYear();SD.m=cd.getMonth()+1;SD.d=Math.min(28,cd.getDate());SD.base=Math.floor(START_H*60/1440)}memClear();storms=[];strikes=[];hailMk=[];boltLog=[];alerts=[];ACC.fill(0);HACC.fill(0);CITIES.forEach(c=>{c.total=0;c.rate=0;c.hail=0;c.al={}});simT=0;scanNo=1;if(ATM.Q)atmReset();renderAlerts();computeField()}
+function resetWorld(){if(scen.running||scen.world){scen.running=false;scen.world=false;scen.editing=false;scen.main=null;scenUI()}DAY.idx=null;rpReset();{const cd=simDate();SD.y=cd.getFullYear();SD.m=cd.getMonth()+1;SD.d=Math.min(28,cd.getDate());SD.base=Math.floor(START_H*60/1440)}memClear();storms=[];strikes=[];hailMk=[];boltLog=[];alerts=[];ACC.fill(0);HACC.fill(0);CITIES.forEach(c=>{c.total=0;c.rate=0;c.hail=0;c.al={}});simT=0;scanNo=1;if(ATM.Q)atmReset();renderAlerts();computeField()}
 function briefMission(){
   resetWorld();mode='mission';mission.on=true;mission.done=false;mission.budget=REGION.budget||24;mission.elapsed=0;
   env.windFrom=Math.round(R(190,300));env.windSpd=Math.round(R(15,35));env.inst=+R(.45,.75).toFixed(2);env.moist=+R(.45,.7).toFixed(2);
@@ -2469,8 +2506,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=94,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=95,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:95,title:'ملخص اليوم، حفظ الجلسة، التوقع الآلي، الأرقام القياسية',add:['ملخص اليوم: عند منتصف الليل يطلع لك أعلى المدن مطراً، عدد الصواعق، أكبر برد، أقوى سحابة، وعدد السحب (وتقدر تشوفه أي وقت من زر تحت الطبقات)','حفظ الجلسة: المحاكي يحفظ جلستك كل دقيقة، ولما تفتحه مرة ثانية تلقى زر "متابعة جلستي السابقة" في شاشة الترحيب','توقع آلي: خيار "توقع السحب بعد ساعة" في الطبقات يرسم وين متوقع توصل كل سحابة قوية خلال ساعة','الأرقام القياسية: أعلى مطر يومي، أكثر صواعق، أكبر برد، أقوى سحابة، وأطول سحابة عمراً، محفوظة لك بين الجلسات']},
   {v:94,title:'خريطتين جديدتين وسحب تلقائية أطول',add:['خريطة كبيرة جديدة: "المنطقة الشرقية والخليج" — الدمام والجبيل والأحساء وحفر الباطن، إلى الكويت والبحرين وقطر، بثلاثة رادارات','خريطة كبيرة جديدة: "المنطقة الجنوبية" — أبها والباحة وجازان ونجران وبيشة والقنفذة إلى الطائف، بأربعة رادارات','الخريطتين بسواحل وتضاريس حقيقية'],fix:['السحب التلقائية (اللي تطلع لحالها) صارت تعيش أطول بـ60% تقريباً، والسحب اللي ترسمها أنت ما تغيّرت']},
   {v:93,title:'سرعة الإعادة',add:['سرعة الإعادة في شريط الوقت: ×1 ×2 ×4 ×8 ×16 ×32','الإعادة صارت تحفظ آخر يوم كامل بدقة ثابتة (صورة كل 5 دقائق) بدل ما تتباعد الصور القديمة'],fix:['جودة صورة الإعادة كانت أقل من الصورة المباشرة: الحين تتسجل بنفس دقة الرادار بالضبط في الخرائط الصغيرة والساحل الغربي (ونصف الدقة مع تنعيم في خريطة المملكة ومنطقة الرياض والقصيم)، ومعها ألوان البرد','شلنا خانة الساعة ورقم المسح من فوق لأن شريط الوقت يعرض التاريخ والساعة']},
   {v:92,title:'التاريخ وشريط الوقت',add:['المحاكي صار له تاريخ: اليوم والتاريخ والشهر مكتوبين فوق مع الساعة، والأيام تمشي','لما يدخل شهر جديد يتغير الموسم لحاله','شريط الوقت فوق الخريطة: اسحبه ورا لين بداية المحاكاة وشوف صورة الرادار مثل فيديو مسجل','زر ◀◀ يشغّل السحب بالعكس، و▶ للأمام، و"مباشر" يرجعك للوقت الحالي (المحاكاة توقف وقت الإعادة وتكمل بعدها)','تقدر تسوي زوم لبرّا الخريطة أكثر بثلاث مرات']},
@@ -2519,7 +2557,8 @@ function changelogHTML(){const c=CHANGELOG[0],li=a=>a.map(t=>`<li>${t}</li>`).jo
   return `<div class="cl"><div class="cl-h"><b>ما الجديد في النسخة ${verLabel(c.v)}</b><span>${c.title}</span></div>${c.fix?`<div class="cl-s">تم إصلاح</div><ul>${li(c.fix)}</ul>`:''}${c.add?`<div class="cl-s">الإضافات</div><ul>${li(c.add)}</ul>`:''}
   <details><summary>التحديثات السابقة</summary>${CHANGELOG.slice(1).map(o=>`<div class="cl-o"><b>النسخة ${verLabel(o.v)} · ${o.title}</b><ul>${li([...(o.fix||[]),...(o.add||[])])}</ul></div>`).join('')}</details></div>`}
 function showWelcome(){showModal(`<h3>مختبر العواصف <small style="font-size:12px;color:var(--muted);font-weight:400">النسخة ${verLabel(APP_VERSION)}</small></h3><p>تم إنشاء هذا المحاكي في المملكة العربية السعودية بمساعدة الذكاء الاصطناعي.</p>${changelogHTML()}<p>نستقبل أفكاركم واقتراحاتكم لتطوير المحاكي على ديسكورد${DISCORD_URL?'':' (الرابط قريباً)'}.</p><div class="row"><button class="btn" id="welcomeGo">ابدأ</button>${DISCORD_URL?`<a class="btn ghost" href="${DISCORD_URL}" target="_blank" rel="noopener">انضم إلى ديسكورد</a>`:''}</div>`);
-  $('welcomeGo').onclick=()=>{hideModal();if(!SND.mute)sndInit()}}
+  $('welcomeGo').onclick=()=>{hideModal();if(!SND.mute)sndInit()};
+  IDB.get('session').then(sv=>{const go=document.getElementById('welcomeGo');if(sv&&go&&REGIONS[sv.region]){const b=document.createElement('button');b.className='btn ghost';b.id='welcomeRes';b.textContent='متابعة جلستي السابقة · '+sv.label;b.onclick=()=>{if(!SND.mute)sndInit();sessLoad()};go.after(b)}}).catch(()=>{})}
 DEM_READY.then(()=>{loadRegion('big');stInit();renderLegend();setTool(document.body.classList.contains('mob')?'pan':'storm');resize();startFree(true);renderCities();requestAnimationFrame(frame);if(!window.__NOWELCOME)showWelcome()});
 // ---------- phone layout: full-screen map, thumb toolbar, settings in a pull-up sheet ----------
 const MOBQ=matchMedia('(max-width:760px), (pointer:coarse) and (max-height:520px)'),mob={on:false,home:new Map()};
@@ -2546,6 +2585,23 @@ document.querySelector('#scen .sc-h').addEventListener('click',()=>{if(mob.on)$(
 if(document.fullscreenEnabled){$('mFull').hidden=false;$('mFull').addEventListener('click',()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen().catch(()=>{});mSheet(false)})}
 $('toMob').addEventListener('click',()=>setUi('mob'));
 // settings: using the graphics card is a switch of the desktop program itself (it restarts to apply it)
+// Session save: the whole state of free play (clouds, rain totals, atmosphere, date) is stored on this device every minute and when the
+// page is hidden; "resume" on the welcome screen (or the button under the layers) brings it back exactly.
+const IDB={open(){return new Promise((ok,no)=>{try{const r=indexedDB.open('stormlab',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}})},
+  async set(k,v){const d=await this.open();return new Promise((ok,no)=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>{d.close();ok()};t.onerror=()=>{d.close();no(t.error)}})},
+  async get(k){const d=await this.open();return new Promise((ok,no)=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>{d.close();ok(q.result)};q.onerror=()=>{d.close();no(q.error)}})}};
+function sessSnap(){return{v:APP_VERSION,label:dateStr()+' · '+clockStr()+' · '+REGION.name,region:regionKey,simT,START_H,SD:{...SD},env:{...env},storms:JSON.stringify(storms),idc,scanNo,acc:ACC.slice(),hacc:HACC.slice(),
+  mem:MEM.M?{M:MEM.M.slice(),C:MEM.C.slice(),o:[MEM.ox,MEM.oy,MEM.tx,MEM.ty]}:null,atm:ATM.Q?{Q:ATM.Q.slice(),CP:ATM.CP.slice(),SN:ATM.SN.slice()}:null,cities:CITIES.map(c=>[c.n,c.total,c.hail,c.day0||0]),day:{...DAY}}}
+async function sessSave(manual){if(mission.on||scen.world||RP.on||!storms){if(manual)toast('الحفظ يشتغل في اللعب الحر فقط');return}try{await IDB.set('session',sessSnap());if(manual)toast('تم حفظ الجلسة: '+dateStr()+' · '+clockStr())}catch(e){if(manual)toast('تعذّر الحفظ على هذا الجهاز')}}
+async function sessLoad(){let sv;try{sv=await IDB.get('session')}catch(e){}if(!sv||!REGIONS[sv.region]){toast('ما فيه جلسة محفوظة');return false}
+  if(mission.on)startFree(false);if(sv.region!==regionKey)switchRegion(sv.region);else resetWorld();hideModal();
+  Object.assign(env,sv.env);START_H=sv.START_H;simT=sv.simT;Object.assign(SD,sv.SD);try{storms=JSON.parse(sv.storms)}catch(e){storms=[]}idc=sv.idc||0;scanNo=sv.scanNo||1;
+  if(sv.acc&&sv.acc.length===ACC.length){ACC.set(sv.acc);HACC.set(sv.hacc)}memOk();if(sv.mem&&sv.mem.M.length===MEM.M.length){MEM.M.set(sv.mem.M);MEM.C.set(sv.mem.C);[MEM.ox,MEM.oy,MEM.tx,MEM.ty]=sv.mem.o}
+  atmOk();if(sv.atm&&sv.atm.Q.length===ATM.Q.length){ATM.Q.set(sv.atm.Q);ATM.CP.set(sv.atm.CP);ATM.SN.set(sv.atm.SN)}atmDiag();
+  for(const[n,t,h,d0]of sv.cities){const c=CITIES.find(q=>q.n===n);if(c){c.total=t;c.hail=h;c.day0=d0}}Object.assign(DAY,sv.day);
+  strikes=[];hailMk=[];rpReset();buildRR();segSet('presetSeg','k','');setBase();syncEnv();{const ms=document.getElementById('monthSel');if(ms)ms.value=String(env.month||4)}$('natural').checked=env.natural;
+  computeField();fieldDirty=true;renderLegend();renderCities();paused=false;syncSpeed();toast('رجعنا لجلستك: '+sv.label);return true}
+setInterval(()=>{if(!paused&&simT>5)sessSave(false)},60000);document.addEventListener('visibilitychange',()=>{if(document.hidden)sessSave(false)});addEventListener('pagehide',()=>sessSave(false));
 // Settings window: the graphics-card switch, plus the map/radar look and the sound settings (moved here from the side panel to free its space).
 // On the phone layout these two stay in the side panel, where the phone menus expect them.
 function placeSet(){const mobL=document.body.classList.contains('mob'),look=$('secLook'),snd=$('secSnd');if(mobL){const at=$('secAtm');if(look.parentNode!==at.parentNode){at.parentNode.insertBefore(look,at);at.parentNode.insertBefore(snd,at)}}else if(look.parentNode!==$('setBody')){$('setBody').appendChild(look);$('setBody').appendChild(snd)}}
@@ -2553,6 +2609,7 @@ placeSet();new MutationObserver(placeSet).observe(document.body,{attributes:true
 // rain statistics list: opens and closes like a menu (remembered)
 {const tg=$('cityTog'),setC=o=>{tg.setAttribute('aria-expanded',o);$('cities').hidden=!o;try{localStorage.setItem('stormlab-cities',o?'1':'0')}catch(e){}};let o=true;try{o=localStorage.getItem('stormlab-cities')!=='0'}catch(e){}setC(o);
   const fl=()=>setC(tg.getAttribute('aria-expanded')!=='true');tg.addEventListener('click',fl);tg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fl()}})}
+$('bDay').addEventListener('click',showDay);$('bRec').addEventListener('click',showRecords);$('bSave').addEventListener('click',()=>sessSave(true));$('bLoad').addEventListener('click',()=>sessLoad());
 $('tlBar').addEventListener('input',e=>{const i=+e.target.value;RP.play=0;if(i>=RP.fr.length){if(RP.on)rpLive()}else if(RP.on)rpShow(i);else rpEnter(i)});
 $('tlRev').addEventListener('click',()=>{if(!RP.on&&!rpEnter(RP.fr.length-1))return;RP.play=RP.play<0?0:-1;RP.acc=0;tlSync()});
 $('tlPlay').addEventListener('click',()=>{if(!RP.on)return;RP.play=RP.play>0?0:1;RP.acc=0;tlSync()});
