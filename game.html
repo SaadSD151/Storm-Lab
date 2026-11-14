@@ -765,6 +765,8 @@ function samp(t,x,y){const x0=Math.floor(x),y0=Math.floor(y),tx=x-x0,ty=y-y0;
 /* ---------- map ---------- */
 const COAST_WEST=[[27.6,35.45],[27.0,35.85],[26.6,36.15],[26.24,36.45],[25.9,36.62],[25.7,36.72],[25.4,36.92],[25.2,37.1],[25.02,37.25],[24.8,37.45],[24.6,37.62],[24.35,37.84],[24.09,38.06],[23.85,38.3],[23.55,38.52],[23.25,38.74],[23.0,38.9],[22.8,39.02],[22.2,39.08],[21.7,39.12],[21.45,39.15],[21.0,39.3],[20.5,39.55],[20.0,40.0]];
 const CITY_DB={
+  'الكويت':[29.376,47.977],'الجهراء':[29.337,47.658],'الأحمدي':[29.077,48.084],'الدوحة':[25.286,51.533],'المنامة':[26.228,50.586],'رأس تنورة':[26.707,50.062],'سلوى':[24.730,50.750],'العقير':[25.643,50.215],'قرية العليا':[27.500,47.700],'الخور':[25.684,51.506],
+  'النماص':[19.120,42.130],'تثليث':[19.520,43.500],'ظهران الجنوب':[17.660,43.610],'سراة عبيدة':[18.090,43.140],'بلجرشي':[19.860,41.560],'المخواة':[19.780,41.430],'رجال ألمع':[18.210,42.270],'الدرب':[17.720,42.250],'صامطة':[16.600,42.940],'تنومة':[18.920,42.170],'بارق':[18.930,41.930],
   'أملج':[25.02,37.27],'العيص':[25.06,38.11],'ينبع':[24.09,38.06],'ينبع النخل':[24.33,38.62],'بدر':[23.78,38.79],'المدينة المنورة':[24.47,39.61],'رابغ':[22.80,39.03],
   'خيبر':[25.70,39.29],'الحناكية':[24.88,40.51],'مستورة':[23.10,38.83],'الوجه':[26.24,36.50],'العلا':[26.61,37.92],'خليص':[22.14,39.33],'جدة':[21.54,39.20],'مكة المكرمة':[21.42,39.83],
   'ثول':[22.28,39.12],'الجموم':[21.62,39.70],'الطائف':[21.27,40.42],'بحرة':[21.40,39.45],
@@ -821,6 +823,20 @@ const REGIONS={
     labels:[['النفود الكبير',41.0,28.6,0,6,'sand'],['جبل أجا',41.25,27.68,-0.55,4,'land'],['جبل سلمى',42.3,27.02,-0.4,3,'land'],['وادي السرحان',38.55,30.62,-0.6,5,'land'],['حرة الحرة',38.2,31.15,0,4,'land'],['الحماد',40.4,31.45,0,5,'land'],['الدهناء',44.1,27.75,-0.95,4,'sand'],['وادي الباطن',45.85,28.78,-0.68,4,'land'],['وادي الرمة',42.75,26.3,0.12,5,'land'],['نفود الثويرات',44.42,26.75,1.45,4,'sand']],
     home:null,wind:240,
     seed:[['storm',43.4,26.2,20],['shower',43.8,25.8,10],['strat',41.6,28.9,60],['storm',41.0,30.6,18],['shower',45.6,28.6,12],['shower',38.6,29.4,12],['storm',41.9,27.4,14]]},
+  east:{name:'المنطقة الشرقية والخليج',kind:'big',lon0:45.7,lat0:30.25,w:640,h:716,ms:1,coast:null,terrain:'ksa',prov:null,natElev:0.12,budget:34,natMul:1.6,
+    radars:[['الدمام','DMM',26.47,49.80],['الأحساء','HOF',25.30,49.48],['حفر الباطن','HFR',28.33,46.12]],
+    mission:['الدمام','الجبيل','الأحساء','الخفجي','حفر الباطن','النعيرية','بقيق'],
+    extra:['الخبر','الظهران','القطيف','رأس تنورة','حرض','قرية العليا','العقير','سلوى','القيصومة','الكويت','الجهراء','الأحمدي','المنامة','الدوحة','الخور'],roads:[],
+    labels:[['الخليج العربي',50.75,27.75,-0.75,8,'sea'],['الدهناء',47.25,26.2,-1.15,5,'sand'],['الصمان',47.7,27.3,0,5,'land'],['الجافورة',49.85,24.55,0,4,'sand'],['وادي الباطن',46.5,28.75,-0.68,4,'land']],
+    home:null,wind:300,
+    seed:[['storm',49.4,26.6,20],['strat',48.2,28.3,60],['shower',49.6,25.2,12],['storm',47.2,27.4,15],['shower',50.6,25.9,10],['shower',46.6,29.2,10]]},
+  south:{name:'المنطقة الجنوبية',kind:'big',lon0:39.7,lat0:21.75,w:606,h:612,ms:1,coast:null,terrain:'ksa',prov:null,natElev:0.36,budget:34,natMul:1.6,
+    radars:[['أبها','AHB',18.24,42.66],['جازان','GIZ',16.90,42.58],['نجران','EAM',17.61,44.42],['الطائف','TIF',21.48,40.54]],
+    mission:['أبها','الباحة','جازان','نجران','بيشة','القنفذة','خميس مشيط'],
+    extra:['محايل عسير','النماص','تنومة','بلجرشي','المخواة','رجال ألمع','سراة عبيدة','ظهران الجنوب','تثليث','صبيا','أبو عريش','صامطة','الدرب','بارق','الليث','تربة','رنية','الطائف'],roads:[],
+    labels:[['جبال السروات',42.55,18.95,-1.05,6,'land'],['تهامة',41.75,18.35,-1.05,4,'land'],['البحر الأحمر',40.6,18.3,-0.95,8,'sea'],['الربع الخالي',45.0,18.9,0,5,'sand']],
+    home:null,wind:240,
+    seed:[['storm',42.5,18.6,20],['storm',41.5,20.0,18],['shower',42.9,17.6,12],['shower',43.4,19.4,10],['strat',41.0,19.3,50],['shower',44.0,17.8,10]]},
   ksa:{name:'المملكة كاملة',kind:'nat',lon0:34.4,lat0:32.3,w:1081,h:894,px:2,ms:1,coast:null,terrain:'ksa',prov:null,natElev:0.3,budget:40,natMul:3,maxStorms:70,
     radars:[['الرياض','RUH',24.91,46.72],['جدة','JED',21.68,39.15],['المدينة','MED',24.55,39.70],['ينبع','YNB',24.14,38.06],['الطائف','TIF',21.48,40.54],['أبها','AHB',18.24,42.66],['جازان','GIZ',16.90,42.58],['نجران','EAM',17.61,44.42],['شرورة','SHW',17.47,47.12],['وادي الدواسر','WAE',20.50,45.20],
       ['القصيم','QSM',26.30,43.77],['حائل','HAL',27.44,41.69],['تبوك','TBK',28.37,36.62],['الوجه','EJH',26.20,36.48],['الجوف','JOF',29.79,40.10],['عرعر','ARR',30.90,41.14],['حفر الباطن','HFR',28.33,46.12],['الدمام','DMM',26.47,49.80],['الأحساء','HOF',25.30,49.48]],
@@ -1007,7 +1023,7 @@ function loadRegion(key){
   REGION=REGIONS[key];regionKey=key;
   PX=REGION.px||1;PKX=KX/PX;PKY=KY/PX;RANGE=250/PX;
   LON0=REGION.lon0;LAT0=REGION.lat0;W=REGION.w;H=REGION.h;N=W*H;MS=REGION.ms||2;STRIDE_AT=REGION.kind==='small'?1e9:22;
-  const nl=document.getElementById('natLabel');if(nl)nl.textContent=key==='riyadh'||key==='riyadhProv'?'عواصف تلقائية فوق جبل طويق':key==='ksa'?'عواصف تلقائية في كل المملكة حسب الرطوبة والتضاريس':key==='qassim'?'عواصف تلقائية فوق جبلي أجا وسلمى والمرتفعات':key==='jeddah'?'عواصف تلقائية فوق جبال السروات':'عواصف تلقائية فوق جبال الحجاز';
+  const nl=document.getElementById('natLabel');if(nl)nl.textContent=key==='east'?'عواصف تلقائية حسب الرطوبة ونسيم الخليج':key==='south'?'عواصف تلقائية فوق جبال السروات وتهامة':key==='riyadh'||key==='riyadhProv'?'عواصف تلقائية فوق جبل طويق':key==='ksa'?'عواصف تلقائية في كل المملكة حسب الرطوبة والتضاريس':key==='qassim'?'عواصف تلقائية فوق جبلي أجا وسلمى والمرتفعات':key==='jeddah'?'عواصف تلقائية فوق جبال السروات':'عواصف تلقائية فوق جبال الحجاز';
   RADARS=REGION.radars.map(([n,c,lat,lon])=>({n,c,lat,lon,x:lon2x(lon),y:lat2y(lat)}));RADAR=RADARS[0];
   const mk=(n,m)=>{const[lat,lon]=CITY_DB[n];const c={n,lat,lon,m,x:lon2x(lon),y:lat2y(lat),total:0,rate:0,hail:0,al:{}};c.i=clamp(c.y|0,0,H-1)*W+clamp(c.x|0,0,W-1);return c};
   CITIES=[...REGION.mission.map(n=>mk(n,true)),...REGION.extra.map(n=>mk(n,false))];MC=CITIES.filter(c=>c.m);
@@ -1195,6 +1211,7 @@ function megaTail(s,r0){const Zs=env.size/PX,bl=s.blobs,blob=(rx,ry,ax,ay,P,g,o=
       for(const b of bl)if(b.ti!=null){b.x0=b.rx;b.y0=b.ry;b.P0=b.P;b.ay0=b.ay;b.a0=b.ang}
       s.tailL=L*Zs;s.tailT=L*env.size;s.twob=wob*Zs;s.tph=ph;s.megaT=1;s.r0=r0*Zs;s.mph=R(0,6.28);
 }
+let NATF=0;   // set while the simulator itself (not the player) is creating a storm: those live longer
 let idc=0;const nextId=()=>{const c=idc++;return String.fromCharCode(65+c%26)+(1+(c/26|0))};
 // a band of 2-4 cells lined up along the steering flow (band-parallel organisation, as in the Najd / Eastern Province radar images)
 function spawnBand(prob,type,x,y){const st=spawn(type,x,y);if(!st||(type!=='storm'&&type!=='shower')||rnd()>=prob)return st;
@@ -1309,7 +1326,7 @@ function spawn(type,x,y,o={}){
   if(type==='mega'||type==='mcs'||type==='mini')s.type='storm';
   s.blobs=bl.filter(b=>!b.halo);
   s.rad=0;for(const b of bl)if(b.g>1.1)s.rad=Math.max(s.rad,Math.hypot(b.rx,b.ry)+Math.max(b.ax,b.ay));
-  s.rad0=s.rad;s.oro=oro;s.life*=s.mini?(0.8+0.4*env.moist):(0.6+0.8*env.moist)*env.lifeM;if(s.mini){s.jx=R(-.1,.1)/PX;s.jy=R(-.1,.1)/PX}s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
+  s.rad0=s.rad;s.oro=oro;s.life*=s.mini?(0.8+0.4*env.moist):(0.6+0.8*env.moist)*env.lifeM;if(NATF){s.nat=1;s.life*=s.mini?1.3:1.6}if(s.mini){s.jx=R(-.1,.1)/PX;s.jy=R(-.1,.1)/PX}s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
   s.hailRoll=s.variant==='lp'?R(0,0.5):rnd();
   storms.push(s);return s;
 }
@@ -1878,7 +1895,7 @@ function step(dt,rdt=0){
     if((s.type==='storm'||s.type==='super')&&!s.megaT&&!s.mini&&p>0.22&&p<0.72&&s.age>=s.nextD&&!s.kill&&storms.length<70){
       s.nextD=s.age+R(12,22);
       if(rnd()<env.inst*0.95*(0.6+0.8*env.sev)){const fw=R(-6,10)*env.size/PX,side=R(16,28)*env.size/PX*(s.type==='super'||rnd()<.7?1:-1);
-        const ch=spawn(!s.scen&&env.sev>0.8&&rnd()<0.15?'super':env.inst>0.65&&rnd()<0.35?'storm':'shower',s.x+fw*s.hx-side*s.hy,s.y+fw*s.hy+side*s.hx);
+        NATF=s.nat?1:0;const ch=spawn(!s.scen&&env.sev>0.8&&rnd()<0.15?'super':env.inst>0.65&&rnd()<0.35?'storm':'shower',s.x+fw*s.hx-side*s.hy,s.y+fw*s.hy+side*s.hx);NATF=0;
         if(ch&&s.scen){ch.scen=1;ch.bornT=simT;ch.fcBoost=s.fcBoost}}}
     if(rdt>0&&layers.light&&hailOK(s))for(const b of s.blobs)if(b.g>1.1&&b.Pe>=60){let n=(b.Pe-58)*0.02*rdt*(0.6+0.4*Math.sqrt(speed));while(n>0){if(rnd()<n){const a=R(0,6.28),r=R(0,Math.max(b.ax,b.ay)*0.5),x=b.cx+Math.cos(a)*r,y=b.cy+Math.sin(a)*r;if(x>=0&&y>=0&&x<W&&y<H){const hs=hailSizeAt((y|0)*W+(x|0));if(hs>0)hailMk.push({x,y,lt:liveT,hs})}}n-=1}}
     // lightning jump: flashes follow the updraft — a cell that is strengthening (echo rising) produces a burst of lightning,
@@ -1891,7 +1908,7 @@ function step(dt,rdt=0){
   liveT+=rdt;strikes=strikes.filter(k=>liveT-k.lt<6);if(hailMk.length)hailMk=hailMk.filter(k=>liveT-k.lt<6);if(hailMk.length>300)hailMk.splice(0,hailMk.length-300);if(strikes.length>350)strikes.splice(0,strikes.length-350);while(boltLog.length&&simT-boltLog[0]>60)boltLog.shift();
   if(env.natural&&!mission.on&&!scen.world&&storms.length<(REGION.maxStorms||45)&&rnd()<dt*env.inst*env.moist*0.5*env.natRate*(REGION.natMul||1)){
     let bx=0,by=0,bv=-1;for(let t=0;t<16;t++){const x=R(20,W-20),y=R(20,H-20),v=moistAt(x,y)+R(0,0.05);if(v>bv){bv=v;bx=x;by=y}}
-    for(let t=0;t<1;t++){const x=bx,y=by;if(rnd()<clamp((bv-0.5)/0.25,0,1)*(1-0.8*clamp((atmSamp(ATM.T,x,y)-40)/7,0,1))){spawnBand(0.5,env.inst>0.45&&rnd()<0.12?'mini':env.inst<0.35&&env.moist>0.6?(rnd()<0.6?'strat':'shower'):env.sev>0.85&&env.shear>0.7&&rnd()<0.25?'super':env.inst>0.7&&rnd()<0.3?'storm':'shower',x,y);break}}}
+    for(let t=0;t<1;t++){const x=bx,y=by;if(rnd()<clamp((bv-0.5)/0.25,0,1)*(1-0.8*clamp((atmSamp(ATM.T,x,y)-40)/7,0,1))){NATF=1;spawnBand(0.5,env.inst>0.45&&rnd()<0.12?'mini':env.inst<0.35&&env.moist>0.6?(rnd()<0.6?'strat':'shower'):env.sev>0.85&&env.shear>0.7&&rnd()<0.25?'super':env.inst>0.7&&rnd()<0.3?'storm':'shower',x,y);NATF=0;break}}}
   mergeStorms();
   fieldClock+=rdt;pendDt+=dt;
   if(rdt===0||(radarFps<0?scanNo!==fieldScan:fieldClock>=(radarFps?1/radarFps:document.body.classList.contains('mob')?1/20:1/24))){fieldScan=scanNo;fieldClock=0;computeField(pendDt,1);fieldDirty=true;rpRecord();
@@ -2386,7 +2403,7 @@ function switchRegion(key){
   if(mission.on)briefMission();else startFree(true);
 }
 function pickBig(){
-  const opts=[['big','WEST','الساحل الغربي','من الوجه وتبوك إلى جدة ومكة، مع ثلاثة رادارات'],['riyadhProv','RUH','منطقة الرياض','المنطقة كاملة: من الزلفي والمجمعة إلى وادي الدواسر والسليل'],['qassim','NORTH','القصيم وشمال المملكة','من القصيم وحائل إلى الجوف وعرعر والقريات وحفر الباطن، مع ستة رادارات']];
+  const opts=[['big','WEST','الساحل الغربي','من الوجه وتبوك إلى جدة ومكة، مع ثلاثة رادارات'],['riyadhProv','RUH','منطقة الرياض','المنطقة كاملة: من الزلفي والمجمعة إلى وادي الدواسر والسليل'],['qassim','NORTH','القصيم وشمال المملكة','من القصيم وحائل إلى الجوف وعرعر والقريات وحفر الباطن، مع ستة رادارات'],['east','EAST','المنطقة الشرقية والخليج','الدمام والجبيل والأحساء وحفر الباطن، إلى الكويت والبحرين وقطر، مع ثلاثة رادارات'],['south','SOUTH','المنطقة الجنوبية','أبها والباحة وجازان ونجران وبيشة والقنفذة إلى الطائف، مع أربعة رادارات']];
   showModal(`<h3>اختر الخريطة الكبيرة</h3><p>كل خريطة تغطي منطقة كاملة. قرّب على أي مدينة لترى شوارعها وأحياءها.</p><div class="maps">${opts.map(([k,c,n,d])=>`<button class="mapc" data-k="${k}"><i>${c}</i><b>${n}</b><small>${d}</small></button>`).join('')}</div><div class="row"><button class="btn ghost" id="mclose">إلغاء</button></div>`);
   sheet.querySelectorAll('.mapc').forEach(b=>b.onclick=()=>{hideModal();if(b.dataset.k!==regionKey)switchRegion(b.dataset.k)});$('mclose').onclick=hideModal;
 }
@@ -2452,8 +2469,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=93,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=94,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:94,title:'خريطتين جديدتين وسحب تلقائية أطول',add:['خريطة كبيرة جديدة: "المنطقة الشرقية والخليج" — الدمام والجبيل والأحساء وحفر الباطن، إلى الكويت والبحرين وقطر، بثلاثة رادارات','خريطة كبيرة جديدة: "المنطقة الجنوبية" — أبها والباحة وجازان ونجران وبيشة والقنفذة إلى الطائف، بأربعة رادارات','الخريطتين بسواحل وتضاريس حقيقية'],fix:['السحب التلقائية (اللي تطلع لحالها) صارت تعيش أطول بـ60% تقريباً، والسحب اللي ترسمها أنت ما تغيّرت']},
   {v:93,title:'سرعة الإعادة',add:['سرعة الإعادة في شريط الوقت: ×1 ×2 ×4 ×8 ×16 ×32','الإعادة صارت تحفظ آخر يوم كامل بدقة ثابتة (صورة كل 5 دقائق) بدل ما تتباعد الصور القديمة'],fix:['جودة صورة الإعادة كانت أقل من الصورة المباشرة: الحين تتسجل بنفس دقة الرادار بالضبط في الخرائط الصغيرة والساحل الغربي (ونصف الدقة مع تنعيم في خريطة المملكة ومنطقة الرياض والقصيم)، ومعها ألوان البرد','شلنا خانة الساعة ورقم المسح من فوق لأن شريط الوقت يعرض التاريخ والساعة']},
   {v:92,title:'التاريخ وشريط الوقت',add:['المحاكي صار له تاريخ: اليوم والتاريخ والشهر مكتوبين فوق مع الساعة، والأيام تمشي','لما يدخل شهر جديد يتغير الموسم لحاله','شريط الوقت فوق الخريطة: اسحبه ورا لين بداية المحاكاة وشوف صورة الرادار مثل فيديو مسجل','زر ◀◀ يشغّل السحب بالعكس، و▶ للأمام، و"مباشر" يرجعك للوقت الحالي (المحاكاة توقف وقت الإعادة وتكمل بعدها)','تقدر تسوي زوم لبرّا الخريطة أكثر بثلاث مرات']},
   {v:91,title:'العاصفة الصغيرة تندمج',add:['العاصفة الرعدية الصغيرة صارت تندمج مع السحب الثانية مثل كل الغيوم','إذا اندمجت يطول عمرها: تتحول لعاصفة رعدية عادية تتجدد أنويتها وتعيش ساعات زيادة']},
