@@ -1303,7 +1303,7 @@ function spawn(type,x,y,o={}){
       pts.forEach((q,k)=>bl.push(core((q[0]-mx)*1.3,(q[1]-my)*1.3,hot.has(k)?R(17,23):R(11,17),hot.has(k)?R(64,68)+env.sev*3:R(54,62))));
       for(let k=0,m=5+(rnd()*3|0);k<m;k++){const q=pts[(rnd()*pts.length)|0];bl.push(blob((q[0]-mx)*1.3-R(5,40),(q[1]-my)*1.3+R(-26,26),R(44,66),R(30,44),R(33,39),0.85,{k:1,m:1.1,late:R(.2,1),ang:R(-.8,.8)}))}
       break;}
-    case'mini':{s.life=R(85,125);s.mini=1;
+    case'mini':{s.life=R(300,400);s.mini=1;
       // small pulse thunderstorm: one or two tight intense cores that burst up within minutes, crackle with lightning, and collapse within the hour.
       // Shape differs every time: a single lopsided core, twins, a core with a weaker flank, or a short arc of three.
       const v=rnd(),P0=R(58,64)+env.sev*3,a0=R(0,6.28);
@@ -1336,7 +1336,7 @@ function spawn(type,x,y,o={}){
   if(type==='mega'||type==='mcs'||type==='mini')s.type='storm';
   s.blobs=bl.filter(b=>!b.halo);
   s.rad=0;for(const b of bl)if(b.g>1.1)s.rad=Math.max(s.rad,Math.hypot(b.rx,b.ry)+Math.max(b.ax,b.ay));
-  s.rad0=s.rad;s.oro=oro;s.life*=s.mini?(0.8+0.4*env.moist):(0.6+0.8*env.moist)*env.lifeM;if(NATF){s.nat=1;s.life*=s.mini?1.3:1.6}if(s.mini){s.jx=R(-.1,.1)/PX;s.jy=R(-.1,.1)/PX}s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
+  s.rad0=s.rad;s.oro=oro;s.life*=s.mini?1:(0.6+0.8*env.moist)*env.lifeM;if(NATF){s.nat=1;s.life*=s.mini?1.1:1.6}if(s.mini){s.jx=R(-.1,.1)/PX;s.jy=R(-.1,.1)/PX}s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
   s.hailRoll=s.variant==='lp'?R(0,0.5):rnd();
   s.t0=simT;DAY.born++;storms.push(s);return s;
 }
@@ -1848,7 +1848,7 @@ function step(dt,rdt=0){
   const w=windVec(),hour=(START_H+simT/60)%24,diurnal=0.35+0.65*Math.max(0,Math.sin(Math.PI*(hour-9)/12));
   for(const s of storms){
     {let mc=moistAt(s.x,s.y);if(s.mega)mc=Math.max(mc,envHum(s.x,s.y));s.mc=s.mc==null?mc:s.mc+(mc-s.mc)*Math.min(1,dt*0.1)}
-    s.boost=(env.inst-0.5)*14+elevAt(s.x,s.y)*6+(ATM.UP?(u=>u<0?u*30:u*12)(atmSamp(ATM.UP,s.x,s.y)):0)+(env.sev-0.35)*8+(s.mc-0.5)*8*env.moistFx+(s.megaB||0)+(s.fcBoost||0)+(s.nb||0)+(s.erB||0)+(s.trail?-9*clamp(s.age/s.life,0,1):0)-7*clamp(((ATM.T?atmSamp(ATM.T,s.x,s.y):30)-39)/8,0,1);
+    s.boost=(env.inst-0.5)*14+elevAt(s.x,s.y)*6+(ATM.UP?(u=>u<0?u*30:u*12)(atmSamp(ATM.UP,s.x,s.y)):0)+(env.sev-0.35)*8+(s.mc-0.5)*8*env.moistFx+(s.megaB||0)+(s.mini?3:0)+(s.fcBoost||0)+(s.nb||0)+(s.erB||0)+(s.trail?-9*clamp(s.age/s.life,0,1):0)-7*clamp(((ATM.T?atmSamp(ATM.T,s.x,s.y):30)-39)/8,0,1);
     // storm motion = steering wind (+ propagation): ordinary cells drift with ~90-100% of the mean wind,
     // supercells deviate ~30° right at ~75% (Maddox / Bunkers), squall lines run ahead of it (forward propagation),
     // multicells creep toward the moist inflow where new cells form, and young storms over high mountains stay anchored to the terrain.
@@ -1887,7 +1887,8 @@ function step(dt,rdt=0){
     if(s.anc>0.2&&!s.megaT&&!s.hookR){
       if(!s.kill&&pS<0.8){s.rad=Math.min((s.rad0||s.rad||12)*2.6,(s.rad||12)+dt*0.05*s.anc/PX);s.maxCores=Math.min(13,Math.max(s.maxCores||0,6+((s.rad-(s.rad0||s.rad))*PX/5|0)))}}
     if(s.type!=='line'){const m=Math.hypot(bhx,bhy);if(m>0.02){const k2=Math.min(1,dt*(s.oro?0.0006:0.004));s.hx+=(bhx/m-s.hx)*k2;s.hy+=(bhy/m-s.hy)*k2;const n=Math.hypot(s.hx,s.hy);s.hx/=n;s.hy/=n}}
-    s.age+=dt*(1+(0.5-s.mc)*0.9*env.moistFx)*(1-0.4*(s.anc||0));
+    s.age+=dt*(s.mini?clamp(1+(0.5-s.mc)*0.4,0.8,1.2):(1+(0.5-s.mc)*0.9*env.moistFx)*(1-0.4*(s.anc||0)));
+    if(s.mini&&!s.kill&&ATM.Q){const gx=clamp((s.x/MG)|0,1,ATM.w-2),gy=clamp((s.y/MG)|0,1,ATM.h-2),Q=ATM.Q,dq=0.0011*dt;for(let oy=-1;oy<=1;oy++)for(let ox=-1;ox<=1;ox++){const i=(gy+oy)*ATM.w+gx+ox;Q[i]=Math.max(0.06,Q[i]-dq*(ox||oy?0.6:1))}}
     // no single cloud system lasts for ever: past about half a day (longer for wide rain and lows) it runs down quickly, whatever the settings
     if(!s.scen&&!s.hold&&s.t0!=null){const over=(simT-s.t0)/60-(s.type==='low'?26:s.type==='strat'?15:11);if(over>0)s.age+=dt*Math.min(4,1+over)}
     // a giant stays at full strength for a limited run (about 280-370 km of travel, or 10-14 hours if it hardly moves, or until the air dries); then it ages and dies like any thunderstorm
@@ -2508,8 +2509,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=98,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=99,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:99,title:'العاصفة الصغيرة تطوّل',fix:['العاصفة الرعدية الصغيرة كانت تتفتت وتختفي بسرعة: الحين تعيش من 4 إلى 6 ساعات على الأقل','صارت تاكل الرطوبة اللي حولها: تتغذى عليها وتبقى قوية، وتشوف الجو يجف في المكان اللي تمر عليه على خريطة الرطوبة','عمرها ما عاد يقصر كثير في الجو الجاف']},
   {v:98,title:'سحب تلقائية أقل',fix:['السحب اللي تطلع لحالها كانت كثيرة بزيادة على أجواء السعودية: قللنا ظهورها لحوالي الخُمس في الأجواء الربيعية','السحب التلقائية صارت تطلع فرادى أكثر من مجموعات، وتولّد سحب جديدة حولها أقل','لو تبيها أكثر: ارفع "تكرار العواصف التلقائية" من خصائص الجو المتقدمة']},
   {v:97,title:'عمر السحب المندمجة',fix:['السحابة كانت تولّد سحب صغيرة حولها ثم تبلعها، وكل مرة يتمدد عمرها، فبعض السحب عاشت أكثر من يوم كامل: الحين بلع السحب اللي ولّدتها ما يزيد عمرها','الاندماج مع سحب ثانية يطوّل العمر لحد الضعف كأقصى شي','أي سحابة تعدّت نصف يوم تقريباً (11 ساعة، و15 للمطر الواسع، و26 للمنخفض) تبدأ تضعف بسرعة مهما كانت الإعدادات','رقم "أطول سحابة عمراً" في الملخص والأرقام القياسية صار منطقي']},
   {v:96,title:'تحسين ملخص اليوم',fix:['ملخص اليوم ما عاد يطلع وأنت ترسم التوقعات أو تسحب على الخريطة']},
