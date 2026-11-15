@@ -1210,7 +1210,7 @@ const layers={sb:false,fc:false,mm:true,flood:true,moist:false,streets:true,trac
 let storms=[],strikes=[],alerts=[],hailMk=[];
 let START_H=13,simT=0,speed=1,paused=false,product='ref',tool='storm',mode='free';
 const mission={on:false,budget:24,elapsed:0,dur:480,done:false,started:false};
-const COST={ul:10,tc:8,lstrat:2,mini:2,mcs:8,mega:8,shower:1,storm:2,super:4,line:4,strat:3,low:6};
+const COST={hshower:2,lshower:1,ul:10,tc:8,lstrat:2,mini:2,mcs:8,mega:8,shower:1,storm:2,super:4,line:4,strat:3,low:6};
 
 function windVec(){const t=(env.windFrom+180)*Math.PI/180,s=env.windSpd/60/PX;return{x:Math.sin(t)*s,y:-Math.cos(t)*s}}
 // steering flow: the deep-layer (≈0-6 km) mean wind that carries storms. Smooth on a few-hundred-km scale and slowly evolving
@@ -1255,6 +1255,14 @@ function spawn(type,x,y,o={}){
   const shield=(r,P)=>bl.push(blob(R(-4,2),R(-3,3),r*R(2.3,2.9),r*R(1.3,1.7),P+R(1,3),0.85,{k:1,m:1.15,late:.15,ang:R(-.35,.35),halo:1}));
   const halo=(r,sc,P)=>bl.push(blob(R(-3,3),R(-3,3),r*sc*R(1.2,1.45),r*sc*R(.7,.85),P,0.75,{k:1,m:1.35,late:.25,ang:R(-.35,.35),halo:1}));
   switch(type){
+    case'hshower':{s.life=R(70,110);s.cap=53;
+      // heavy rain cell: a bigger, rain-loaded cell whose core reaches ordinary red (about 50-55 dBZ) but not dark red
+      const r0=R(11,15);bl.push(core(0,0,r0,R(55,58)));for(let k=0,n=2+(rnd()*3|0);k<n;k++)bl.push(core(R(-20,20),R(-8,8),R(8,12),R(46,54)));
+      shield(r0,R(31,36));if(rnd()<.75)halo(r0,R(2.4,3.2),R(18,21));break;}
+    case'lshower':{s.life=R(60,95);s.cap=35;
+      // light rain cell: a gentle cell of light rain (greens, at most a touch of yellow), no thunder
+      const r0=R(9,13);bl.push(core(0,0,r0,R(34,38)));for(let k=0,n=1+(rnd()*3|0);k<n;k++)bl.push(core(R(-17,17),R(-7,7),R(7,10),R(28,35)));
+      shield(r0,R(22,27));if(rnd()<.6)halo(r0,R(2,2.6),R(15,18));break;}
     case'shower':{s.life=R(55,85);const r0=R(9,13);bl.push(core(0,0,r0,R(47,56)));
       for(let k=0,n=1+(rnd()*3|0);k<n;k++)bl.push(core(R(-17,17),R(-6,6),R(7,10),R(40,52)));
       shield(r0,R(28,33));if(rnd()<.65)halo(r0,R(2.2,3),R(17,20));break;}
@@ -1380,7 +1388,7 @@ function spawn(type,x,y,o={}){
         if(rnd()<0.6)bl.push(B(-R(55,85)*Zs,t*sgn,R(18,28)*Zs,R(18,26)*Zs,R(24,30),0.8,{k:1,m:1.15,late:1,ang:R(-.4,.4)}))}
       s.hx=o.hx;s.hy=o.hy;break;}
   }
-  if(type==='mega'||type==='mini')s.type='storm';if(type==='lstrat'||type==='mcs')s.type='strat';
+  if(type==='hshower'||type==='lshower')s.type='shower';if(type==='mega'||type==='mini')s.type='storm';if(type==='lstrat'||type==='mcs')s.type='strat';
   s.blobs=bl.filter(b=>!b.halo);
   s.rad=0;for(const b of bl)if(b.g>1.1)s.rad=Math.max(s.rad,Math.hypot(b.rx,b.ry)+Math.max(b.ax,b.ay));
   s.rad0=s.rad;s.oro=oro;s.life*=s.mini?1:(0.6+0.8*env.moist)*env.lifeM;if(NATF){s.nat=1;s.life*=s.mini?1.1:1.6}if(s.mini){s.jx=R(-.1,.1)/PX;s.jy=R(-.1,.1)/PX}s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
@@ -1471,7 +1479,7 @@ function computeField(dtf=1,adv=0){
     for(const b of s.blobs){
       const pb=p-Math.min(0.15,25/s.life)*b.late,cf=(b.life2&&!b.persist)?pulse(b.age2/b.life2):1,ft=b.out?0:Math.max(0,lifeF(pb,s.g0||0.15)*s.killF*cf);
       b.fv=b.fv==null?0:b.fv+(ft-b.fv)*kf;const f=b.fv;b.Pe=0;if(f<=0.004)continue;s.vis=true;
-      const fs=pb<(s.g0||0.15)?f:1,mo=b.m==null?0.5:b.m,P=6+(Math.min(s.mcs?(b.g>1.1?61:46):71,b.P+(b.g>1.1?s.boost:s.boost*0.5)+(b.g>1.1?(mo-0.5)*9*env.moistFx:(mo-0.5)*2*env.moistFx))-6)*f;b.Pe=P;
+      const fs=pb<(s.g0||0.15)?f:1,mo=b.m==null?0.5:b.m,P=6+(Math.min(s.cap?(b.g>1.1?s.cap:s.cap-12):s.mcs?(b.g>1.1?61:46):71,b.P+(b.g>1.1?s.boost:s.boost*0.5)+(b.g>1.1?(mo-0.5)*9*env.moistFx:(mo-0.5)*2*env.moistFx))-6)*f;b.Pe=P;
       const sc=(b.g>1.1?(0.55+0.45*fs)*(1+(0.35*mo-0.2)*env.moistFx):(0.75+0.25*fs)*(0.96+0.08*mo))*gf,ax=b.ax*sc,ay=b.ay*sc;
       const cx=s.x+(b.rx*fx+b.ry*rxv)*gf,cy=s.y+(b.rx*fy+b.ry*fx)*gf;b.cx=cx;b.cy=cy;
       if(b.g<1){EM.push(cx,cy,ax,ay,hang+b.ang,P,b.sx,b.sy,0);continue}
@@ -2376,6 +2384,8 @@ const ICON={
   line:'<path d="M3 18l4-7 4 4 4-8 6 6"/><path d="M14 20l3-3 3 3" opacity=".6"/>',
   lstrat:'<path d="M4 8h12M3 12h17M5 16h13" opacity=".55"/><path d="M8 19.5l-.6 1.5M12 19.5l-.6 1.5M16 19.5l-.6 1.5"/>',
   ul:'<path d="M3 19L21 5" stroke-dasharray="2.5 2.5"/><path d="M6 15h4l-2 3M12 10h4l-2 3"/><path d="M16 4l5 1-1 5"/>',
+  lshower:'<path d="M7 14h10a4 4 0 0 0 .5-8 5.5 5.5 0 0 0-10.4-1A4.5 4.5 0 0 0 7 14z" opacity=".7"/><path d="M10 17.5l-.6 1.5M14 17.5l-.6 1.5"/>',
+  hshower:'<path d="M7 13h10a4 4 0 0 0 .5-8 5.5 5.5 0 0 0-10.4-1A4.5 4.5 0 0 0 7 13z"/><path d="M7 16l-1.5 4M10.5 16L9 20M14 16l-1.5 4M17.5 16L16 20"/>',
   tc:'<path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M12 4c-4 0-7 2-7 5 3-2 6-1 7 1"/><path d="M12 20c4 0 7-2 7-5-3 2-6 1-7-1"/><path d="M4 12c0 4 2 7 5 7-2-3-1-6 1-7"/><path d="M20 12c0-4-2-7-5-7 2 3 1 6-1 7"/>',
   gauge:'<path d="M8 3h8v4l-1.5 12h-5L8 7z"/><path d="M9.5 13h5M9 9.5h6"/><path d="M6 21h12"/>',
   mcs:'<path d="M4 6h12M3 10h17M5 14h13"/><path d="M12 14l-2.5 4h3.5l-2.5 4"/>',
@@ -2384,7 +2394,7 @@ const ICON={
   low:'<path d="M12 12m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0"/><path d="M3.5 10A9 9 0 0 1 17 4.5"/><path d="M20.5 14A9 9 0 0 1 7 19.5"/><path d="M6 6.5A6.5 6.5 0 0 1 18.5 11" opacity=".6"/><path d="M18 17.5A6.5 6.5 0 0 1 5.5 13" opacity=".6"/>',
   pan:'<path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>',
 };
-const TOOLS=[['shower','خلية مطرية'],['mini','عاصفة رعدية صغيرة'],['storm','عاصفة رعدية'],['super','خلية عملاقة'],['mega','عاصفة رعدية عملاقة'],['line','خط عواصف'],['lstrat','مطر واسع خفيف'],['strat','مطر واسع'],['mcs','مطر واسع عاصف'],['low','منخفض جوي'],['ul','منخفض علوي'],['tc','إعصار مداري'],['gauge','محطة قياس'],['erase','ممحاة'],['pan','تحريك']];
+const TOOLS=[['lshower','خلية مطرية خفيفة'],['shower','خلية مطرية'],['hshower','خلية مطرية غزيرة'],['mini','عاصفة رعدية صغيرة'],['storm','عاصفة رعدية'],['mega','عاصفة رعدية عملاقة'],['super','سوبر سل'],['line','خط عواصف'],['lstrat','مطر واسع خفيف'],['strat','مطر واسع'],['mcs','مطر واسع عاصف'],['low','منخفض جوي'],['ul','منخفض علوي'],['tc','إعصار مداري'],['gauge','محطة قياس'],['erase','ممحاة'],['pan','تحريك']];
 const toolsEl=document.getElementById('tools');
 toolsEl.innerHTML=`<div class="zbtns"><button class="tool zb" id="zIn" title="تكبير" aria-label="تكبير"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button class="tool zb" id="zOut" title="تصغير" aria-label="تصغير"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button></div>`+TOOLS.map(([k,n],i)=>`<button class="tool" data-t="${k}" aria-pressed="${k===tool}" title="${n} (${i+1})"><kbd>${i+1}</kbd><span class="cost"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg><span class="l">${n}</span></button>`).join('');
 function pickTool(t){if(t===tool&&t!=='pan'){setTool('pan');toast('أُلغي التحديد: الخريطة تتحرك بالسحب')}else setTool(t)}
@@ -2394,7 +2404,7 @@ function updateCosts(){toolsEl.querySelectorAll('.tool[data-t]').forEach(b=>{b.q
 
 function pay(t){if(!mission.on)return true;if(mission.done){toast('انتهت المهمة. ابدأ جولة جديدة.');return false}
   if(mission.budget<COST[t]){toast('الميزانية لا تكفي لهذه الأداة');return false}mission.budget-=COST[t];return true}
-const SPACING={ul:1e9,tc:1e9,gauge:1e9,lstrat:60,mini:22,mcs:1e9,mega:1e9,shower:18,storm:32,super:45,strat:55,low:110};
+const SPACING={hshower:22,lshower:18,ul:1e9,tc:1e9,gauge:1e9,lstrat:60,mini:22,mcs:1e9,mega:1e9,shower:18,storm:32,super:45,strat:55,low:110};
 function trySpawn(t,x,y){if(x<0||y<0||x>W||y>H)return;if(storms.length>=70){toast('السماء ممتلئة. امسح بعض العواصف أولاً');return}if(!pay(t))return;spawn(t,x,y)}
 function lineHeading(a,b){const L=Math.hypot(b.x-a.x,b.y-a.y)||1,lx=(b.x-a.x)/L,ly=(b.y-a.y)/L;let hx=ly,hy=-lx;const w=windVec();
   if(Math.hypot(w.x,w.y)>1e-4){if(hx*w.x+hy*w.y<0){hx=-hx;hy=-hy}}else{hx=0.7071;hy=-0.7071;}return{hx,hy,lx,ly,L}}
@@ -2478,7 +2488,7 @@ document.getElementById('logBtn').addEventListener('click',()=>lpOpen(!LP.open))
 document.getElementById('lpTabs').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;LP.tab=t.dataset.t;lpRender()});
 document.getElementById('lpBody').addEventListener('click',e=>{const f=e.target.closest('[data-f]');if(f){LP.f[f.dataset.f]=LP.f[f.dataset.f]===false;lpRender();return}const r=e.target.closest('[data-x]');if(r)flyTo(+r.dataset.x,+r.dataset.y,Math.max(view.s,6))});
 /* ---------- storm cell table (like the cell lists of operational radars) ---------- */
-function stormName(s){return s.ul?'منخفض علوي':s.megaT?'عاصفة رعدية عملاقة':s.mini?'عاصفة صغيرة':s.hookR?'خلية عملاقة':s.type==='line'?'خط عواصف':s.mcs?'مطر واسع عاصف':s.tc?'إعصار مداري':s.lst?'مطر واسع خفيف':s.type==='strat'?'مطر واسع':s.type==='low'?'منخفض':s.type==='shower'?'خلية مطرية':'عاصفة رعدية'}
+function stormName(s){return s.cap===53?'خلية مطرية غزيرة':s.cap===35?'خلية مطرية خفيفة':s.ul?'منخفض علوي':s.megaT?'عاصفة رعدية عملاقة':s.mini?'عاصفة صغيرة':s.hookR?'سوبر سل':s.type==='line'?'خط عواصف':s.mcs?'مطر واسع عاصف':s.tc?'إعصار مداري':s.lst?'مطر واسع خفيف':s.type==='strat'?'مطر واسع':s.type==='low'?'منخفض':s.type==='shower'?'خلية مطرية':'عاصفة رعدية'}
 function cellTableHTML(){const L=warnStorms().slice().sort((a,b)=>b.mx-a.mx);if(!L.length)return '<p style="color:var(--muted)">ما فيه عواصف قوية حالياً (الجدول يعرض السحب من 45 dBZ).</p>';
   const rows=L.slice(0,40).map(w=>{const sp=Math.hypot(w.vx,w.vy)*PX*60,az=(Math.atan2(w.vx,-w.vy)*180/Math.PI+360)%360,s=w.s,hp=hailOK(s)?Math.round(100*sst(50,66,w.mx)):Math.round(25*sst(56,68,w.mx));
     let eta=null;for(const c of CITIES){for(let t=0;t<=180;t+=5){if(Math.hypot(w.cx+w.vx*t-c.x,w.cy+w.vy*t-c.y)<=w.r+8/PX){if(!eta||t<eta.t)eta={t,n:c.n};break}}}
@@ -2698,8 +2708,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=114,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=115,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:115,title:'خلية مطرية غزيرة وخفيفة، وسوبر سل',add:['"خلية عملاقة" صار اسمها "سوبر سل" وانتقلت تحت العاصفة الرعدية العملاقة','أداة "خلية مطرية غزيرة": خلية أكبر ومطرها أقوى، توصل الأحمر العادي (50-55 dBZ) وما توصل الأحمر الغامق','أداة "خلية مطرية خفيفة": مطر خفيف بالأخضر وأحياناً لمسة أصفر، بدون رعد']},
   {v:114,title:'المنخفض العلوي والعواصف المتتالية',add:['أداة جديدة "منخفض علوي": حزام أمطار طويل جداً مع اتجاه الرياح (من الجنوب الغربي للشمال الشرقي غالباً)، يمشي ككتلة وحدة ويولّد عواصف رعدية باستمرار','العواصف تتكون أغلبها من طرفه الخلفي وتمشي على طوله وحدة ورا وحدة، فنفس الأماكن يجيها مطر مرة بعد مرة وتزيد السيول','طرف الحزام الخلفي يثبت تقريباً لو كان فوق الجبال ويستمر يولّد عواصف، والطرف الأمامي يكمل مع الرياح','المنخفض العلوي يتكون لحاله أحياناً (نادر) في الأجواء الرطبة وغير المستقرة','العواصف العادية صارت أحياناً تولّد خلية جديدة وراها على نفس المسار (عواصف متتالية)']},
   {v:113,title:'مطر خفيف أوسع في الإعصار المداري',add:['الإعصار المداري صار حوله مطر خفيف أكثر وأوسع: غطاء مطر خفيف يدور معه، والأذرع حولها مطر خفيف بدل الفراغ الكامل']},
   {v:112,title:'إعصار مداري واقعي، وإصلاحات الجوال',add:['أعدنا بناء الإعصار المداري: عين صافية، جدار عواصف قوي حولها (أقوى من جهة)، حلقة مطر أخف، و3-4 أذرع مطر حلزونية واضحة بينها فراغات','الأذرع تدور عكس عقارب الساعة (الداخل أسرع)، والخلايا تزحف داخلها باتجاه العين، والأذرع تتنفس وتتغير، والإعصار كله يمشي مع الرياح ويضعف على اليابسة'],fix:['شلنا خانة "نوع الهطول"','الجوال: الصوت صار يشتغل بعد أول لمسة (وحتى لو الآيفون على الصامت)','الجوال: سجل الأحداث صار ينسحب (سكرول)','الجوال: شلنا زر الإعدادات']},
