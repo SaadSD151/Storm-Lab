@@ -1335,6 +1335,7 @@ function spawn(type,x,y,o={}){
       const re=R(13,19)*Zs,rw=re+R(6,9)*Zs,asym=R(0,6.28);s.eyeR=re/Zs;s.rw=rw;s.ew=asym;s.arms=[];s.ph=R(0,6.28);
       for(let k=0;k<30;k++){const a=k/30*6.283,c=B(0,0,R(4.2,5.2)*Zs,R(2.4,3)*Zs,R(54,60),2,{k:2.6});c.persist=1;c.tw={kind:'ew',a,r:rw+R(-1,1)*Zs,P0:c.P};bl.push(c)}
       for(let k=0;k<26;k++){const a=k/26*6.283,c=B(0,0,R(9,13)*Zs,R(4.5,6.5)*Zs,R(37,43),1.05,{k:1.2,m:1.05});c.tw={kind:'cdo',a,r:rw+R(9,20)*Zs,P0:c.P};bl.push(c)}
+      for(let k=0;k<20;k++){const a=k/20*6.283+R(-.15,.15),c=B(0,0,R(30,44)*Zs,R(18,26)*Zs,R(17,21),0.8,{k:1,m:1.1});c.tw={kind:'sh',a,r:rw+R(40,170)*Zs,P0:c.P};bl.push(c)}
       const arms=3+(rnd()*2|0);for(let m=0;m<arms;m++){const A={a0:m/arms*6.283+R(-.35,.35),b:R(0.19,0.26),r0:rw+R(22,30)*Zs,len:R(3.5,4.8),w:R(1.1,1.6),P:R(39,45)};s.arms.push(A);
         const n=Math.round(A.len/0.09);for(let k=0;k<n;k++){const th=k*0.09,c=B(0,0,R(6.5,8.5)*Zs,R(3,4.2)*Zs*A.w,A.P,1.05,{k:1.25,m:1.05});c.tw={kind:'arm',m,th,P0:A.P+R(-3,2),ax0:c.ax,ay0:c.ay};bl.push(c);
           if(rnd()<0.22){const q=B(0,0,R(3,4.5)*Zs,R(2,2.8)*Zs,R(44,53),2,{k:2.2});q.persist=1;q.tw={kind:'arm',m,th:th+R(-.04,.04),P0:q.P,cell:1};bl.push(q)}}}
@@ -1465,7 +1466,7 @@ function computeField(dtf=1,adv=0){
       const sc=(b.g>1.1?(0.55+0.45*fs)*(1+(0.35*mo-0.2)*env.moistFx):(0.75+0.25*fs)*(0.96+0.08*mo))*gf,ax=b.ax*sc,ay=b.ay*sc;
       const cx=s.x+(b.rx*fx+b.ry*rxv)*gf,cy=s.y+(b.rx*fy+b.ry*fx)*gf;b.cx=cx;b.cy=cy;
       if(b.g<1){EM.push(cx,cy,ax,ay,hang+b.ang,P,b.sx,b.sy,0);continue}
-      const t=b.t||0,fl=6*clamp(f*1.6,0,1);RMINI=s.mini?1:s.tc?1.1:s.type==='line'&&b.g>1.1?0.8:0;
+      const t=b.t||0,fl=6*clamp(f*1.6,0,1);RMINI=s.mini?1:s.tc?0.93:s.type==='line'&&b.g>1.1?0.8:0;
       const mv=0.04+0.3*env.morph;raster(cx,cy,ax,ay,hang+b.ang,P,fl,b.k,b.pm??1,b.ns,b.sx+t*mv,b.sy,b.sx2,b.sy2+t*mv*0.85,b.g>1.1&&s.hk?s.hk:0);
       if(b.g>1.1&&P>=38)CORES.push({x:cx,y:cy,r:(ax+ay)/2,P});
     }
@@ -1816,6 +1817,7 @@ function tcDynamics(s,dt){const gf=s.gf||1,hang=Math.atan2(s.hy,s.hx),om=6.283/4
   for(const A of s.arms){A.a0-=om*dt*0.8;A.b2=A.b*(1+0.12*Math.sin(s.ph+A.a0))}
   for(const b of s.blobs){const w=b.tw;if(!w)continue;let r,aw,ta;
     if(w.kind==='ew'){w.a-=om*2.6*dt;r=w.r*(1+0.05*Math.sin(w.a*3+s.ph*2));aw=w.a;ta=aw-1.571;const side=0.5+0.5*Math.cos(aw-s.ew);b.P=w.P0-6+9*side+2*Math.sin(t/23+w.a*5)}
+    else if(w.kind==='sh'){w.a-=om*1.1*dt;r=w.r*(1+0.06*Math.sin(w.a*2+s.ph));aw=w.a;ta=aw-1.571;b.P=w.P0+2*Math.sin(t/37+w.a*3)}
     else if(w.kind==='cdo'){w.a-=om*1.7*dt;r=w.r*(1+0.08*Math.sin(w.a*2-s.ph));aw=w.a;ta=aw-1.571;b.P=w.P0+2*Math.sin(t/31+w.a*4)}
     else{const A=s.arms[w.m];w.th-=dt*(w.cell?0.0045:0.0028);if(w.th<0){w.th+=A.len;b.fv=0}const bb=A.b2||A.b;r=A.r0*Math.exp(bb*w.th);aw=A.a0+w.th;ta=aw+1.571-Math.atan(bb);
       const fade=sst(0,0.5,w.th)*(1-sst(A.len-0.9,A.len,w.th));const pz=samp(TEX,w.th*4.5+w.m*61+s.ph*6,w.m*37+s.ph*9);b.P=(w.P0-4.5*w.th/A.len+2.5*Math.sin(t/19+w.th*7)+7*pz-(pz<-0.55?14:0))*(0.35+0.65*fade);r+=Math.sin(w.th*9+s.ph*3)*1.2*env.size/PX;if(w.ax0){b.ax=Math.max(w.ax0,r*0.095*Math.hypot(1,bb)*0.62)/gf;b.ay=w.ay0*(0.85+0.45*Math.min(1,r/(A.r0*4)))*(1+0.45*pz)/gf}}
@@ -2677,8 +2679,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=112,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=113,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:113,title:'مطر خفيف أوسع في الإعصار المداري',add:['الإعصار المداري صار حوله مطر خفيف أكثر وأوسع: غطاء مطر خفيف يدور معه، والأذرع حولها مطر خفيف بدل الفراغ الكامل']},
   {v:112,title:'إعصار مداري واقعي، وإصلاحات الجوال',add:['أعدنا بناء الإعصار المداري: عين صافية، جدار عواصف قوي حولها (أقوى من جهة)، حلقة مطر أخف، و3-4 أذرع مطر حلزونية واضحة بينها فراغات','الأذرع تدور عكس عقارب الساعة (الداخل أسرع)، والخلايا تزحف داخلها باتجاه العين، والأذرع تتنفس وتتغير، والإعصار كله يمشي مع الرياح ويضعف على اليابسة'],fix:['شلنا خانة "نوع الهطول"','الجوال: الصوت صار يشتغل بعد أول لمسة (وحتى لو الآيفون على الصامت)','الجوال: سجل الأحداث صار ينسحب (سكرول)','الجوال: شلنا زر الإعدادات']},
   {v:111,title:'مركز المعلومات، منتجات رادار جديدة، الإعصار المداري، والمواسم',add:['زر "سجل الأحداث" فوق يفتح مركز المعلومات: الإنذارات الحالية، جدول العواصف، وسجل كل الأحداث (إنذارات، برد، سيول، صواعق، اندماج، ملخص الأيام، المواسم) مع فلترة وحفظ كملف وعدّاد للأحداث الجديدة','جدول العواصف: لكل عاصفة رقمها ونوعها وقوتها وسرعتها واتجاهها واحتمال البرد وأي مدينة بتوصلها ومتى، واضغط الصف وتروح لها','منتج رادار "احتمال البرد": خريطة نسبة احتمال نزول البرد','منتج رادار "نوع الهطول": مطر خفيف ومتوسط وغزير، مطر وثلج، ثلج، وبرد','أداة "محطة قياس": ركّب محطات مطر في أي مكان، واضغطها تشوف قراءتها ورسم بياني للمطر ساعة بساعة','رسم بياني لكل مدينة من زر صغير في إحصائيات الأمطار','أداة "إعصار مداري": عين صافية، جدار من العواصف القوية حولها، وأذرع مطر حلزونية تدور، ويضعف على اليابسة','المواسم المحلية: الوسم والمربعانية والشبط والعقارب والحميمين والذراعين والثريا والجوزاء والمرزم والكليبين وسهيل تطلع مع التاريخ، وكل موسم يأثر على كثرة السحب','طبقة "نسيم البحر والتقاء الرياح": اتجاه نسيم البحر نهاراً ونسيم البر ليلاً، وخطوط الالتقاء اللي تتكون عليها السحب'],fix:['قائمة الإنذارات انتقلت من تحت يسار إلى مركز المعلومات عشان ما تزحم الخريطة','برنامج الكمبيوتر الجديد: شاشة التحديث فيها شريط تقدم وحجم التحديث والسرعة والوقت المتبقي (تحتاج تنزيل البرنامج الجديد مرة وحدة)']},
   {v:110,title:'رجوع المطر الخفيف مثل قبل، ومطر واسع عاصف أقوى',fix:['المطر الواسع العاصف كان أضعف من المطر الواسع العادي: الحين مطره أقوى وأوسع وعواصفه الداخلية أقوى','رجّعنا شكل المطر الخفيف مثل ما كان (شلنا التنقيط المربع)','رجّعنا قوة المطر الواسع الخفيف مثل ما كانت قبل']},
