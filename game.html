@@ -1396,8 +1396,8 @@ function memStep(dt,EM){memOk();atmOk();const{M,T,A,D,RU,RV,w,h,G,cw,ch}=MEM,n=w
         const x=clamp(i-(RU[k]*a+RU[k+1]*b+RU[k+cw]*c+RU[k+cw+1]*e),0,w-1.001),y=clamp(j-(RV[k]*a+RV[k+1]*b+RV[k+cw]*c+RV[k+cw+1]*e),0,h-1.001),x0=x|0,y0=y|0,gx=x-x0,gy=y-y0,q=y0*w+x0;
         A[j*w+i]=(M[q]*(1-gx)+M[q+1]*gx)*(1-gy)+(M[q+w]*(1-gx)+M[q+w+1]*gx)*gy}}M.set(A)}}
   // 3) what feeds it now: the convective cores (their fall-out, capped at moderate rain) and the wide rain areas
-  T.fill(0);const cap=Math.pow(10,3.72+0.12*env.shieldK);
-  for(let j=0;j<h;j++){const Y=((j-1)*G+MEM.oy)|0;if(Y<0||Y>=H-1)continue;for(let i=0;i<w;i++){const X=((i-1)*G+MEM.ox)|0;if(X<0||X>=W-1)continue;const q=Y*W+X,z=Math.max(Zf[q],Zf[q+1],Zf[q+W],Zf[q+W+1]);if(z>2000){const t=z*0.05;T[j*w+i]=t>cap?cap:t}}}
+  T.fill(0);const cap=Math.pow(10,3.82+0.12*env.shieldK);
+  for(let j=0;j<h;j++){const Y=((j-1)*G+MEM.oy)|0;if(Y<0||Y>=H-1)continue;for(let i=0;i<w;i++){const X=((i-1)*G+MEM.ox)|0;if(X<0||X>=W-1)continue;const q=Y*W+X,z=Math.max(Zf[q],Zf[q+1],Zf[q+W],Zf[q+W+1]);if(z>1500){const t=z*0.07;T[j*w+i]=t>cap?cap:t}}}
   for(let e=0;e<EM.length;e+=8){const cx=EM[e],cy=EM[e+1],ax=EM[e+2],ay=EM[e+3],ang=EM[e+4],P=EM[e+5],s1=EM[e+6],s2=EM[e+7];if(P<8)continue;
     const ca=Math.cos(ang),sa=Math.sin(ang),rr=Math.max(ax,ay)*1.5,i0=Math.max(0,Math.floor((cx-rr-MEM.ox)/G)+1),i1=Math.min(w-1,Math.ceil((cx+rr-MEM.ox)/G)+1),j0=Math.max(0,Math.floor((cy-rr-MEM.oy)/G)+1),j1=Math.min(h-1,Math.ceil((cy+rr-MEM.oy)/G)+1),ns=clamp(60/Math.max(ax,ay),0.6,5);
     for(let j=j0;j<=j1;j++){const dy=(j-1)*G+MEM.oy-cy;for(let i=i0;i<=i1;i++){const dx=(i-1)*G+MEM.ox-cx,a=(dx*ca+dy*sa)/ax,c=(-dx*sa+dy*ca)/ay,dd=Math.sqrt(a*a+c*c)+0.33*samp(TEX,dx*ns+s1,dy*ns+s2);if(dd>=1)continue;
@@ -1408,7 +1408,7 @@ function memStep(dt,EM){memOk();atmOk();const{M,T,A,D,RU,RV,w,h,G,cw,ch}=MEM,n=w
     for(let j=0;j<h;j++){const Y=(j-1)*G+MEM.oy,gy=clamp((Y/MG)|0,0,ah-1)*aw;for(let i=0;i<w;i++){const q=j*w+i;let m=M[q];const t=T[q];if(m<0.5&&t<=0){M[q]=0;continue}
       const g=gy+clamp((((i-1)*G+MEM.ox)/MG)|0,0,aw-1),tau=fade?4:(30+85*B[g])*ev*clamp(1+(UP[g]<0?5:2.5)*UP[g],0.28,1.7)*clamp(1.25-(TT[g]-30)/22,0.4,1.25);m/=1+dt/tau;if(t>m)m+=(t-m)*kf;M[q]=m}}
     // 5) it spreads out sideways (turbulent mixing and the spread of falling rain)
-    let p=4*(1.1*env.shieldK/((G*PX)*(G*PX)))*dt;if(p>10)p=10;while(p>0){memBlur(Math.min(1,p));p-=1}
+    let p=4*(1.9*env.shieldK/((G*PX)*(G*PX)))*dt;if(p>10)p=10;while(p>0){memBlur(Math.min(1,p));p-=1}
     // cloud cover: fed by the rain areas, it spreads out several times wider than the rain and thins slowly over hours
     {const C=MEM.C,kc=1-Math.exp(-dt/18),dc=1/(1+dt/(fade?6:230));for(let q=0;q<n;q++){const m=M[q];let c=C[q]*dc;if(m>1.3){const t=Math.min(1,Math.log10(m)/3+0.2);if(t>c)c+=(t-c)*kc}C[q]=c<0.004?0:c}
       let pc=4*(14/((G*PX)*(G*PX)))*dt;if(pc>14)pc=14;MEM.M=C;while(pc>0){memBlur(Math.min(1,pc));pc-=1}MEM.M=M}}
@@ -1416,7 +1416,7 @@ function memStep(dt,EM){memOk();atmOk();const{M,T,A,D,RU,RV,w,h,G,cw,ch}=MEM,n=w
   const t=simT,gw=windVec(),wa=Math.hypot(gw.x,gw.y)>1e-4?Math.atan2(gw.y,gw.x):-0.785,wc=Math.cos(wa),ws=Math.sin(wa),L=Math.LN10/10,B=ATM.B,aw=ATM.w,ah=ATM.h;
   for(let j=0;j<h;j++){const Y=(j-1)*G+MEM.oy,gy=clamp((Y/MG)|0,0,ah-1)*aw;for(let i=0;i<w;i++){const q=j*w+i,m=M[q];if(m<1.2){D[q]=0;continue}
     const X=(i-1)*G+MEM.ox,u0=(X-MEM.tx)*PX,v0=(Y-MEM.ty)*PX,a=u0*wc+v0*ws,b=-u0*ws+v0*wc;
-    const db=6*samp(TEX,a*0.5+11+t*0.0015,b*1.9+3)+4.5*samp(TEX2,a*1.6+57,b*4.6+19-t*0.002)-1+11*(B[gy+clamp((X/MG)|0,0,aw-1)]-0.55)*env.moistFx;
+    const db=6*samp(TEX,a*0.5+11+t*0.0015,b*1.9+3)+4.5*samp(TEX2,a*1.6+57,b*4.6+19-t*0.002)+(m<900?(1-m/900)*5.5*samp(TEX,a*2.1+33,b*8.5+71-t*0.003):0)+4.2*samp(TEX2,a*5.5+13+t*0.004,b*9+47)+2.6*samp(TEX,a*11+81,b*15+5-t*0.005)-1+11*(B[gy+clamp((X/MG)|0,0,aw-1)]-0.55)*env.moistFx;
     const v=m*Math.exp(clamp(db,-12,4)*L)-9;D[q]=v>0?v:0}}}
 function computeField(dtf=1,adv=0){
   Zf.fill(0);MX.fill(0);HK.fill(0);CORES.length=0;const EM=[];
@@ -1448,7 +1448,7 @@ function computeField(dtf=1,adv=0){
   for(let y=0;y<H;y++){const gy=(y-oy)*iG+1,y0=gy|0,fy=gy-y0,r=y*W,jr=y0*mw,nr=((y-ty)&255)<<8;
     for(let x=0;x<W;x++){const i=r+x,gx=(x-ox)*iG+1,x0=gx|0,j=jr+x0;let z=Zf[i];const d0=D[j],d1=D[j+1],d2=D[j+mw],d3=D[j+mw+1];if(z<=1&&d0+d1+d2+d3<=0){DBZ[i]=0;continue}const fx=gx-x0;let m=(d0*(1-fx)+d1*fx)*(1-fy)+(d2*(1-fx)+d3*fx)*fy;
       if(z>1){const c=MX[i]+(MX[i]>40?1.5:4),k=(c*4)|0,zc=Z_LUT[k>399?399:k];if(z>zc)z=zc}else z=0;
-      if(m>1.5)z+=m*(1+0.3*TEX[nr|((x-tx)&255)]);
+      if(m>1.5)z+=m*(1+0.45*TEX[nr|((x-tx)&255)]);
       DBZ[i]=z>2.5?10*Math.log10(z):0}}}
   // light separable [1,2,1] smoothing, like a radar's display filter
   for(let y=0;y<H;y++){const r=y*W;let p=DBZ[r];for(let x=1;x<W-1;x++){const c=DBZ[r+x];TMP[r+x]=(p+2*c+DBZ[r+x+1])*0.25;p=c}TMP[r]=DBZ[r];TMP[r+W-1]=DBZ[r+W-1]}
@@ -1795,8 +1795,8 @@ function cellDynamics(s,dt){
       for(let k=0;k<n&&ncore<(s.megaT?6:s.spin||s.hookR||s.mega?s.maxCores:Math.min(s.maxCores,(s.anc||0)>0.3?13:10));k++){const r=(b.ax+b.ay)/2;let best=[r,0],bm=-1;
         for(let a=0;a<8;a++){const th=a*Math.PI/4+R(-.3,.3),d=r*R(0.7,1.3),ru=Math.cos(th)*d,rr=Math.sin(th)*d;
           const wx=s.x+((b.rx+ru)*fx-(b.ry+rr)*fy)*gf,wy=s.y+((b.rx+ru)*fy+(b.ry+rr)*fx)*gf;
-          const v=moistAt(wx,wy)+R(0,0.08)-(s.type==='line'?Math.abs(ru)*0.03:0)+(s.type!=='line'?0.07*Math.abs(Math.cos(th)):0);if(v>bm){bm=v;best=[ru,rr]}}
-        const e2=s.megaT?R(1,1.25):R(1.25,1.8),rs=r*(s.megaT?R(0.92,1.1):R(0.85,1.12));
+          const v=moistAt(wx,wy)+R(0,0.08)-(s.type==='line'?Math.abs(ru)*0.03:0)+(s.type!=='line'?0.11*Math.abs(Math.cos(th))+(ru<0?0.06:0):0);if(v>bm){bm=v;best=[ru,rr]}}
+        const e2=s.megaT?R(1,1.25):R(1.4,2.1),rs=r*(s.megaT?R(0.92,1.1):R(0.85,1.12));
         const nb=B(b.rx+best[0],b.ry+best[1],rs*e2,rs/e2,s.megaT?clamp(Math.max(b.P,62)+R(-2,2),60,68):clamp(b.P+R(-3,3)+(bm-0.5)*6,40,70),2,{k:b.k,ang:R(-0.35,0.35)});
         nb.fv=0;nb.from=b.from;nb.life2=cellLife()*(s.megaT?1.5:1);nb.age2=0;nb.t=0;nb.m=bm;s.blobs.push(nb);ncore++}}
     if(q>=1)b.out=1}
@@ -2548,8 +2548,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=101,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=102,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:102,title:'حركة السحب مثل الرادار الحقيقي',add:['من مقطع الرادار الحقيقي اللي أرسلته: الخلايا الجديدة صارت تتكون على طول اتجاه الرياح وأكثر من الطرف الخلفي، فالعواصف تصير أحزمة طويلة تتجدد من ورا وتمشي للأمام','منطقة المطر الخفيف والمتوسط حول الأنوية صارت أوسع بكثير، والأنوية جزر صغيرة داخلها مثل الواقع','أطراف السحب صارت متقطعة وفيها خطوط رفيعة مع اتجاه الرياح بدل الحواف الناعمة']},
   {v:101,title:'مطر واسع خفيف، والسيول تكمل لين تنشف',add:['أداة رسم جديدة: "مطر واسع خفيف" — مطر خفيف ورذاذ على مساحة واسعة بدون رعد، يبقى ساعات'],fix:['السيول ما عادت تختفي فجأة: الوادي يكمل مرسوم على طول مجراه والسيل يمشي فيه لين ينشف، ولما يمر السيل يبهت الوادي بالتدريج','السيل يوصل أبعد في مجرى الوادي قبل ما يضعف']},
   {v:100,title:'السيول والأودية',add:['السيول رجعت بنظام جديد كامل: المطر اللي ما تشربه الأرض يجري على التضاريس الحقيقية ويتجمع في الأودية','الأرض تشرب حسب نوعها: الصخر في الجبال يشرب قليل فيسيل بسرعة، والرمل والسهول تشرب كثير، والأرض المبلولة من مطر سابق تسيل أسرع','موجة السيل تمشي بسرعة واقعية (ساعات من الجبل للسهل) والوادي الجاف يشرب جزء منها في الطريق','الجريان بالمتر المكعب في الثانية، بأربع درجات: جريان خفيف، متوسط، سيل، سيل جارف','تنبيهات لما يسيل وادي قرب مدينة، وتدخل في الإنذارات، وتطلع قيمة الجريان لما تحط المؤشر على الوادي','أقوى سيل في اليوم ينكتب في ملخص اليوم والأرقام القياسية','خيار "السيول والأودية" في الطبقات لإخفائها']},
   {v:99,title:'العاصفة الصغيرة تطوّل',fix:['العاصفة الرعدية الصغيرة كانت تتفتت وتختفي بسرعة: الحين تعيش من 4 إلى 6 ساعات على الأقل','صارت تاكل الرطوبة اللي حولها: تتغذى عليها وتبقى قوية، وتشوف الجو يجف في المكان اللي تمر عليه على خريطة الرطوبة','عمرها ما عاد يقصر كثير في الجو الجاف']},
