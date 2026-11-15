@@ -1294,11 +1294,11 @@ function spawn(type,x,y,o={}){
       // keeps renewing its cells; it does not grow giant red cores or swallow its neighbours.
       const v=rnd(),L=R(110,180),Wd=R(45,75),a0=R(-0.35,0.35),cu=R(-0.5,0.5),ca=Math.cos(a0),sa=Math.sin(a0),P=(u,t)=>[u*ca-t*sa,u*sa+t*ca];
       // the rain sheet: overlapping moderate-rain patches over an elongated, slightly bent area
-      for(let k=0,n=9+(rnd()*5|0);k<n;k++){const u=R(-0.5,0.5)*L,t=R(-0.5,0.5)*Wd+cu*u*u/L,[x,y]=P(u,t);bl.push(blob(x,y,R(26,40),R(18,28),R(31,38),0.85,{k:1,m:1.1,late:R(0,.6),ang:a0+R(-.4,.4)}))}
+      for(let k=0,n=12+(rnd()*5|0);k<n;k++){const u=R(-0.5,0.5)*L,t=R(-0.5,0.5)*Wd+cu*u*u/L,[x,y]=P(u,t);bl.push(blob(x,y,R(30,44),R(20,30),R(35,42),0.85,{k:1,m:1.1,late:R(0,.6),ang:a0+R(-.4,.4)}))}
       for(let k=0,n=4+(rnd()*3|0);k<n;k++){const u=R(-0.6,0.6)*L,t=R(-0.6,0.6)*Wd,[x,y]=P(u,t);bl.push(blob(x,y,R(30,46),R(22,32),R(24,30),0.8,{k:1,m:1.15,ang:a0+R(-.5,.5)}))}
       // embedded thunderstorm cells: a line near the leading edge (v<0.5), or scattered through the area
       const nc=4+(rnd()*4|0);for(let k=0;k<nc;k++){let u,t;if(v<0.5){u=(k/(nc-1)-0.5)*L*0.85;t=Wd*0.28+cu*u*u/L+R(-5,5)}else{u=R(-0.45,0.45)*L;t=R(-0.4,0.4)*Wd}const[x,y]=P(u,t);
-        bl.push(core(x,y,R(5.5,8.5),k===0?R(52,57):R(44,52)))}
+        bl.push(core(x,y,R(6.5,9.5),k===0?R(55,60):R(48,55)))}
       break;}
     case'mini':{s.life=R(300,400);s.mini=1;
       // small pulse thunderstorm: one or two tight intense cores that burst up within minutes, crackle with lightning, and collapse within the hour.
@@ -1310,9 +1310,10 @@ function spawn(type,x,y,o={}){
       else{const cu=R(-0.8,0.8),L=R(16,24);for(let k=0;k<3;k++){const t=(k-1)*L/2,bd=cu*t*t/L;bl.push(core(Math.cos(a0)*t-Math.sin(a0)*bd,Math.sin(a0)*t+Math.cos(a0)*bd,R(4.5,6.5),k===1?P0:R(50,58)))}}
       for(const b of bl)b.persist=1;
       break;}
-    case'lstrat':{s.life=R(300,420);
-      // light widespread rain: a broad, gentle sheet of drizzle and light rain (about 15-30 dBZ), no thunder, lasting for hours
-      const n=8+(rnd()*5|0),sx=R(1.1,1.6),a0=R(-0.6,0.6);for(let k=0;k<n;k++){const a=R(0,6.28),d=R(0,55);bl.push(blob(Math.cos(a)*d*sx,Math.sin(a)*d,R(26,44),R(18,32),R(20,29),0.8,{k:1,m:1,ang:a0+R(-.5,.5)}))}
+    case'lstrat':{s.life=R(280,380);s.lst=1;
+      const n=7+(rnd()*5|0),sx=R(1.2,1.8),a0=R(-0.5,0.5),ca=Math.cos(a0),sa=Math.sin(a0);
+      for(let k=0;k<n;k++){const u=R(-45,45)*sx,t=R(-30,30),pb=blob(u*ca-t*sa,u*sa+t*ca,R(14,30),R(10,20),R(22,30),0.8,{k:1,m:1,ang:a0+R(-.7,.7)});
+        pb.life2=s.life*R(0.3,0.65);pb.age2=-s.life*R(0,0.5);if(k<2)pb.age2=-s.life*R(0,0.08);bl.push(pb)}
       break;}
     case'strat':s.life=R(200,280);for(let k=0,n=7+(rnd()*4|0);k<n;k++){const a=R(0,6.28),d=R(0,45);bl.push(blob(Math.cos(a)*d,Math.sin(a)*d,R(24,42),R(18,32),R(25,37),0.8,{k:1,m:1,ang:R(-1,1)}))}
       for(let k=0,n=3+(rnd()*4|0);k<n;k++)bl.push(core(R(-28,28),R(-28,28),R(6,10),R(38,48)));halo(30,R(2,2.5),R(15,19));break;
@@ -1372,6 +1373,7 @@ function raster(cx,cy,ax,ay,ang,P,fl,bk,bm,ns,ox,oy,ox2,oy2,hk=0){
 // (faster and veered from the cells' own motion, so it trails off downshear and off mountain-anchored storms),
 // it spreads out, and it evaporates at a rate set by the humidity of the air (minutes in dry air, 1-2 hours in moist air).
 // Nothing pops in or out: rain appears over minutes and lingers after its storm has died, as on real radar loops.
+const HSH=(()=>{const r=mulberry(4242),a=new Float32Array(16384);for(let i=0;i<a.length;i++){const v=r();a[i]=v*v*(3-2*v)}return a})();
 const MEM={M:null,T:null,A:null,D:null,RU:null,RV:null,w:0,h:0,G:2,ox:0,oy:0,tx:0,ty:0,res:0,fadeT:-1e9};
 const memG=()=>Math.max(2,Math.round(3.2/PX));
 function memInit(){const G=MEM.G=memG(),w=MEM.w=Math.ceil(W/G)+3,h=MEM.h=Math.ceil(H/G)+3,n=w*h;MEM.M=new Float32Array(n);MEM.C=new Float32Array(n);MEM.T=new Float32Array(n);MEM.A=new Float32Array(n);MEM.D=new Float32Array(n);
@@ -1405,10 +1407,10 @@ function memStep(dt,EM){memOk();atmOk();const{M,T,A,D,RU,RV,w,h,G,cw,ch}=MEM,n=w
   // 3) what feeds it now: the convective cores (their fall-out, capped at moderate rain) and the wide rain areas
   T.fill(0);const cap=Math.pow(10,3.82+0.12*env.shieldK);
   for(let j=0;j<h;j++){const Y=((j-1)*G+MEM.oy)|0;if(Y<0||Y>=H-1)continue;for(let i=0;i<w;i++){const X=((i-1)*G+MEM.ox)|0;if(X<0||X>=W-1)continue;const q=Y*W+X,z=Math.max(Zf[q]-0.85*ZM[q],Zf[q+1]-0.85*ZM[q+1],Zf[q+W]-0.85*ZM[q+W],Zf[q+W+1]-0.85*ZM[q+W+1]);if(z>1500){const t=z*0.07;T[j*w+i]=t>cap?cap:t}}}
-  for(let e=0;e<EM.length;e+=8){const cx=EM[e],cy=EM[e+1],ax=EM[e+2],ay=EM[e+3],ang=EM[e+4],P=EM[e+5],s1=EM[e+6],s2=EM[e+7];if(P<8)continue;
+  for(let e=0;e<EM.length;e+=9){const cx=EM[e],cy=EM[e+1],ax=EM[e+2],ay=EM[e+3],ang=EM[e+4],P=EM[e+5],s1=EM[e+6],s2=EM[e+7],flat=EM[e+8];if(P<8)continue;
     const ca=Math.cos(ang),sa=Math.sin(ang),rr=Math.max(ax,ay)*1.5,i0=Math.max(0,Math.floor((cx-rr-MEM.ox)/G)+1),i1=Math.min(w-1,Math.ceil((cx+rr-MEM.ox)/G)+1),j0=Math.max(0,Math.floor((cy-rr-MEM.oy)/G)+1),j1=Math.min(h-1,Math.ceil((cy+rr-MEM.oy)/G)+1),ns=clamp(60/Math.max(ax,ay),0.6,5);
     for(let j=j0;j<=j1;j++){const dy=(j-1)*G+MEM.oy-cy;for(let i=i0;i<=i1;i++){const dx=(i-1)*G+MEM.ox-cx,a=(dx*ca+dy*sa)/ax,c=(-dx*sa+dy*ca)/ay,dd=Math.sqrt(a*a+c*c)+0.33*samp(TEX,dx*ns+s1,dy*ns+s2);if(dd>=1)continue;
-      const dbz=P-(P-6)*(dd<=0?0:dd*dd*dd),k=(dbz*4)|0,z=Z_LUT[k<0?0:k>399?399:k];if(z>T[j*w+i])T[j*w+i]=z}}}
+      const dbz=flat?P-(P-6)*(dd<=0?0:dd**7):P-(P-6)*(dd<=0?0:dd*dd*dd),k=(dbz*4)|0,z=Z_LUT[k<0?0:k>399?399:k];if(z>T[j*w+i])T[j*w+i]=z}}}
   if(dt>0){
     // 4) fill toward the source over minutes; evaporate by the humidity of the air mass, faster where air sinks behind mountains
     const fade=simT<MEM.fadeT,kf=1-Math.exp(-dt/9),ev=1.3-0.8*env.evap,B=ATM.B,UP=ATM.UP,TT=ATM.T,aw=ATM.w,ah=ATM.h;
@@ -1433,10 +1435,10 @@ function computeField(dtf=1,adv=0){
     for(const b of s.blobs){
       const pb=p-Math.min(0.15,25/s.life)*b.late,cf=(b.life2&&!b.persist)?pulse(b.age2/b.life2):1,ft=b.out?0:Math.max(0,lifeF(pb,s.g0||0.15)*s.killF*cf);
       b.fv=b.fv==null?0:b.fv+(ft-b.fv)*kf;const f=b.fv;b.Pe=0;if(f<=0.004)continue;s.vis=true;
-      const fs=pb<(s.g0||0.15)?f:1,mo=b.m==null?0.5:b.m,P=6+(Math.min(s.mcs?(b.g>1.1?57:40):71,b.P+(b.g>1.1?s.boost:s.boost*0.5)+(b.g>1.1?(mo-0.5)*9*env.moistFx:(mo-0.5)*2*env.moistFx))-6)*f;b.Pe=P;
+      const fs=pb<(s.g0||0.15)?f:1,mo=b.m==null?0.5:b.m,P=6+(Math.min(s.mcs?(b.g>1.1?61:46):71,b.P+(b.g>1.1?s.boost:s.boost*0.5)+(b.g>1.1?(mo-0.5)*9*env.moistFx:(mo-0.5)*2*env.moistFx))-6)*f;b.Pe=P;
       const sc=(b.g>1.1?(0.55+0.45*fs)*(1+(0.35*mo-0.2)*env.moistFx):(0.75+0.25*fs)*(0.96+0.08*mo))*gf,ax=b.ax*sc,ay=b.ay*sc;
       const cx=s.x+(b.rx*fx+b.ry*rxv)*gf,cy=s.y+(b.rx*fy+b.ry*fx)*gf;b.cx=cx;b.cy=cy;
-      if(b.g<1){EM.push(cx,cy,ax,ay,hang+b.ang,P,b.sx,b.sy);continue}
+      if(b.g<1){EM.push(cx,cy,ax,ay,hang+b.ang,P,b.sx,b.sy,s.lst?1:0);continue}
       const t=b.t||0,fl=6*clamp(f*1.6,0,1);RMINI=s.mini?1:s.type==='line'&&b.g>1.1?0.8:0;
       const mv=0.04+0.3*env.morph;raster(cx,cy,ax,ay,hang+b.ang,P,fl,b.k,b.pm??1,b.ns,b.sx+t*mv,b.sy,b.sx2,b.sy2+t*mv*0.85,b.g>1.1&&s.hk?s.hk:0);
       if(b.g>1.1&&P>=38)CORES.push({x:cx,y:cy,r:(ax+ay)/2,P});
@@ -1455,7 +1457,7 @@ function computeField(dtf=1,adv=0){
   for(let y=0;y<H;y++){const gy=(y-oy)*iG+1,y0=gy|0,fy=gy-y0,r=y*W,jr=y0*mw,nr=((y-ty)&255)<<8;
     for(let x=0;x<W;x++){const i=r+x,gx=(x-ox)*iG+1,x0=gx|0,j=jr+x0;let z=Zf[i];const d0=D[j],d1=D[j+1],d2=D[j+mw],d3=D[j+mw+1];if(z<=1&&d0+d1+d2+d3<=0){DBZ[i]=0;continue}const fx=gx-x0;let m=(d0*(1-fx)+d1*fx)*(1-fy)+(d2*(1-fx)+d3*fx)*fy;
       if(z>1){const c=MX[i]+(MX[i]>40?1.5:4),k=(c*4)|0,zc=Z_LUT[k>399?399:k];if(z>zc)z=zc}else z=0;
-      if(m>1.5)z+=m*(1+0.45*TEX[nr|((x-tx)&255)]);
+      if(m>1.5)z+=m*(m<600?0.3+1.4*HSH[((((y-ty)>>1)&127)<<7)|(((x-tx)>>1)&127)]:1+0.45*TEX[nr|((x-tx)&255)]);
       DBZ[i]=z>2.5?10*Math.log10(z):0}}}
   // light separable [1,2,1] smoothing, like a radar's display filter
   for(let y=0;y<H;y++){const r=y*W;let p=DBZ[r];for(let x=1;x<W-1;x++){const c=DBZ[r+x];TMP[r+x]=(p+2*c+DBZ[r+x+1])*0.25;p=c}TMP[r]=DBZ[r];TMP[r+W-1]=DBZ[r+W-1]}
@@ -1783,6 +1785,7 @@ function cellDynamics(s,dt){
   for(const b of s.blobs)if(b.g>1.1&&!b.hook&&!b.out)ncore++;
   for(const b of s.blobs){
     let mm=moistAt(b.cx||s.x,b.cy||s.y);if(s.mega)mm=Math.max(mm,0.92*envHum(b.cx||s.x,b.cy||s.y));b.m=b.m==null?mm:b.m+(mm-b.m)*Math.min(1,dt*0.15);
+    if(s.lst&&b.g<=1.1&&b.life2)b.age2+=dt;
     if(b.g<=1.1||b.hook||b.out||b.persist)continue;
     if(b.life2==null){b.life2=cellLife();b.age2=R(0.15,0.55)*b.life2}
     b.age2+=dt*(1+(0.25-0.6*b.m)*env.moistFx);
@@ -2556,8 +2559,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=105,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=106,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:106,title:'مطر واسع خفيف مثل الرادار الحقيقي',add:['من المقطع اللي أرسلته: المطر الواسع الخفيف صار بقع مطر خفيف متساوية القوة بحواف حادة، بدون حلقات ألوان متدرجة','البقع تطلع صغيرة، تتجمع وتكبر، ثم تتقطع وتتلاشى وحدة وحدة مثل الرادار الحقيقي','المطر الخفيف صار محبّب ومتقطع مثل نقاط الرادار الحقيقية بدل ما يكون ناعم'],fix:['المطر الواسع العاصف كان أضعف من المطر الواسع العادي: الحين مطره أقوى وأوسع وعواصفه الداخلية أقوى']},
   {v:105,title:'رجوع عمر العاصفة الصغيرة',fix:['رجّعنا عمر العاصفة الرعدية الصغيرة مثل قبل: 4 إلى 6 ساعات تقريباً، وإذا اندمجت تطوّل أكثر (والمطر الأزرق حولها باقي قليل)']},
   {v:104,title:'إعادة بناء خط العواصف',add:['خط العواصف صار مثل الرادار الحقيقي: خط ضيق متموّج من الخلايا القوية على حافة هبة الرياح، أقوى في أجزاء وأضعف في أجزاء، ومنقطع في مكان أو مكانين، ويضعف عند أطرافه','وراه منطقة هادئة، وبعدها حزام عريض من المطر المتوسط ممتد 30 إلى 80 كم','غالباً جزء واحد بس ينتفخ للأمام على شكل قوس، مو الخط كله']},
   {v:103,title:'إعادة بناء المطر الواسع العاصف والعاصفة الصغيرة',add:['"مطر واسع عاصف" صار مطر متوسط على مساحة واسعة وداخله عواصف رعدية عادية (أغلبها صف قدام المنطقة)، يمشي كمنطقة مطر وحدة مع الرياح ويجدد خلاياه'],fix:['المطر الواسع العاصف ما عاد يولّد أنوية حمراء عملاقة ولا يبلع السحب اللي حوله','بدّلنا مكان "مطر واسع" و"مطر واسع خفيف" في الأدوات','العاصفة الرعدية الصغيرة صار المطر الخفيف الأزرق حولها قليل مثل الواقع في السعودية','العاصفة الصغيرة تعيش 3 ساعات كحد أقصى، وإذا اندمجت تقدر توصل 6 ساعات','أصوات رياح جديدة: رياح صحراوية حقيقية (تسجيل عاصفة رملية) وهبات رياح قوية من تسجيلات حقيقية']},
