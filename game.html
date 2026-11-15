@@ -1255,15 +1255,15 @@ function spawn(type,x,y,o={}){
   const shield=(r,P)=>bl.push(blob(R(-4,2),R(-3,3),r*R(2.3,2.9),r*R(1.3,1.7),P+R(1,3),0.85,{k:1,m:1.15,late:.15,ang:R(-.35,.35),halo:1}));
   const halo=(r,sc,P)=>bl.push(blob(R(-3,3),R(-3,3),r*sc*R(1.2,1.45),r*sc*R(.7,.85),P,0.75,{k:1,m:1.35,late:.25,ang:R(-.35,.35),halo:1}));
   switch(type){
-    case'hshower':{s.life=R(70,110);s.cap=53;
+    case'hshower':{s.life=R(115,165);s.cap=53;
       // heavy rain cell: a bigger, rain-loaded cell whose core reaches ordinary red (about 50-55 dBZ) but not dark red
       const r0=R(11,15);bl.push(core(0,0,r0,R(55,58)));for(let k=0,n=2+(rnd()*3|0);k<n;k++)bl.push(core(R(-20,20),R(-8,8),R(8,12),R(46,54)));
       shield(r0,R(31,36));if(rnd()<.75)halo(r0,R(2.4,3.2),R(18,21));break;}
-    case'lshower':{s.life=R(60,95);s.cap=35;
+    case'lshower':{s.life=R(80,120);s.cap=35;
       // light rain cell: a gentle cell of light rain (greens, at most a touch of yellow), no thunder
       const r0=R(9,13);bl.push(core(0,0,r0,R(34,38)));for(let k=0,n=1+(rnd()*3|0);k<n;k++)bl.push(core(R(-17,17),R(-7,7),R(7,10),R(28,35)));
       shield(r0,R(22,27));if(rnd()<.6)halo(r0,R(2,2.6),R(15,18));break;}
-    case'shower':{s.life=R(55,85);const r0=R(9,13);bl.push(core(0,0,r0,R(47,56)));
+    case'shower':{s.life=R(95,140);const r0=R(9,13);bl.push(core(0,0,r0,R(47,56)));
       for(let k=0,n=1+(rnd()*3|0);k<n;k++)bl.push(core(R(-17,17),R(-6,6),R(7,10),R(40,52)));
       shield(r0,R(28,33));if(rnd()<.65)halo(r0,R(2.2,3),R(17,20));break;}
     case'storm':{s.life=R(85,120);const P0=R(59,66)+env.sev*4,v=rnd();
@@ -2294,7 +2294,7 @@ function draw(now){
   if(product==='temp'){if(!tempCan||tempCan.ver!==ATM.ver)buildTempCan();ctx.imageSmoothingEnabled=true;ctx.globalAlpha=0.82;ctx.drawImage(tempCan,0,0,ATM.w*MG,ATM.h*MG);ctx.globalAlpha=1}
   if(product!=='wind'&&product!=='terr'&&product!=='temp'){ctx.imageSmoothingEnabled=true;ctx.drawImage(maskCan,0,0,W,H)}
   if(product==='wind'){if(wCan){ctx.imageSmoothingEnabled=true;ctx.globalAlpha=layers.streets?1-0.4*sst(8,60,s):1;ctx.drawImage(wCan,0,0,WGW*WG,WGH*WG);ctx.globalAlpha=1}}
-  else{ctx.imageSmoothingEnabled=layers.smooth||(RP.on&&RP.f>1);ctx.globalAlpha=(layers.streets?1-0.45*sst(8,60,s):1)*(product==='temp'?0.32:product==='terr'?0.8:1);ctx.drawImage(RP.on&&RP.can?RP.can:rCan,0,0,W,H);ctx.globalAlpha=1;}
+  else{if(product==='ref'||product==='acc'||product==='terr'){ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);drawFloods();ctx.restore()}ctx.imageSmoothingEnabled=layers.smooth||(RP.on&&RP.f>1);ctx.globalAlpha=(layers.streets?1-0.45*sst(8,60,s):1)*(product==='temp'?0.32:product==='terr'?0.8:1);ctx.drawImage(RP.on&&RP.can?RP.can:rCan,0,0,W,H);ctx.globalAlpha=1;}
   if(product==='ref'&&!RP.on)drawWarn(now);
   if(product==='fcst')scenEnsure();if(product==='fcst'&&!scen.running&&scen.fc){scenRender();if(scen.can){ctx.imageSmoothingEnabled=true;ctx.drawImage(scen.can,0,0,scen.fgw*FG,scen.fgh*FG)}}
   const lw=1/s;
@@ -2315,7 +2315,6 @@ function draw(now){
   // radar site
   for(const RD of RADARS){const[x,y]=toScreen(RD.x,RD.y);ctx.fillStyle='#8fd8ff';ctx.beginPath();ctx.moveTo(x,y-6);ctx.lineTo(x+5,y);ctx.lineTo(x,y+6);ctx.lineTo(x-5,y);ctx.closePath();ctx.fill();ctx.strokeStyle='#04070a';ctx.lineWidth=1.5;ctx.stroke()}
   // storm tracks
-  if(product==='ref'||product==='acc'||product==='terr')drawFloods();
   if(layers.sb&&!RP.on)drawSeaBreeze();drawGauges();
   // automatic forecast: where each significant storm is expected to be in one hour (its present motion carried forward, widening with uncertainty)
   if(layers.fc&&product==='ref'&&!RP.on)for(const w of warnStorms()){const[ax,ay]=toScreen(w.cx,w.cy),[bx,by]=toScreen(w.cx+w.vx*60,w.cy+w.vy*60),r0=Math.max(6,w.r*s),r1=r0*1.3+8,L=Math.hypot(bx-ax,by-ay),col=WARN_C[w.mx>=58?3:w.mx>=50?2:1];
@@ -2708,8 +2707,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=115,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=116,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:116,title:'الخلايا المطرية تطوّل، والسيول تحت السحب',fix:['الخلايا المطرية الثلاث (الخفيفة والعادية والغزيرة) صارت تعيش أطول بكثير','خطوط السيول والأودية صارت تنرسم تحت السحب بدل ما تكون فوقها']},
   {v:115,title:'خلية مطرية غزيرة وخفيفة، وسوبر سل',add:['"خلية عملاقة" صار اسمها "سوبر سل" وانتقلت تحت العاصفة الرعدية العملاقة','أداة "خلية مطرية غزيرة": خلية أكبر ومطرها أقوى، توصل الأحمر العادي (50-55 dBZ) وما توصل الأحمر الغامق','أداة "خلية مطرية خفيفة": مطر خفيف بالأخضر وأحياناً لمسة أصفر، بدون رعد']},
   {v:114,title:'المنخفض العلوي والعواصف المتتالية',add:['أداة جديدة "منخفض علوي": حزام أمطار طويل جداً مع اتجاه الرياح (من الجنوب الغربي للشمال الشرقي غالباً)، يمشي ككتلة وحدة ويولّد عواصف رعدية باستمرار','العواصف تتكون أغلبها من طرفه الخلفي وتمشي على طوله وحدة ورا وحدة، فنفس الأماكن يجيها مطر مرة بعد مرة وتزيد السيول','طرف الحزام الخلفي يثبت تقريباً لو كان فوق الجبال ويستمر يولّد عواصف، والطرف الأمامي يكمل مع الرياح','المنخفض العلوي يتكون لحاله أحياناً (نادر) في الأجواء الرطبة وغير المستقرة','العواصف العادية صارت أحياناً تولّد خلية جديدة وراها على نفس المسار (عواصف متتالية)']},
   {v:113,title:'مطر خفيف أوسع في الإعصار المداري',add:['الإعصار المداري صار حوله مطر خفيف أكثر وأوسع: غطاء مطر خفيف يدور معه، والأذرع حولها مطر خفيف بدل الفراغ الكامل']},
