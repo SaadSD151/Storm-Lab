@@ -1977,16 +1977,16 @@ function step(dt,rdt=0){
     if(s.anc>0.2&&!s.megaT&&!s.hookR){
       if(!s.kill&&pS<0.8){s.rad=Math.min((s.rad0||s.rad||12)*2.6,(s.rad||12)+dt*0.05*s.anc/PX);s.maxCores=Math.min(13,Math.max(s.maxCores||0,6+((s.rad-(s.rad0||s.rad))*PX/5|0)))}}
     if(s.type!=='line'){const m=Math.hypot(bhx,bhy);if(m>0.02){const k2=Math.min(1,dt*(s.oro?0.0006:0.004));s.hx+=(bhx/m-s.hx)*k2;s.hy+=(bhy/m-s.hy)*k2;const n=Math.hypot(s.hx,s.hy);s.hx/=n;s.hy/=n}}
-    s.age+=dt*(s.mini?clamp(1+(0.5-s.mc)*0.4,0.8,1.2):(1+(0.5-s.mc)*0.9*env.moistFx)*(1-0.4*(s.anc||0)));
+    s.age+=dt*(s.mini?clamp(1+(0.5-s.mc)*0.4,0.8,1.2):(1+(0.5-s.mc)*0.9*env.moistFx)*(1-0.4*(s.anc||0)))*(s.age>s.life*0.8&&!s.kill&&(s.hookR||s.megaT||s.mega||s.type==='storm'||s.type==='line')?0.4:1);
     if(s.mini&&!s.kill&&ATM.Q){const gx=clamp((s.x/MG)|0,1,ATM.w-2),gy=clamp((s.y/MG)|0,1,ATM.h-2),Q=ATM.Q,dq=0.0011*dt;for(let oy=-1;oy<=1;oy++)for(let ox=-1;ox<=1;ox++){const i=(gy+oy)*ATM.w+gx+ox;Q[i]=Math.max(0.06,Q[i]-dq*(ox||oy?0.6:1))}}
     // no single cloud system lasts for ever: past about half a day (longer for wide rain and lows) it runs down quickly, whatever the settings
     if(!s.scen&&!s.megaT&&!s.tc&&!s.ul&&s.t0!=null){if(s.fuel==null)s.fuel=1;let mx=0;for(const b of s.blobs)if(b.Pe>mx)mx=b.Pe;const q=humAt(s.x,s.y),burn=clamp((mx-25)/40,0,1)*(s.type==='strat'?0.6:1);
       s.fuel=clamp(s.fuel+dt*((q-0.38)*0.02-burn*0.0055),0,1.4);s.fh=s.fuel>0.35;
       if(s.fh&&s.age>s.life*0.55&&!s.kill)s.age=Math.max(s.life*0.55,s.age-dt*0.95);   // well fed: stays mature
-      else if(s.fuel<0.2)s.age+=dt*(1+3*(0.2-s.fuel)/0.2);                               // starving: dies faster
+      else if(s.fuel<0.2&&s.age<s.life*0.78)s.age+=dt*(1.5*(0.2-s.fuel)/0.2);                               // starving: dies faster
       const hrs=(simT-s.t0)/60;if(hrs>36)s.age+=dt*(hrs-36)}                               // safety: nothing lasts for ever
     // a giant stays at full strength for a limited run (about 280-370 km of travel, or 10-14 hours if it hardly moves, or until the air dries); then it ages and dies like any thunderstorm
-    if(s.mega&&!s.kill){s.trav=(s.trav||0)+Math.hypot(s.vx,s.vy)*dt*PX;s.ht=(s.ht||0)+dt;s.maxTrav=s.maxTrav||R(280,370);s.maxT=s.maxT||R(600,840);s.hold=s.mc>0.27&&s.trav<s.maxTrav&&s.ht<s.maxT;if(s.hold&&s.age>s.life*0.5)s.age=s.life*0.5;if(!s.hold&&s.held&&!s.rel){s.rel=1;s.age=Math.max(s.age,s.life*(1-Math.min(0.4,170/s.life)))}if(s.hold)s.held=1}const p=s.age/s.life;for(const b of s.blobs)b.t=(b.t||0)+dt;cellDynamics(s,dt);if(s.merged>0)coalesce(s,dt);
+    if(s.mega&&!s.kill){s.trav=(s.trav||0)+Math.hypot(s.vx,s.vy)*dt*PX;s.ht=(s.ht||0)+dt;s.maxTrav=s.maxTrav||R(280,370);s.maxT=s.maxT||R(600,840);s.hold=s.mc>0.27&&s.trav<s.maxTrav&&s.ht<s.maxT;if(s.hold&&s.age>s.life*0.5)s.age=s.life*0.5;if(!s.hold&&s.held&&!s.rel){s.rel=1}if(s.hold)s.held=1}const p=s.age/s.life;for(const b of s.blobs)b.t=(b.t||0)+dt;cellDynamics(s,dt);if(s.merged>0)coalesce(s,dt);
     if(s.scen){
       // scenario clouds keep their water through the night (weakening to lighter rain); from 8 AM the sun eats them away over 2-3 hours
       {const dy=Math.floor((START_H+simT/60)/24);if(s.kd!==dy&&hour>=8&&hour<12&&simT-(s.bornT??simT)>120){s.kd=dy;s.keep=rnd()<clamp(1.3*env.moist+(s.merged>0?0.3:0),0.2,0.95)*clamp(1.4-(atmSamp(ATM.TX,s.x,s.y)-28)/14,0.25,1.1)}}
@@ -2712,8 +2712,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=118,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=119,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:119,title:'السوبر سل والعاصفة العملاقة ما تختفي فجأة',fix:['السوبر سل والعاصفة الرعدية العملاقة كانت تختفي فجأة: الحين تضعف بالتدريج، ومرحلة الضعف صارت أطول بمرتين','العاصفة الرعدية العملاقة كانت تقفز فجأة لآخر عمرها لما تخلص مسافتها: شلنا القفزة وصارت تشيخ بشكل طبيعي','السحابة اللي يخلص وقودها تضعف أسرع، لكن ما تستعجل في آخر مرحلة من عمرها']},
   {v:118,title:'إصلاح طبقة نسيم البحر',fix:['خطوط التقاء الرياح (البرتقالي) كانت فجأة تغطي الخريطة كلها ثم ترجع: الحين تطلع بس في الأماكن اللي فيها التقاء رياح فعلي']},
   {v:117,title:'السحب تعيش على الرطوبة',add:['نظام جديد لعمر السحب: كل سحابة لها "وقود" تاخذه من الرطوبة اللي تمر عليها وتصرفه وهي تمطر، فما عاد فيه حد زمني ثابت: تعيش ما دامت تلقى رطوبة، ولما تنتهي رطوبتها تضعف وتموت','السحابة تاكل الرطوبة اللي تحتها، فلازم تكمل تزحف لمكان رطب عشان تعيش أكثر','كل السحب صارت تنجذب للمناطق الرطبة وهي تمشي، وكل ما قل وقودها زاد انجذابها','الرياح دايماً تدفع السحب: ما فيه سحابة توقف مكانها (الجبال تبطئها بس)','السحابة اللي وقودها كثير تكون أقوى، واللي وقودها قليل تضعف']},
   {v:116,title:'الخلايا المطرية تطوّل، والسيول تحت السحب',fix:['الخلايا المطرية الثلاث (الخفيفة والعادية والغزيرة) صارت تعيش أطول بكثير','خطوط السيول والأودية صارت تنرسم تحت السحب بدل ما تكون فوقها']},
