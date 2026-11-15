@@ -665,6 +665,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
         </div>
         <div class="hint" id="fpsHint" style="font-size:11px;color:var(--muted);margin-top:4px">الصورة تتحدث 10 مرات في الثانية.</div>
         <div class="sl"><label for="radAlpha">وضوح ألوان المطر <output id="oAlpha"></output></label><input type="range" id="radAlpha" min="35" max="100" step="1"></div>
+        <div class="sl"><label for="flAlpha">وضوح السيول والأودية <output id="oFlA"></output></label><input type="range" id="flAlpha" min="10" max="100" step="1"></div>
       </section>
       <section id="secSnd">
         <h2>الصوت <small id="sndState">مرّر المؤشر فوق المطر</small></h2>
@@ -2234,7 +2235,7 @@ function drawDust(){if(!ATM.DU)return;const w=ATM.w,h=ATM.h;if(!dustCan||dustCan
 //  - the flood wave travels at 0.5-3 m/s depending on the slope (hours from the mountains to the plain), and the dry wadi bed drinks part of it on the way.
 // Discharge is in cubic metres per second, as hydrologists report it.
 const FL={g:3,w:0,h:0,key:'',rc:null,ord:null,land:null,S:null,Q:null,Qd:null,SM:null,tau:null,inf:null,acc:0,max:0};
-const FLQ=[15,60,300,1200],FLC=['#8fdcff','#45a6ff','#3167ff','#b455ff'],FLN=['جريان خفيف','جريان متوسط','سيل','سيل جارف'];
+let flAlpha=1;const FLQ=[15,60,300,1200],FLC=['#8fdcff','#45a6ff','#3167ff','#b455ff'],FLN=['جريان خفيف','جريان متوسط','سيل','سيل جارف'];
 function floodInit(){const g=FL.g=PX>1?2:3,w=FL.w=Math.ceil(W/g),h=FL.h=Math.ceil(H/g),n=w*h,E=new Float32Array(n),land=new Uint8Array(n);FL.key=regionKey;
   for(let gy=0;gy<h;gy++)for(let gx=0;gx<w;gx++){const i=gy*w+gx,x=Math.min(W-1,gx*g+(g>>1)),y=Math.min(H-1,gy*g+(g>>1));land[i]=landKm[y*W+x];let e=0,c=0;
     for(let oy=0;oy<g;oy++)for(let ox=0;ox<g;ox++){const X=Math.min(W-1,gx*g+ox),Y=Math.min(H-1,gy*g+oy);e+=elevM[Y*W+X]||0;c++}E[i]=land[i]?e/c+samp(TEX2,gx*0.9,gy*0.9)*1.2:-100}
@@ -2268,7 +2269,7 @@ function drawFloods(){if(!layers.flood||!FL.Dv||FL.key!==regionKey||!(FL.dmax>=F
   for(let dry=1;dry>=0;dry--)for(let pass=0;pass<2;pass++)for(let c=0;c<4;c++){const lo=FLQ[c],hi=c<3?FLQ[c+1]:1e12;ctx.beginPath();let any=false;
     for(let gy=y0;gy<=y1;gy++)for(let gx=x0;gx<=x1;gx++){const i=gy*w+gx,q=Dv[i];if(q<lo||q>=hi)continue;if((Qd[i]<q*0.45?1:0)!==dry)continue;const r=rc[i];if(r<0)continue;any=true;const[sx,sy]=P(i),[ex,ey]=P(r),mx=(sx+ex)/2,my=(sy+ey)/2;
       if(!up[i]){ctx.moveTo(sx,sy);ctx.lineTo(mx,my)}const r2=rc[r];ctx.moveTo(mx,my);if(r2>=0){const[fx,fy]=P(r2);ctx.quadraticCurveTo(ex,ey,(ex+fx)/2,(ey+fy)/2)}else ctx.lineTo(ex,ey)}
-    if(!any)continue;const wd=[1.5,2.3,3.3,4.8][c]*zs;ctx.globalAlpha=dry?0.45:1;if(pass===0){ctx.strokeStyle='rgba(4,10,20,.8)';ctx.lineWidth=wd+2.2}else{ctx.strokeStyle=FLC[c];ctx.lineWidth=wd}ctx.stroke()}ctx.globalAlpha=1;
+    if(!any)continue;const wd=[1.5,2.3,3.3,4.8][c]*zs;ctx.globalAlpha=(dry?0.45:1)*flAlpha;if(pass===0){ctx.strokeStyle='rgba(4,10,20,.8)';ctx.lineWidth=wd+2.2}else{ctx.strokeStyle=FLC[c];ctx.lineWidth=wd}ctx.stroke()}ctx.globalAlpha=1;
   ctx.restore()}
 // ---------- (5) warnings: yellow / orange / red per city, in the style of the met service ----------
 const WARN_C=['','#f2d43b','#f39a2a','#e8392c'],WARN_N=['','تنبيه أصفر','إنذار برتقالي','إنذار أحمر'];
@@ -2580,14 +2581,14 @@ $('wideBtn').addEventListener('click',()=>{const on=document.body.classList.togg
 const STYLE_SW={game:'linear-gradient(135deg,#0d1b28 0 45%,#2a2c30 45%)',light:'linear-gradient(135deg,#aad3df 0 45%,#ebe9e4 45% 70%,#fcd581 70% 74%,#ebe9e4 74%)',terrain:'linear-gradient(135deg,#80b8db 0 40%,#e2d6b2 40% 62%,#b89a72 62% 82%,#8c7058 82%)',sat:'linear-gradient(135deg,#0e2c4a 0 32%,#3a9aa0 32% 42%,#c4a57a 42% 70%,#6b5440 70%)',night:'linear-gradient(135deg,#17263c 0 45%,#242f3e 45% 70%,#746855 70% 74%,#242f3e 74%)'};
 $('styleGrid').innerHTML=Object.entries(MAP_STYLES).map(([k,v])=>`<button data-s="${k}" aria-pressed="${k===mapStyle}"><span class="sw" style="background:${STYLE_SW[k]}"></span>${v.n}</button>`).join('');
 $('palGrid').innerHTML=Object.entries(PALETTES).map(([k,v])=>`<button data-s="${k}" aria-pressed="${k===palKey}"><span class="sw" style="background:linear-gradient(to right,${v.steps.map(s=>s[1]).join(',')})"></span>${v.n}</button>`).join('');
-function save(){try{localStorage.setItem('stormlab-look',JSON.stringify({aim:aimPc,mapStyle,palKey,palSmooth,radarAlpha,radarFps,snd:{on:SND.on,thunder:SND.thunder,wind:SND.wind,mute:SND.mute,vol:SND.vol}}))}catch(e){}}
+function save(){try{localStorage.setItem('stormlab-look',JSON.stringify({aim:aimPc,mapStyle,palKey,palSmooth,radarAlpha,flAlpha,radarFps,snd:{on:SND.on,thunder:SND.thunder,wind:SND.wind,mute:SND.mute,vol:SND.vol}}))}catch(e){}}
 function syncLook(){segSet('fpsSeg','f',radarFps);$('fpsHint').textContent=radarFps<0?'مثل الرادار الحقيقي تماماً: الرادار يكمل مسحه كل 5–6 دقائق تقريباً، فالصورة تتحدث مرة مع كل مسح (كل 6 دقائق محاكاة، يعني كل 3 ثوانٍ على سرعة 1×). تحريك الخريطة يبقى سلساً.':radarFps===1?'الصورة تتحدث مرة كل ثانية، وتحريك الخريطة يبقى سلساً.':radarFps?`الصورة تتحدث ${radarFps} مرات في الثانية فقط، وتحريك الخريطة يبقى سلساً.`:'الصورة تتحدث 10 مرات في الثانية (وأسرع عند تسريع الوقت).';segSet('styleGrid','s',mapStyle);segSet('palGrid','s',palKey);$('palSmooth').checked=palSmooth;$('radAlpha').value=Math.round(radarAlpha*100);$('oAlpha').textContent=Math.round(radarAlpha*100)+'%'}
 $('fpsSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;radarFps=+b.dataset.f;syncLook();save()});
 $('styleGrid').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setMapStyle(b.dataset.s)});
 $('palGrid').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;palKey=b.dataset.s;buildDbzLut();fieldDirty=true;syncLook();renderLegend();save()});
 $('palSmooth').addEventListener('change',e=>{palSmooth=e.target.checked;buildDbzLut();buildAccLut();fieldDirty=true;renderLegend();save()});
 $('radAlpha').addEventListener('input',e=>{radarAlpha=e.target.value/100;buildDbzLut();buildAccLut();buildHailPk();fieldDirty=true;syncLook();save()});
-try{const o=JSON.parse(localStorage.getItem('stormlab-look')||'null');if(o){if(MAP_STYLES[o.mapStyle])mapStyle=o.mapStyle;if(PALETTES[o.palKey])palKey=o.palKey;palSmooth=!!o.palSmooth;if(o.radarAlpha>=0.35&&o.radarAlpha<=1)radarAlpha=o.radarAlpha;if([0,1,4,5,6,-1].includes(o.radarFps))radarFps=o.radarFps;if(o.aim===false)aimPc=false;if(o.snd){SND.on=o.snd.on!==false;SND.thunder=o.snd.thunder!==false;SND.wind=o.snd.wind!==false;SND.mute=!!o.snd.mute;if(o.snd.vol>=0&&o.snd.vol<=1)SND.vol=o.snd.vol}buildDbzLut();buildAccLut()}}catch(e){}
+try{const o=JSON.parse(localStorage.getItem('stormlab-look')||'null');if(o){if(MAP_STYLES[o.mapStyle])mapStyle=o.mapStyle;if(PALETTES[o.palKey])palKey=o.palKey;palSmooth=!!o.palSmooth;if(o.radarAlpha>=0.35&&o.radarAlpha<=1)radarAlpha=o.radarAlpha;if(o.flAlpha>=0.1&&o.flAlpha<=1)flAlpha=o.flAlpha;if([0,1,4,5,6,-1].includes(o.radarFps))radarFps=o.radarFps;if(o.aim===false)aimPc=false;if(o.snd){SND.on=o.snd.on!==false;SND.thunder=o.snd.thunder!==false;SND.wind=o.snd.wind!==false;SND.mute=!!o.snd.mute;if(o.snd.vol>=0&&o.snd.vol<=1)SND.vol=o.snd.vol}buildDbzLut();buildAccLut()}}catch(e){}
 syncLook();
 const SND_NAMES=[[5,''],[20,'رذاذ'],[30,'مطر خفيف'],[40,'مطر متوسط'],[50,'مطر غزير'],[60,'مطر غزير جداً'],[999,'أمطار عنيفة']];
 function sndSync(){$('sOn').checked=SND.on;$('sThunder').checked=SND.thunder;$('sWind').checked=SND.wind;$('sVol').value=Math.round(SND.vol*100);$('oVol').textContent=Math.round(SND.vol*100)+'%';$('sndBtn').setAttribute('aria-pressed',!SND.mute)}
@@ -2715,7 +2716,7 @@ const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
 const APP_VERSION=121,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
-  {v:121,title:'السيول فوق السحب',fix:['رجّعنا خطوط السيول والأودية فوق السحب مثل قبل']},
+  {v:121,title:'السيول فوق السحب',add:['خيار "وضوح السيول والأودية" في الإعدادات تحت وضوح ألوان المطر'],fix:['رجّعنا خطوط السيول والأودية فوق السحب مثل قبل']},
   {v:120,title:'السحب ما تختفي فجأة ولا تقفز',fix:['السحابة الكبيرة كانت تختفي فجأة لما يقرب مركزها من طرف الخريطة: الحين تبقى لين يطلع مطرها كله من الخريطة','الأنوية الحمراء كانت تختفي وتطلع في مكان جديد بسرعة: الحين كل نواة تكبر وتضعف بالتدريج (ضعف المدة السابقة تقريباً)، فتشوف القديمة تخف والجديدة تقوى جنبها']},
   {v:119,title:'السوبر سل والعاصفة العملاقة ما تختفي فجأة',fix:['السوبر سل والعاصفة الرعدية العملاقة كانت تختفي فجأة: الحين تضعف بالتدريج، ومرحلة الضعف صارت أطول بمرتين','العاصفة الرعدية العملاقة كانت تقفز فجأة لآخر عمرها لما تخلص مسافتها: شلنا القفزة وصارت تشيخ بشكل طبيعي','السحابة اللي يخلص وقودها تضعف أسرع، لكن ما تستعجل في آخر مرحلة من عمرها']},
   {v:118,title:'إصلاح طبقة نسيم البحر',fix:['خطوط التقاء الرياح (البرتقالي) كانت فجأة تغطي الخريطة كلها ثم ترجع: الحين تطلع بس في الأماكن اللي فيها التقاء رياح فعلي']},
@@ -2844,6 +2845,7 @@ $('tlRev').addEventListener('click',()=>{if(!RP.on&&!rpEnter(RP.fr.length-1))ret
 $('tlPlay').addEventListener('click',()=>{if(!RP.on)return;RP.play=RP.play>0?0:1;RP.acc=0;tlSync()});
 $('tlSpd').addEventListener('change',e=>{RP.spd=+e.target.value});
 $('tlLive').addEventListener('click',()=>{if(RP.on)rpLive()});
+{const fa=document.getElementById('flAlpha'),fo=document.getElementById('oFlA');fa.value=Math.round(flAlpha*100);fo.textContent=fa.value+'%';fa.addEventListener('input',e=>{flAlpha=e.target.value/100;fo.textContent=e.target.value+'%';save()})}
 $('setX').addEventListener('click',()=>{$('setPanel').hidden=true});$('setPanel').addEventListener('pointerdown',e=>{if(e.target===$('setPanel'))$('setPanel').hidden=true});
 $('setBtn').addEventListener('click',async()=>{const A=window.stormApp;let on=true;if(A){try{on=await A.gpuGet()}catch(e){}}
   $('setGpuBox').innerHTML=`<label class="chk"><input type="checkbox" id="setGpu" ${A&&on?'checked':''} ${A?'':'disabled'}><span>تفعيل قوة كرت الشاشة</span></label>
