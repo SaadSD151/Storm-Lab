@@ -1300,7 +1300,7 @@ function spawn(type,x,y,o={}){
       const nc=4+(rnd()*4|0);for(let k=0;k<nc;k++){let u,t;if(v<0.5){u=(k/(nc-1)-0.5)*L*0.85;t=Wd*0.28+cu*u*u/L+R(-5,5)}else{u=R(-0.45,0.45)*L;t=R(-0.4,0.4)*Wd}const[x,y]=P(u,t);
         bl.push(core(x,y,R(5.5,8.5),k===0?R(52,57):R(44,52)))}
       break;}
-    case'mini':{s.life=R(140,170);s.mini=1;
+    case'mini':{s.life=R(300,400);s.mini=1;
       // small pulse thunderstorm: one or two tight intense cores that burst up within minutes, crackle with lightning, and collapse within the hour.
       // Shape differs every time: a single lopsided core, twins, a core with a weaker flank, or a short arc of three.
       const v=rnd(),P0=R(58,64)+env.sev*3,a0=R(0,6.28);
@@ -1348,7 +1348,7 @@ function spawn(type,x,y,o={}){
   if(type==='mega'||type==='mini')s.type='storm';if(type==='lstrat'||type==='mcs')s.type='strat';
   s.blobs=bl.filter(b=>!b.halo);
   s.rad=0;for(const b of bl)if(b.g>1.1)s.rad=Math.max(s.rad,Math.hypot(b.rx,b.ry)+Math.max(b.ax,b.ay));
-  s.rad0=s.rad;s.oro=oro;s.life*=s.mini?1:(0.6+0.8*env.moist)*env.lifeM;if(NATF){s.nat=1;if(!s.mini)s.life*=1.6}if(s.mini){s.jx=R(-.1,.1)/PX;s.jy=R(-.1,.1)/PX}s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
+  s.rad0=s.rad;s.oro=oro;s.life*=s.mini?1:(0.6+0.8*env.moist)*env.lifeM;if(NATF){s.nat=1;s.life*=s.mini?1.1:1.6}if(s.mini){s.jx=R(-.1,.1)/PX;s.jy=R(-.1,.1)/PX}s.life0=s.life;s.g0=Math.min(0.15,15/s.life);s.age=o.age!=null?o.age:s.life*s.g0*0.35;
   s.hailRoll=s.variant==='lp'?R(0,0.5):rnd();
   s.t0=simT;DAY.born++;storms.push(s);return s;
 }
@@ -1846,7 +1846,7 @@ function mergeStorms(){
       // a small thunderstorm that joins another cloud stops being a short-lived pulse: the merged storm lives on like any thunderstorm, with cores that renew
       if(big.mini||sm.mini){big.mini=0;big.miniM=1;
         if(!(big.root&&big.root===sm.root)||big.age>big.life*0.7)big.life=Math.max(big.life,(big.age+R(120,190)*(0.6+0.8*env.moist))/0.85);
-        big.life=Math.min(big.life,big.age+Math.max(40,360-(simT-(big.t0??simT))));big.g0=Math.min(0.15,15/big.life);big.maxCores=Math.max(big.maxCores||0,6)}
+        big.g0=Math.min(0.15,15/big.life);big.maxCores=Math.max(big.maxCores||0,6)}
       if(big.mega){big.megaB=Math.min(6,(big.megaB||3)+0.5);big.maxCores=Math.min(34,(big.maxCores||22)+2)}
       if(sm.type==='storm'&&big.type==='storm'){big.sj=(big.sj||0)+(sm.sj||0)+1;if(big.sj>=3&&!big.mega&&!big.kill&&!big.megaTried&&(big.megaTried=1)&&rnd()<0.08){big.mega=1;big.megaB=3;big.maxCores=22;big.life=Math.max(big.life,300);megaTail(big,28);for(const q of big.blobs)if(q.ti!=null)q.fv=0;alert(`اتحدت أربع عواصف رعدية وتكوّنت عاصفة رعدية عملاقة (${big.id})`,'bad')}}
       big.merged++;if(!big.mega)big.rad=Math.max(big.rad||10,(d+(sm.rad||10)*gS)/gB);sm.dead=true;
@@ -2556,8 +2556,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=104,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=105,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:105,title:'رجوع عمر العاصفة الصغيرة',fix:['رجّعنا عمر العاصفة الرعدية الصغيرة مثل قبل: 4 إلى 6 ساعات تقريباً، وإذا اندمجت تطوّل أكثر (والمطر الأزرق حولها باقي قليل)']},
   {v:104,title:'إعادة بناء خط العواصف',add:['خط العواصف صار مثل الرادار الحقيقي: خط ضيق متموّج من الخلايا القوية على حافة هبة الرياح، أقوى في أجزاء وأضعف في أجزاء، ومنقطع في مكان أو مكانين، ويضعف عند أطرافه','وراه منطقة هادئة، وبعدها حزام عريض من المطر المتوسط ممتد 30 إلى 80 كم','غالباً جزء واحد بس ينتفخ للأمام على شكل قوس، مو الخط كله']},
   {v:103,title:'إعادة بناء المطر الواسع العاصف والعاصفة الصغيرة',add:['"مطر واسع عاصف" صار مطر متوسط على مساحة واسعة وداخله عواصف رعدية عادية (أغلبها صف قدام المنطقة)، يمشي كمنطقة مطر وحدة مع الرياح ويجدد خلاياه'],fix:['المطر الواسع العاصف ما عاد يولّد أنوية حمراء عملاقة ولا يبلع السحب اللي حوله','بدّلنا مكان "مطر واسع" و"مطر واسع خفيف" في الأدوات','العاصفة الرعدية الصغيرة صار المطر الخفيف الأزرق حولها قليل مثل الواقع في السعودية','العاصفة الصغيرة تعيش 3 ساعات كحد أقصى، وإذا اندمجت تقدر توصل 6 ساعات','أصوات رياح جديدة: رياح صحراوية حقيقية (تسجيل عاصفة رملية) وهبات رياح قوية من تسجيلات حقيقية']},
   {v:102,title:'حركة السحب مثل الرادار الحقيقي',add:['من مقطع الرادار الحقيقي اللي أرسلته: الخلايا الجديدة صارت تتكون على طول اتجاه الرياح وأكثر من الطرف الخلفي، فالعواصف تصير أحزمة طويلة تتجدد من ورا وتمشي للأمام','منطقة المطر الخفيف والمتوسط حول الأنوية صارت أوسع بكثير، والأنوية جزر صغيرة داخلها مثل الواقع','أطراف السحب صارت متقطعة وفيها خطوط رفيعة مع اتجاه الرياح بدل الحواف الناعمة']},
