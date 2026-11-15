@@ -1475,7 +1475,7 @@ function computeField(dtf=1,adv=0){
   Zf.fill(0);MX.fill(0);HK.fill(0);ZM.fill(0);CORES.length=0;const EM=[];
   for(const s of storms){
     const p=s.age/s.life,fx=s.hx,fy=s.hy,rxv=-fy,hang=Math.atan2(fy,fx),gf=Math.max(s.gf||1,1+s.grow*sst(0.05,0.75,p));s.gf=gf;s.vis=false;
-    const kf=Math.min(1,dtf*(s.kill?0.45:0.12));s.hk=hailOK(s)?(s.type==='super'?1.5:1)*(0.75+0.5*env.sev)*(0.85+0.3*((s.hailRoll*97)%1))+(s.type==='super'&&env.sev>=0.9&&((s.hailRoll*31)%1)<0.08?10:0):0;
+    const kf=Math.min(1,dtf*(s.kill?0.45:0.06));s.hk=hailOK(s)?(s.type==='super'?1.5:1)*(0.75+0.5*env.sev)*(0.85+0.3*((s.hailRoll*97)%1))+(s.type==='super'&&env.sev>=0.9&&((s.hailRoll*31)%1)<0.08?10:0):0;
     for(const b of s.blobs){
       const pb=p-Math.min(0.15,25/s.life)*b.late,cf=(b.life2&&!b.persist)?pulse(b.age2/b.life2):1,ft=b.out?0:Math.max(0,lifeF(pb,s.g0||0.15)*s.killF*cf);
       b.fv=b.fv==null?0:b.fv+(ft-b.fv)*kf;const f=b.fv;b.Pe=0;if(f<=0.004)continue;s.vis=true;
@@ -1793,7 +1793,7 @@ function shieldDyn(s,b,dt,p,fx,fy,gf){
   const tau=25+55*sst(0.12,0.7,p),tx=b.rx0+(s.upU*tau+gu*pull)/gf,ty=b.ry0+(s.upV*tau+gv*pull)/gf,k=1-Math.exp(-dt/45);b.rx+=(tx-b.rx)*k;b.ry+=(ty-b.ry)*k;
   // it grows where the air is moist and dries up where it is not (slowly, over an hour or two)
   b.gr=clamp(b.gr+((b.hm-0.5)*0.008+(b.hm-s.hmA)*0.12)*env.moistFx*dt,0.55,1.5)}
-const pulse=q=>q<=0?0:q<0.2?sm(q/0.2):q<0.7?1:q<1?1-sm((q-0.7)/0.3):0;
+const pulse=q=>q<=0?0:q<0.3?sm(q/0.3):q<0.55?1:q<1?1-sm((q-0.55)/0.45):0;
 const cellLife=()=>R(55,110)*Math.sqrt(env.lifeM)*(1.6-env.morph);
 // Each convective cell is born, matures and dies; before dying it may seed a new cell on its moistest side,
 // so the storm moves partly by growing new cells (multicell propagation), not only by drifting with the wind.
@@ -2011,7 +2011,7 @@ function step(dt,rdt=0){
     if(rdt>0)for(const b of s.blobs)if(b.g>1.1&&b.Pe>44){const gw=b.grw||0;let n=(Math.max(0,b.Pe-50)*(s.mega?0.9:gw<0?0.3:0.55)+Math.max(0,gw)*(b.Pe-44)*3.5)*0.022*env.light*(s.mega?1.8:s.mini?1.7:1)*rdt*(0.6+0.4*Math.sqrt(speed));while(n>0){if(rnd()<n){const a=R(0,6.28),r=R(0,Math.max(b.ax,b.ay)*0.8);const k={x:b.cx+Math.cos(a)*r,y:b.cy+Math.sin(a)*r,t:simT,lt:liveT,rot:R(-.35,.35)};strikes.push(k);boltLog.push(simT);DAY.st++;sndThunderAt(k.x,k.y,s.megaT,s.mini);if(navigator.vibrate&&window.__ug&&document.body.classList.contains('mob')&&product!=='fcst'&&liveT-(window.__vb||-9)>1.2){const sp=sndPoint();if(sp&&Math.hypot(sp.x-k.x,sp.y-k.y)<12){window.__vb=liveT;try{navigator.vibrate(Math.hypot(sp.x-k.x,sp.y-k.y)<5?[40,60,25]:25)}catch(e){}}}
       for(const c of CITIES)if(Math.hypot(c.x-k.x,c.y-k.y)<9&&simT-(c.al.bolt??-99)>30){c.al.bolt=simT;alert(`صواعق رعدية قرب ${c.n}`,'warn')}}n-=1}}
   }
-  storms=storms.filter(s=>((s.age<s.life*1.2&&s.killF>0)||s.vis!==false)&&s.x>-80&&s.x<W+80&&s.y>-80&&s.y<H+80);
+  storms=storms.filter(s=>{const m=(s.rad||20)*(s.gf||1)*1.6+(s.ul?s.L0*0.7:s.tc?300/PX:0)+90/PX;return((s.age<s.life*1.2&&s.killF>0)||s.vis!==false)&&s.x>-m&&s.x<W+m&&s.y>-m&&s.y<H+m});
   liveT+=rdt;strikes=strikes.filter(k=>liveT-k.lt<6);if(hailMk.length)hailMk=hailMk.filter(k=>liveT-k.lt<6);if(hailMk.length>300)hailMk.splice(0,hailMk.length-300);if(strikes.length>350)strikes.splice(0,strikes.length-350);while(boltLog.length&&simT-boltLog[0]>60)boltLog.shift();
   if(env.natural&&!mission.on&&!scen.world&&storms.length<(REGION.maxStorms||45)&&rnd()<dt*env.inst*env.moist*0.13*env.natRate*(REGION.natMul||1)*seasonF()){
     let bx=0,by=0,bv=-1;for(let t=0;t<16;t++){const x=R(20,W-20),y=R(20,H-20),v=moistAt(x,y)+R(0,0.05);if(v>bv){bv=v;bx=x;by=y}}
@@ -2712,8 +2712,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=119,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=120,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:120,title:'السحب ما تختفي فجأة ولا تقفز',fix:['السحابة الكبيرة كانت تختفي فجأة لما يقرب مركزها من طرف الخريطة: الحين تبقى لين يطلع مطرها كله من الخريطة','الأنوية الحمراء كانت تختفي وتطلع في مكان جديد بسرعة: الحين كل نواة تكبر وتضعف بالتدريج (ضعف المدة السابقة تقريباً)، فتشوف القديمة تخف والجديدة تقوى جنبها']},
   {v:119,title:'السوبر سل والعاصفة العملاقة ما تختفي فجأة',fix:['السوبر سل والعاصفة الرعدية العملاقة كانت تختفي فجأة: الحين تضعف بالتدريج، ومرحلة الضعف صارت أطول بمرتين','العاصفة الرعدية العملاقة كانت تقفز فجأة لآخر عمرها لما تخلص مسافتها: شلنا القفزة وصارت تشيخ بشكل طبيعي','السحابة اللي يخلص وقودها تضعف أسرع، لكن ما تستعجل في آخر مرحلة من عمرها']},
   {v:118,title:'إصلاح طبقة نسيم البحر',fix:['خطوط التقاء الرياح (البرتقالي) كانت فجأة تغطي الخريطة كلها ثم ترجع: الحين تطلع بس في الأماكن اللي فيها التقاء رياح فعلي']},
   {v:117,title:'السحب تعيش على الرطوبة',add:['نظام جديد لعمر السحب: كل سحابة لها "وقود" تاخذه من الرطوبة اللي تمر عليها وتصرفه وهي تمطر، فما عاد فيه حد زمني ثابت: تعيش ما دامت تلقى رطوبة، ولما تنتهي رطوبتها تضعف وتموت','السحابة تاكل الرطوبة اللي تحتها، فلازم تكمل تزحف لمكان رطب عشان تعيش أكثر','كل السحب صارت تنجذب للمناطق الرطبة وهي تمشي، وكل ما قل وقودها زاد انجذابها','الرياح دايماً تدفع السحب: ما فيه سحابة توقف مكانها (الجبال تبطئها بس)','السحابة اللي وقودها كثير تكون أقوى، واللي وقودها قليل تضعف']},
