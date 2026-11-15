@@ -1764,7 +1764,7 @@ function atmStep(dt){if(!ATM.Q||ATM.w!==Math.ceil(W/MG))atmInit();const {w,h,Q,C
     {const DU=ATM.DU;if(LF[i]>=0.5){const xm=gy*w+Math.max(0,gx-1),xp=gy*w+Math.min(w-1,gx+1),ym=Math.max(0,gy-1)*w+gx,yp=Math.min(h-1,gy+1)*w+gx,gf=Math.hypot(CP[xp]-CP[xm],CP[yp]-CP[ym]),dry=clamp((0.5-Q[i])/0.25,0,1);
       DU[i]=0}DU[i]*=Math.exp(-dt/(R>1?25:200))}
     {const sn=ATM.SN,t=ATM.T[i];if(t<=1&&R>0)sn[i]=Math.min(80,sn[i]+R*dt/60*1.2);else if(sn[i]>0&&t>2)sn[i]=Math.max(0,sn[i]-(t-2)*0.02*dt)}
-    ATM.R[i]=R;const bs=ATM.B[i]=atmBase(i,gx*MG+4,gy*MG+4),q=T1[i]+(bs-T1[i])*(LF[i]<0.5?ts:tq)-0.004*R*dt/60;Q[i]=clamp(q,0.02,1);
+    ATM.R[i]=R;const bs=ATM.B[i]=atmBase(i,gx*MG+4,gy*MG+4),q=T1[i]+(bs-T1[i])*(LF[i]<0.5?ts:tq)-0.0075*R*dt/60;Q[i]=clamp(q,0.02,1);
     CP[i]=Math.min(1,T2[i]*cpd+0.011*R*dt/60*(1.25-Q[i]))}
   // 3) the cold pool spreads out along the ground (gust front)
   {let any=false;for(const v of ATM.SN)if(v>0.5){any=true;break}ATM.snowAny=any}
@@ -1936,7 +1936,7 @@ function step(dt,rdt=0){
   const w=windVec(),hour=(START_H+simT/60)%24,diurnal=0.35+0.65*Math.max(0,Math.sin(Math.PI*(hour-9)/12));
   for(const s of storms){
     {let mc=moistAt(s.x,s.y);if(s.mega)mc=Math.max(mc,envHum(s.x,s.y));s.mc=s.mc==null?mc:s.mc+(mc-s.mc)*Math.min(1,dt*0.1)}
-    s.boost=(env.inst-0.5)*14+elevAt(s.x,s.y)*6+(ATM.UP?(u=>u<0?u*30:u*12)(atmSamp(ATM.UP,s.x,s.y)):0)+(env.sev-0.35)*8+(s.mc-0.5)*8*env.moistFx+(s.megaB||0)+(s.mini?3:0)+(s.tcB||0)+(s.fcBoost||0)+(s.nb||0)+(s.erB||0)+(s.trail?-9*clamp(s.age/s.life,0,1):0)-7*clamp(((ATM.T?atmSamp(ATM.T,s.x,s.y):30)-39)/8,0,1);
+    s.boost=(env.inst-0.5)*14+elevAt(s.x,s.y)*6+(ATM.UP?(u=>u<0?u*30:u*12)(atmSamp(ATM.UP,s.x,s.y)):0)+(env.sev-0.35)*8+(s.mc-0.5)*8*env.moistFx+(s.megaB||0)+(s.mini?3:0)+(s.tcB||0)+(s.fuel!=null&&!s.scen?(clamp(s.fuel,0,1.2)-0.6)*7:0)+(s.fcBoost||0)+(s.nb||0)+(s.erB||0)+(s.trail?-9*clamp(s.age/s.life,0,1):0)-7*clamp(((ATM.T?atmSamp(ATM.T,s.x,s.y):30)-39)/8,0,1);
     // storm motion = steering wind (+ propagation): ordinary cells drift with ~90-100% of the mean wind,
     // supercells deviate ~30° right at ~75% (Maddox / Bunkers), squall lines run ahead of it (forward propagation),
     // multicells creep toward the moist inflow where new cells form, and young storms over high mountains stay anchored to the terrain.
@@ -1945,8 +1945,8 @@ function step(dt,rdt=0){
     // the echo's shape is aligned with the environmental flow (mean wind; a supercell's usual deviant path), not with the storm's momentary course:
     // when a storm suddenly changes course its echo slides the new way without turning, as on real radar
     const bhx=tx,bhy=ty;
-    if((s.type==='storm'||s.type==='super')&&pS<0.8){const gx=moistAt(s.x+8,s.y)-moistAt(s.x-8,s.y),gy=moistAt(s.x,s.y+8)-moistAt(s.x,s.y-8),gm=Math.hypot(gx,gy);
-      if(gm>1e-4){const pm=0.28*Math.hypot(ws.x,ws.y)*env.speedK*Math.min(1,gm*12);tx+=gx/gm*pm;ty+=gy/gm*pm}}
+    if(s.type!=='line'&&s.type!=='low'&&!s.tc&&!s.ul&&!s.megaT&&!s.scen){const e8=12/PX,gx=humAt(s.x+e8,s.y)-humAt(s.x-e8,s.y),gy=humAt(s.x,s.y+e8)-humAt(s.x,s.y-e8),gm=Math.hypot(gx,gy);
+      if(gm>1e-4){const pm=(0.22+0.4*(1-clamp(s.fuel??1,0,1)))*Math.hypot(ws.x,ws.y)*env.speedK*Math.min(1,gm*10*PX);tx+=gx/gm*pm;ty+=gy/gm*pm}}
     // orographic anchoring: while moist air keeps being forced up the slope, new cells keep forming over the mountain and the storm stays there
     let anc=0;if(s.type!=='line'&&s.type!=='low'&&s.type!=='trail'&&!s.tc&&!s.ul&&pS<0.8){const el=elevAt(s.x,s.y),up=ATM.UP?atmSamp(ATM.UP,s.x,s.y):0;s.tl=(s.tl||0)+dt;anc=clamp((el-0.25)/0.3,0,1)*clamp(0.65+up*3,0,1)*(1-sst(45,140,s.tl));if(anc>0){tx*=1-0.75*anc;ty*=1-0.75*anc}}s.anc=anc;
     if(!s.mega&&s.type!=='low'&&s.type!=='line')for(const m of storms){if(!m.mega||m.kill||m===s)continue;const dx=m.x-s.x,dy=m.y-s.y,d=Math.hypot(dx,dy),Rr=megaReach(m)+(s.rad||10)*(s.gf||1)*0.6+14/PX;
@@ -1972,6 +1972,7 @@ function step(dt,rdt=0){
         else{a=h+R(-0.2,0.2);m=R(0.4,0.7)}
         s.evU=Math.cos(a)*m*spd;s.evV=Math.sin(a)*m*spd;s.evEnd=s.age+R(20,70)}
       if(s.evU!=null){const f=sst(0,8,s.evEnd-s.age)*(1-0.7*anc);tx+=s.evU*f;ty+=s.evV*f}}
+    if(!s.tc&&!s.ul&&s.type!=='low'){const sm0=Math.hypot(ws.x,ws.y)*env.speedK,mn=sm0*(0.6-0.25*(s.anc||0)),tm=Math.hypot(tx,ty);if(tm<mn){if(tm>1e-6){tx*=mn/tm;ty*=mn/tm}else{tx=ws.x*env.speedK*0.6;ty=ws.y*env.speedK*0.6}}}
     const k=Math.min(1,dt*(s.evU!=null?0.13:0.08));s.vx+=(tx-s.vx)*k;s.vy+=(ty-s.vy)*k;s.x+=s.vx*dt;s.y+=s.vy*dt;
     if(s.anc>0.2&&!s.megaT&&!s.hookR){
       if(!s.kill&&pS<0.8){s.rad=Math.min((s.rad0||s.rad||12)*2.6,(s.rad||12)+dt*0.05*s.anc/PX);s.maxCores=Math.min(13,Math.max(s.maxCores||0,6+((s.rad-(s.rad0||s.rad))*PX/5|0)))}}
@@ -1979,7 +1980,11 @@ function step(dt,rdt=0){
     s.age+=dt*(s.mini?clamp(1+(0.5-s.mc)*0.4,0.8,1.2):(1+(0.5-s.mc)*0.9*env.moistFx)*(1-0.4*(s.anc||0)));
     if(s.mini&&!s.kill&&ATM.Q){const gx=clamp((s.x/MG)|0,1,ATM.w-2),gy=clamp((s.y/MG)|0,1,ATM.h-2),Q=ATM.Q,dq=0.0011*dt;for(let oy=-1;oy<=1;oy++)for(let ox=-1;ox<=1;ox++){const i=(gy+oy)*ATM.w+gx+ox;Q[i]=Math.max(0.06,Q[i]-dq*(ox||oy?0.6:1))}}
     // no single cloud system lasts for ever: past about half a day (longer for wide rain and lows) it runs down quickly, whatever the settings
-    if(!s.scen&&!s.hold&&s.t0!=null){const over=(simT-s.t0)/60-(s.tc||s.ul?40:s.type==='low'?26:s.type==='strat'?15:11);if(over>0)s.age+=dt*Math.min(4,1+over)}
+    if(!s.scen&&!s.megaT&&!s.tc&&!s.ul&&s.t0!=null){if(s.fuel==null)s.fuel=1;let mx=0;for(const b of s.blobs)if(b.Pe>mx)mx=b.Pe;const q=humAt(s.x,s.y),burn=clamp((mx-25)/40,0,1)*(s.type==='strat'?0.6:1);
+      s.fuel=clamp(s.fuel+dt*((q-0.38)*0.02-burn*0.0055),0,1.4);s.fh=s.fuel>0.35;
+      if(s.fh&&s.age>s.life*0.55&&!s.kill)s.age=Math.max(s.life*0.55,s.age-dt*0.95);   // well fed: stays mature
+      else if(s.fuel<0.2)s.age+=dt*(1+3*(0.2-s.fuel)/0.2);                               // starving: dies faster
+      const hrs=(simT-s.t0)/60;if(hrs>36)s.age+=dt*(hrs-36)}                               // safety: nothing lasts for ever
     // a giant stays at full strength for a limited run (about 280-370 km of travel, or 10-14 hours if it hardly moves, or until the air dries); then it ages and dies like any thunderstorm
     if(s.mega&&!s.kill){s.trav=(s.trav||0)+Math.hypot(s.vx,s.vy)*dt*PX;s.ht=(s.ht||0)+dt;s.maxTrav=s.maxTrav||R(280,370);s.maxT=s.maxT||R(600,840);s.hold=s.mc>0.27&&s.trav<s.maxTrav&&s.ht<s.maxT;if(s.hold&&s.age>s.life*0.5)s.age=s.life*0.5;if(!s.hold&&s.held&&!s.rel){s.rel=1;s.age=Math.max(s.age,s.life*(1-Math.min(0.4,170/s.life)))}if(s.hold)s.held=1}const p=s.age/s.life;for(const b of s.blobs)b.t=(b.t||0)+dt;cellDynamics(s,dt);if(s.merged>0)coalesce(s,dt);
     if(s.scen){
@@ -2516,7 +2521,7 @@ function drawSeaBreeze(){if(!ATM.Q||!ATM.XU)return;const{w,h,U,V,XU,XV,NM,LF}=AT
   for(let gy=1;gy<h-1;gy++)for(let gx=1;gx<w-1;gx++){const i=gy*w+gx,c=-((U[i+1]-U[i-1])+(V[i+w]-V[i-w]));cvA[i]=c;if(LF[i]>=0.5&&c>mxc)mxc=c}
   ctx.save();ctx.lineCap='round';const st=Math.max(1,Math.round(3/Math.max(0.6,s*MG/24)));
   for(let gy=1;gy<h-1;gy++)for(let gx=1;gx<w-1;gx++){const i=gy*w+gx;const[x,y]=toScreen(gx*MG+4,gy*MG+4);if(x<-20||y<-20||x>cw+20||y>ch+20)continue;
-    if(mxc>1e-5&&LF[i]>=0.5&&cvA[i]>mxc*0.4){ctx.fillStyle=`rgba(255,150,40,${0.18+0.4*cvA[i]/mxc})`;ctx.beginPath();ctx.arc(x,y,Math.max(2.5,MG*s*0.45),0,6.283);ctx.fill()}
+    const cvn=cvA[i]/(2*MG)*90*PX;if(LF[i]>=0.5&&cvn>0.07){ctx.fillStyle=`rgba(255,150,40,${Math.min(0.55,0.12+1.6*(cvn-0.07))})`;ctx.beginPath();ctx.arc(x,y,Math.max(2.5,MG*s*0.45),0,6.283);ctx.fill()}
     if(gx%st||gy%st||NM[i]<0.06)continue;const vx=XU[i],vy=XV[i],m=Math.hypot(vx,vy);if(m<0.01/PX)continue;const L=clamp(m*PX*260,6,22),ux=vx/m,uy=vy/m;
     ctx.strokeStyle=dk?'rgba(127,214,255,.85)':'rgba(20,110,170,.85)';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(x-ux*L/2,y-uy*L/2);ctx.lineTo(x+ux*L/2,y+uy*L/2);ctx.lineTo(x+ux*L/2-ux*5-uy*3,y+uy*L/2-uy*5+ux*3);ctx.moveTo(x+ux*L/2,y+uy*L/2);ctx.lineTo(x+ux*L/2-ux*5+uy*3,y+uy*L/2-uy*5-ux*3);ctx.stroke()}
   ctx.restore()}
@@ -2707,8 +2712,10 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=116,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=118,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:118,title:'إصلاح طبقة نسيم البحر',fix:['خطوط التقاء الرياح (البرتقالي) كانت فجأة تغطي الخريطة كلها ثم ترجع: الحين تطلع بس في الأماكن اللي فيها التقاء رياح فعلي']},
+  {v:117,title:'السحب تعيش على الرطوبة',add:['نظام جديد لعمر السحب: كل سحابة لها "وقود" تاخذه من الرطوبة اللي تمر عليها وتصرفه وهي تمطر، فما عاد فيه حد زمني ثابت: تعيش ما دامت تلقى رطوبة، ولما تنتهي رطوبتها تضعف وتموت','السحابة تاكل الرطوبة اللي تحتها، فلازم تكمل تزحف لمكان رطب عشان تعيش أكثر','كل السحب صارت تنجذب للمناطق الرطبة وهي تمشي، وكل ما قل وقودها زاد انجذابها','الرياح دايماً تدفع السحب: ما فيه سحابة توقف مكانها (الجبال تبطئها بس)','السحابة اللي وقودها كثير تكون أقوى، واللي وقودها قليل تضعف']},
   {v:116,title:'الخلايا المطرية تطوّل، والسيول تحت السحب',fix:['الخلايا المطرية الثلاث (الخفيفة والعادية والغزيرة) صارت تعيش أطول بكثير','خطوط السيول والأودية صارت تنرسم تحت السحب بدل ما تكون فوقها']},
   {v:115,title:'خلية مطرية غزيرة وخفيفة، وسوبر سل',add:['"خلية عملاقة" صار اسمها "سوبر سل" وانتقلت تحت العاصفة الرعدية العملاقة','أداة "خلية مطرية غزيرة": خلية أكبر ومطرها أقوى، توصل الأحمر العادي (50-55 dBZ) وما توصل الأحمر الغامق','أداة "خلية مطرية خفيفة": مطر خفيف بالأخضر وأحياناً لمسة أصفر، بدون رعد']},
   {v:114,title:'المنخفض العلوي والعواصف المتتالية',add:['أداة جديدة "منخفض علوي": حزام أمطار طويل جداً مع اتجاه الرياح (من الجنوب الغربي للشمال الشرقي غالباً)، يمشي ككتلة وحدة ويولّد عواصف رعدية باستمرار','العواصف تتكون أغلبها من طرفه الخلفي وتمشي على طوله وحدة ورا وحدة، فنفس الأماكن يجيها مطر مرة بعد مرة وتزيد السيول','طرف الحزام الخلفي يثبت تقريباً لو كان فوق الجبال ويستمر يولّد عواصف، والطرف الأمامي يكمل مع الرياح','المنخفض العلوي يتكون لحاله أحياناً (نادر) في الأجواء الرطبة وغير المستقرة','العواصف العادية صارت أحياناً تولّد خلية جديدة وراها على نفس المسار (عواصف متتالية)']},
