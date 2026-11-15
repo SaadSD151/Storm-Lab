@@ -1327,11 +1327,22 @@ function spawn(type,x,y,o={}){
         if(k%2===0)bl.push(blob(u-9,r-9,R(12,16),R(8,11),R(22,29),0.8,{k:1,m:1.1,ang:R(-.6,.6)}))}
       halo(48,R(1.9,2.3),R(16,19));break;}
     case'trail':{s.life=R(140,220);s.maxCores=1;const L=R(14,22),Wd=R(7,11);bl.push(blob(0,0,L,Wd,R(36,44),0.9,{k:1,m:1.1,ang:R(-.2,.2)}));if(rnd()<0.55)bl.push(core(R(-5,5),R(-3,3),R(4,6),R(44,50),{k:1.6}));bl.push(blob(R(-6,6),R(-4,4),L*1.5,Wd*1.7,R(20,26),0.75,{k:1,m:1.35,halo:1}));break;}
-    case'line':{const{L,sgn}=o;s.life=R(170,230);
-      const n=Math.max(4,Math.round(L*PX/7));for(let k=0;k<n;k++){const t=-L/2+(k+.5)*L/n;if(rnd()<0.08)continue;bl.push(B(R(-2,2),t*sgn,R(6,8)*Zs,R(8,11)*Zs,R(54,64)+env.sev*3,2,{k:2.1,bow:1-(2*t/L)**2,ang:R(-.3,.3)}))}
-      const n2=Math.round(L*PX/14)+1;for(let k=0;k<n2;k++){const t=-L/2+(k+.5)*L/n2;
-        bl.push(B(-R(20,30)*Zs,t*sgn,R(12,17)*Zs,R(14,20)*Zs,R(30,37),0.85,{k:1,m:1.1,late:.6,bow:1-(2*t/L)**2}));
-        bl.push(B(-R(5,14)*Zs,t*sgn,R(28,36)*Zs,R(22,30)*Zs,R(17,21),0.75,{k:1,m:1.35,late:.25,halo:1,bow:1-(2*t/L)**2}))}
+    case'line':{const{L,sgn}=o;s.life=R(190,260);
+      // squall line as real radar shows it (leading line + trailing stratiform): a narrow, slightly wavy line of intense cells along the gust front,
+      // brighter in some stretches and broken in one or two places, weaker toward its ends; behind it a quieter transition zone, then a broad
+      // band of moderate rain trailing 30-80 km back. Usually only one stretch bulges forward into a bow.
+      const ph1=R(0,6.28),ph2=R(0,6.28),l1=R(35,60)/PX,l2=R(12,20)/PX,wav=t=>(R(-0.6,0.6)+3.5*Math.sin(t/l1+ph1)+1.6*Math.sin(t/l2+ph2))/PX;
+      const gaps=[];for(let k=0,ng=rnd()<0.75?1+(rnd()*2|0):0;k<ng;k++)gaps.push([R(-0.4,0.4)*L,R(8,18)/PX]);
+      const bowC=rnd()<0.55?R(-0.3,0.3)*L:null,bowW=L*R(0.12,0.22),bowAt=t=>{if(bowC==null)return 0;const q=(t-bowC)/bowW;return Math.exp(-q*q)};
+      const segPh=R(0,6.28),segL=R(40,80)/PX;
+      for(let t=-L/2;t<L/2;){const st=R(5,8)/PX;t+=st;if(t>=L/2)break;if(gaps.some(([c,w])=>Math.abs(t-c)<w/2))continue;const u=Math.abs(2*t/L);
+        const P=R(50,56)+6*Math.max(0,Math.sin(t/segL+segPh))+env.sev*3-7*u*u*u+4*bowAt(t);
+        bl.push(B(wav(t)*Zs,t*sgn,R(4.5,6.5)*Zs,R(8,12)*Zs,P,2,{k:2.2,bow:bowAt(t),ang:R(-.2,.2)}))}
+      s.maxCores=bl.length+2;
+      // trailing stratiform rain, starting behind a weaker transition zone
+      const n2=Math.round(L*PX/16)+2;for(let k=0;k<n2;k++){const t=-L/2+(k+R(0.2,0.8))*L/n2,u=Math.abs(2*t/L);if(u>0.95)continue;
+        bl.push(B(-R(30,55)*Zs,t*sgn,R(16,26)*Zs,R(16,24)*Zs,R(31,37)-4*u*u,0.85,{k:1,m:1.1,late:R(.3,.8),bow:bowAt(t)*0.6,ang:R(-.3,.3)}));
+        if(rnd()<0.6)bl.push(B(-R(55,85)*Zs,t*sgn,R(18,28)*Zs,R(18,26)*Zs,R(24,30),0.8,{k:1,m:1.15,late:1,ang:R(-.4,.4)}))}
       s.hx=o.hx;s.hy=o.hy;break;}
   }
   if(type==='mega'||type==='mini')s.type='storm';if(type==='lstrat'||type==='mcs')s.type='strat';
@@ -1353,7 +1364,7 @@ function raster(cx,cy,ax,ay,ang,P,fl,bk,bm,ns,ox,oy,ox2,oy2,hk=0){
       const vx=dx*ns,n=(TEX[ra|(((vx+ox)|0)&255)]+TEX2[rb|(((vx+ox2)|0)&255)])*0.55;
       const dd=Math.max(0,Math.sqrt(d2)+0.42*n);if(dd>=1)continue;
       const q=bk===2?dd*dd:bk===1?dd:Math.pow(dd,bk),pr=bm===1?1-q:Math.pow(1-q,bm);const dbz=fl+span*pr+n*2.5;const k=(dbz*4)|0;
-      const zz=Z_LUT[k<0?0:k>399?399:k],i0=row+x;if(hk>0&&dbz>=50){if(hk>HK[i0])HK[i0]=hk;if(st===2){if(hk>HK[i0+1])HK[i0+1]=hk;if(hk>HK[i0+W])HK[i0+W]=hk;if(hk>HK[i0+W+1])HK[i0+W+1]=hk}}Zf[i0]+=zz;if(RMINI){ZM[i0]+=zz;if(st===2){ZM[i0+1]+=zz;ZM[i0+W]+=zz;ZM[i0+W+1]+=zz}}if(dbz>MX[i0])MX[i0]=dbz;if(st===2){Zf[i0+1]+=zz;Zf[i0+W]+=zz;Zf[i0+W+1]+=zz;if(dbz>MX[i0+1])MX[i0+1]=dbz;if(dbz>MX[i0+W])MX[i0+W]=dbz;if(dbz>MX[i0+W+1])MX[i0+W+1]=dbz}}}
+      const zz=Z_LUT[k<0?0:k>399?399:k],i0=row+x;if(hk>0&&dbz>=50){if(hk>HK[i0])HK[i0]=hk;if(st===2){if(hk>HK[i0+1])HK[i0+1]=hk;if(hk>HK[i0+W])HK[i0+W]=hk;if(hk>HK[i0+W+1])HK[i0+W+1]=hk}}Zf[i0]+=zz;if(RMINI){const zr=zz*RMINI;ZM[i0]+=zr;if(st===2){ZM[i0+1]+=zr;ZM[i0+W]+=zr;ZM[i0+W+1]+=zr}}if(dbz>MX[i0])MX[i0]=dbz;if(st===2){Zf[i0+1]+=zz;Zf[i0+W]+=zz;Zf[i0+W+1]+=zz;if(dbz>MX[i0+1])MX[i0+1]=dbz;if(dbz>MX[i0+W])MX[i0+W]=dbz;if(dbz>MX[i0+W+1])MX[i0+W+1]=dbz}}}
 }
 // ===== Engine 2: rain with memory =====
 // Convective cores are drawn from the living cells. Everything lighter (the green/blue rain around and behind them, anvils,
@@ -1426,7 +1437,7 @@ function computeField(dtf=1,adv=0){
       const sc=(b.g>1.1?(0.55+0.45*fs)*(1+(0.35*mo-0.2)*env.moistFx):(0.75+0.25*fs)*(0.96+0.08*mo))*gf,ax=b.ax*sc,ay=b.ay*sc;
       const cx=s.x+(b.rx*fx+b.ry*rxv)*gf,cy=s.y+(b.rx*fy+b.ry*fx)*gf;b.cx=cx;b.cy=cy;
       if(b.g<1){EM.push(cx,cy,ax,ay,hang+b.ang,P,b.sx,b.sy);continue}
-      const t=b.t||0,fl=6*clamp(f*1.6,0,1);RMINI=s.mini?1:0;
+      const t=b.t||0,fl=6*clamp(f*1.6,0,1);RMINI=s.mini?1:s.type==='line'&&b.g>1.1?0.8:0;
       const mv=0.04+0.3*env.morph;raster(cx,cy,ax,ay,hang+b.ang,P,fl,b.k,b.pm??1,b.ns,b.sx+t*mv,b.sy,b.sx2,b.sy2+t*mv*0.85,b.g>1.1&&s.hk?s.hk:0);
       if(b.g>1.1&&P>=38)CORES.push({x:cx,y:cy,r:(ax+ay)/2,P});
     }
@@ -1788,7 +1799,7 @@ function cellDynamics(s,dt){
     if(q>=0.55&&!b.spawned&&!s.kill&&p<0.9&&!s.hookR){b.spawned=1;
       let n=s.mini?0:rnd()<(s.mega&&s.hold?0.97:clamp((0.25+0.9*b.m+env.inst*0.25)*(0.4+env.regen),0,0.97))?1:0;if(s.mega&&!s.megaT&&n&&rnd()<0.22)n=2;if(n&&b.m>0.7&&rnd()<0.12*env.regen)n=2;
       s.maxCores=s.maxCores||Math.max(4,ncore+3);if(!s.mega&&(s.anc||0)>0.3){if(!n&&rnd()<0.3*s.anc)n=1;if(n===1&&rnd()<0.18*s.anc)n=2}
-      for(let k=0;k<n&&ncore<(s.megaT?6:s.spin||s.hookR||s.mega?s.maxCores:Math.min(s.maxCores,(s.anc||0)>0.3?13:10));k++){const r=(b.ax+b.ay)/2;let best=[r,0],bm=-1;
+      for(let k=0;k<n&&ncore<(s.megaT?6:s.spin||s.hookR||s.mega||s.type==='line'?s.maxCores:Math.min(s.maxCores,(s.anc||0)>0.3?13:10));k++){const r=(b.ax+b.ay)/2;let best=[r,0],bm=-1;
         for(let a=0;a<8;a++){const th=a*Math.PI/4+R(-.3,.3),d=r*R(0.7,1.3),ru=Math.cos(th)*d,rr=Math.sin(th)*d;
           const wx=s.x+((b.rx+ru)*fx-(b.ry+rr)*fy)*gf,wy=s.y+((b.rx+ru)*fy+(b.ry+rr)*fx)*gf;
           const v=moistAt(wx,wy)+R(0,0.08)-(s.type==='line'?Math.abs(ru)*0.03:0)+(s.type!=='line'?0.11*Math.abs(Math.cos(th))+(ru<0?0.06:0):0);if(v>bm){bm=v;best=[ru,rr]}}
@@ -2545,8 +2556,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=103,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=104,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:104,title:'إعادة بناء خط العواصف',add:['خط العواصف صار مثل الرادار الحقيقي: خط ضيق متموّج من الخلايا القوية على حافة هبة الرياح، أقوى في أجزاء وأضعف في أجزاء، ومنقطع في مكان أو مكانين، ويضعف عند أطرافه','وراه منطقة هادئة، وبعدها حزام عريض من المطر المتوسط ممتد 30 إلى 80 كم','غالباً جزء واحد بس ينتفخ للأمام على شكل قوس، مو الخط كله']},
   {v:103,title:'إعادة بناء المطر الواسع العاصف والعاصفة الصغيرة',add:['"مطر واسع عاصف" صار مطر متوسط على مساحة واسعة وداخله عواصف رعدية عادية (أغلبها صف قدام المنطقة)، يمشي كمنطقة مطر وحدة مع الرياح ويجدد خلاياه'],fix:['المطر الواسع العاصف ما عاد يولّد أنوية حمراء عملاقة ولا يبلع السحب اللي حوله','بدّلنا مكان "مطر واسع" و"مطر واسع خفيف" في الأدوات','العاصفة الرعدية الصغيرة صار المطر الخفيف الأزرق حولها قليل مثل الواقع في السعودية','العاصفة الصغيرة تعيش 3 ساعات كحد أقصى، وإذا اندمجت تقدر توصل 6 ساعات','أصوات رياح جديدة: رياح صحراوية حقيقية (تسجيل عاصفة رملية) وهبات رياح قوية من تسجيلات حقيقية']},
   {v:102,title:'حركة السحب مثل الرادار الحقيقي',add:['من مقطع الرادار الحقيقي اللي أرسلته: الخلايا الجديدة صارت تتكون على طول اتجاه الرياح وأكثر من الطرف الخلفي، فالعواصف تصير أحزمة طويلة تتجدد من ورا وتمشي للأمام','منطقة المطر الخفيف والمتوسط حول الأنوية صارت أوسع بكثير، والأنوية جزر صغيرة داخلها مثل الواقع','أطراف السحب صارت متقطعة وفيها خطوط رفيعة مع اتجاه الرياح بدل الحواف الناعمة']},
   {v:101,title:'مطر واسع خفيف، والسيول تكمل لين تنشف',add:['أداة رسم جديدة: "مطر واسع خفيف" — مطر خفيف ورذاذ على مساحة واسعة بدون رعد، يبقى ساعات'],fix:['السيول ما عادت تختفي فجأة: الوادي يكمل مرسوم على طول مجراه والسيل يمشي فيه لين ينشف، ولما يمر السيل يبهت الوادي بالتدريج','السيل يوصل أبعد في مجرى الوادي قبل ما يضعف']},
