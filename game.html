@@ -326,6 +326,15 @@ body.mob .sheet{max-height:calc(100dvh - 40px);overflow:auto}
 #tl input{flex:1 1 auto;min-width:60px}#tlTxt{font:500 11.5px var(--f-ui);color:var(--muted);white-space:nowrap;direction:rtl}#tl.rp{outline:2px solid var(--warn,#ffb547)}#tl.rp #tlTxt{color:var(--warn,#ffb547)}
 body.mob #tl{display:none}
 body:not(.mob) .clock{display:none}
+#logBtn{position:relative}#logBadge{position:absolute;top:-5px;left:-5px;min-width:16px;height:16px;border-radius:9px;background:var(--bad,#e8392c);color:#fff;font:700 10px/16px var(--f-ui);text-align:center;font-style:normal;padding:0 3px}
+#lp{position:absolute;top:58px;left:10px;z-index:3;width:min(420px,calc(100% - 20px));max-height:calc(100% - 140px);display:flex;flex-direction:column;border-radius:12px;padding:8px 10px 10px}
+#lp[hidden]{display:none}.lpHead{display:flex;gap:8px;align-items:center;margin-bottom:6px}.lpHead .seg{flex:1;display:grid;grid-template-columns:repeat(3,1fr)}.lpHead .seg button{font-size:12px;padding:5px 2px}
+.lpX{all:unset;cursor:pointer;padding:3px 8px;border-radius:6px;color:var(--muted)}.lpX:hover{background:var(--accent-dim)}#lpBody{overflow:auto;font-size:12.5px;line-height:1.55}
+.ev{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 8px;padding:5px 2px;border-bottom:1px solid var(--line);cursor:default}.ev[data-x]{cursor:pointer}.ev[data-x]:hover{background:var(--accent-dim)}
+.ev time{font:500 10.5px var(--f-mono);color:var(--muted);direction:ltr;white-space:nowrap}.ev i{font-style:normal;font-size:10.5px;color:var(--muted)}.ev.warn span{color:var(--warn,#ffb547)}.ev.bad span{color:var(--bad,#ff6b6b)}
+.lpChips{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 6px}.lpChips button{all:unset;cursor:pointer;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}.lpChips button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.ctab{width:100%;border-collapse:collapse;font-size:12px}.ctab th{font-weight:600;color:var(--muted);text-align:right;padding:3px 4px;border-bottom:1px solid var(--line);white-space:nowrap}.ctab td{padding:4px;border-bottom:1px solid var(--line);white-space:nowrap}.ctab tr[data-x]{cursor:pointer}.ctab tr[data-x]:hover{background:var(--accent-dim)}.ctab .dz{font-family:var(--f-mono);font-weight:700}
+.cch{all:unset;cursor:pointer;color:var(--muted);display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px}.cch:hover{background:var(--accent-dim);color:var(--accent)}.cch svg{width:14px;height:14px}
 #setPanel{position:absolute;inset:0;display:grid;place-items:center;background:rgba(3,6,9,.6);z-index:5;padding:16px}#setPanel[hidden]{display:none}
 .setBox{width:min(460px,100%);max-height:100%;overflow:auto;border-radius:14px;padding:14px 16px 18px;background:var(--panel)}.setHead{display:flex;justify-content:space-between;align-items:center;font-size:17px;margin-bottom:6px;position:sticky;top:-14px;background:var(--panel);padding:8px 0;z-index:1}
 .setBox section{padding:12px 0 4px;border-top:1px solid var(--line);margin-top:10px}#setGpuBox .chk{font-size:14.5px;margin:8px 0 4px}
@@ -383,7 +392,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
 .btn.sm{padding:6px 11px;font-size:12.5px}
 
 .cities{display:grid;gap:7px}
-.city{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 10px;align-items:center;font-size:13px}
+.city{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:4px 10px;align-items:center;font-size:13px}
 .city{cursor:pointer;border-radius:6px}
 .city:hover .nm{color:var(--accent)}
 .city .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -560,6 +569,8 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
       <button data-p="acc" aria-pressed="false">مجموع الأمطار</button>
       <button data-p="hacc" aria-pressed="false">مجموع البرد</button>
       <button data-p="cloud" aria-pressed="false">الغيوم</button>
+      <button data-p="hprob" aria-pressed="false">احتمال البرد</button>
+      <button data-p="ptype" aria-pressed="false">نوع الهطول</button>
       <button data-p="wind" aria-pressed="false">الرياح</button>
       <button data-p="top" aria-pressed="false">قمة السحب</button>
       <button data-p="terr" aria-pressed="false">التضاريس</button>
@@ -585,6 +596,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
       <button class="num" data-s="64" aria-pressed="false">64×</button>
     </div>
     <button class="seg wbtn" id="wideBtn" aria-pressed="false"><span>توسيع الخريطة</span></button>
+    <button class="seg wbtn uibtn" id="logBtn" title="مركز المعلومات: الإنذارات، سجل الأحداث، جدول العواصف"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg><span>سجل الأحداث</span><i id="logBadge" hidden></i></button>
     <button class="seg wbtn uibtn" id="setBtn" title="الإعدادات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg><span>الإعدادات</span></button>
     <button class="seg wbtn uibtn" id="toMob" title="التبديل إلى نسخة الجوال"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/></svg><span>نسخة الجوال</span></button>
     <button class="sndbtn" id="sndBtn" aria-pressed="true" title="الصوت" aria-label="الصوت"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w1" d="M16.5 9.5a3.5 3.5 0 0 1 0 5"/><path class="w2" d="M19 7a7 7 0 0 1 0 10"/><path class="x" d="M17 9l5 6M22 9l-5 6"/></svg><i id="sndMeter"></i></button>
@@ -625,6 +637,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
         </div>
       </div>
       <div id="tl" class="glass"><button id="tlRev" title="تشغيل للخلف (مثل فيديو مسجل)" aria-label="تشغيل للخلف">◀◀</button><button id="tlPlay" title="تشغيل للأمام" aria-label="تشغيل للأمام">▶</button><input type="range" id="tlBar" min="0" max="0" step="1" value="0" aria-label="شريط الوقت"><select id="tlSpd" title="سرعة الإعادة" aria-label="سرعة الإعادة"><option value="1">×1</option><option value="2">×2</option><option value="4" selected>×4</option><option value="8">×8</option><option value="16">×16</option><option value="32">×32</option></select><button id="tlLive" title="الرجوع للوقت الحالي">مباشر</button><span id="tlTxt"></span></div>
+      <div id="lp" class="glass" hidden><div class="lpHead"><div class="seg" id="lpTabs"><button data-t="warn" aria-pressed="true">الإنذارات</button><button data-t="cells" aria-pressed="false">جدول العواصف</button><button data-t="log" aria-pressed="false">سجل الأحداث</button></div><button class="lpX" id="lpX" aria-label="إغلاق">✕</button></div><div id="lpBody"></div></div>
       <div id="modal" hidden><div class="sheet" id="sheet"></div></div>
       <div id="setPanel" hidden><div class="setBox glass"><div class="setHead"><b>الإعدادات</b><button class="btn sm ghost" id="setX">إغلاق</button></div><div id="setGpuBox"></div><div id="setBody"></div></div></div>
     </div>
@@ -713,6 +726,7 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:0}
           <label class="chk"><input type="checkbox" id="lTracks" checked><span>مسارات العواصف</span></label>
           <label class="chk"><input type="checkbox" id="lStreets" checked><span>الشوارع والأحياء</span></label>
           <label class="chk"><input type="checkbox" id="lFlood" checked><span>السيول والأودية</span></label>
+          <label class="chk"><input type="checkbox" id="lSb"><span>نسيم البحر والتقاء الرياح</span></label>
           <label class="chk"><input type="checkbox" id="lFc"><span>توقع السحب بعد ساعة</span></label>
           <label class="chk"><input type="checkbox" id="lMm" checked><span>مجموع المطر تحت المدن</span></label>
           <label class="chk"><input type="checkbox" id="lMoist"><span>خريطة الرطوبة</span></label>
@@ -1042,7 +1056,7 @@ function loadRegion(key){
   for(const RD of RADARS)for(let k=0;k<150;k++){const a=R(0,6.283),r=2+20*Math.sqrt(rnd());const x=clamp((RD.x+Math.cos(a)*r)|0,0,W-1),y=clamp((RD.y+Math.sin(a)*r)|0,0,H-1);CLUTTER.push({i:y*W+x,d:R(10,38)})}
   for(let k=0,t=0;k<Math.round(N/6000)&&t<4000;t++){const x=R(0,W)|0,y=R(0,H)|0;if(elevKm[y*W+x]>0.62){CLUTTER.push({i:y*W+x,d:R(8,26)});k++}}
   rCan=document.createElement('canvas');rCan.width=W;rCan.height=H;rCtx=rCan.getContext('2d');rImg=rCtx.createImageData(W,H);r32=new Uint32Array(rImg.data.buffer);
-  storms=[];strikes=[];hailMk=[];fieldDirty=true;stDirty=true;ATM.Q=null;MEM.M=null;RP.fr=[];RP.last=-1e9;RP.can=null;RP.on=false;RP.play=0;scen.fc=null;scen.running=false;scen.world=false;scen.editing=false;scen.main=null;if(document.getElementById('scEdit'))scenUI();{const o=document.getElementById('oScR');if(o)o.textContent=Math.round(scen.r*PX)+' كم'}
+  storms=[];strikes=[];hailMk=[];fieldDirty=true;stDirty=true;ATM.Q=null;MEM.M=null;if(typeof GAUGES!=='undefined'){GAUGES.length=0;HB.t=null}RP.fr=[];RP.last=-1e9;RP.can=null;RP.on=false;RP.play=0;scen.fc=null;scen.running=false;scen.world=false;scen.editing=false;scen.main=null;if(document.getElementById('scEdit'))scenUI();{const o=document.getElementById('oScR');if(o)o.textContent=Math.round(scen.r*PX)+' كم'}
 }
 const elevAt=(x,y)=>elevKm[clamp(y|0,0,H-1)*W+clamp(x|0,0,W-1)];
 const landAt=(x,y)=>landKm[clamp(y|0,0,H-1)*W+clamp(x|0,0,W-1)];
@@ -1193,11 +1207,11 @@ const PRESET_INFO={calm:'جو مستقر: سحب قليلة ومطر خفيف، 
   summer:'صيف حار: هواء جاف وحرارة، عواصف رعدية متفرقة وبرق كثير، وأغلب المطر يتبخر قبل وصوله للأرض.',
   winter:'منخفض شتوي: مطر واسع ومستمر يتحرك بسرعة، وعواصف رعدية قليلة.',dry:'جفاف: هواء جاف جداً، والعواصف ضعيفة وتتلاشى بسرعة.',
   supercell:'تفشي خلايا عملاقة: قص رياح قوي، خلايا عملاقة تتكون من نفسها، وبرد كبير متكرر.'};
-const layers={fc:false,mm:true,flood:true,moist:false,streets:true,tracks:true,rings:false,sweep:false,light:true,clutter:false,smooth:false,labels:true};
+const layers={sb:false,fc:false,mm:true,flood:true,moist:false,streets:true,tracks:true,rings:false,sweep:false,light:true,clutter:false,smooth:false,labels:true};
 let storms=[],strikes=[],alerts=[],hailMk=[];
 let START_H=13,simT=0,speed=1,paused=false,product='ref',tool='storm',mode='free';
 const mission={on:false,budget:24,elapsed:0,dur:480,done:false,started:false};
-const COST={lstrat:2,mini:2,mcs:8,mega:8,shower:1,storm:2,super:4,line:4,strat:3,low:6};
+const COST={tc:8,lstrat:2,mini:2,mcs:8,mega:8,shower:1,storm:2,super:4,line:4,strat:3,low:6};
 
 function windVec(){const t=(env.windFrom+180)*Math.PI/180,s=env.windSpd/60/PX;return{x:Math.sin(t)*s,y:-Math.cos(t)*s}}
 // steering flow: the deep-layer (≈0-6 km) mean wind that carries storms. Smooth on a few-hundred-km scale and slowly evolving
@@ -1314,6 +1328,14 @@ function spawn(type,x,y,o={}){
       // light widespread rain: a broad, gentle sheet of drizzle and light rain (mostly 15-25 dBZ), no thunder, lasting for hours
       const n=8+(rnd()*5|0),sx=R(1.1,1.6),a0=R(-0.6,0.6);for(let k=0;k<n;k++){const a=R(0,6.28),d=R(0,55);bl.push(blob(Math.cos(a)*d*sx,Math.sin(a)*d,R(26,44),R(18,32),R(20,29),0.8,{k:1,m:1,ang:a0+R(-.5,.5)}))}
       s.lst=1;break;}
+    case'tc':{s.life=R(1500,2100);s.tc=1;s.spin=1;s.spinK=3.5;s.maxCores=60;s.eyeR=0;
+      // tropical cyclone: a clear eye, a ring of intense eyewall thunderstorms, a dense overcast of moderate rain round it, and spiral rain
+      // bands curling out for a few hundred km; the whole system turns anticlockwise, drifts with the steering flow and dies over land.
+      const re=R(14,20),rw=re+R(7,10);s.eyeR=re;for(let k=0;k<22;k++){const a=k/22*6.283+R(-.08,.08),r=rw+R(-1.5,1.5),c=B(Math.cos(a)*r*Zs,Math.sin(a)*r*Zs,R(5,6.5)*Zs,R(2.6,3.4)*Zs,R(55,62),2,{k:2.4,ang:a+1.57});c.persist=1;bl.push(c)}
+      for(let k=0;k<18;k++){const a=k/18*6.283+R(-.15,.15),r=rw+R(14,26);bl.push(blob(Math.cos(a)*r,Math.sin(a)*r,R(12,18),R(6,9),R(33,39),0.85,{k:1,m:1.05,ang:a+1.57}))}
+      const arms=3+(rnd()*2|0),bS=R(0.2,0.28);for(let m=0;m<arms;m++){const a0=m/arms*6.283+R(-.3,.3);for(let th=0;th<5.5;th+=0.22){const r=(rw+30)*Math.exp(bS*th);if(r>260)break;const a=a0+th;
+        bl.push(blob(Math.cos(a)*r,Math.sin(a)*r,R(10,15),R(4,6),R(30,39)-r*0.02,0.85,{k:1,m:1.05,ang:a+1.57-0.25}));if(rnd()<0.35){const c=core(Math.cos(a)*r,Math.sin(a)*r,R(4,6),R(44,52));c.persist=1;bl.push(c)}}}
+      break;}
     case'strat':s.life=R(200,280);for(let k=0,n=7+(rnd()*4|0);k<n;k++){const a=R(0,6.28),d=R(0,45);bl.push(blob(Math.cos(a)*d,Math.sin(a)*d,R(24,42),R(18,32),R(25,37),0.8,{k:1,m:1,ang:R(-1,1)}))}
       for(let k=0,n=3+(rnd()*4|0);k<n;k++)bl.push(core(R(-28,28),R(-28,28),R(6,10),R(38,48)));halo(30,R(2,2.5),R(15,19));break;
     case'low':{s.life=R(320,420);s.spin=1;s.maxCores=22;
@@ -1373,6 +1395,7 @@ function raster(cx,cy,ax,ay,ang,P,fl,bk,bm,ns,ox,oy,ox2,oy2,hk=0){
 // it spreads out, and it evaporates at a rate set by the humidity of the air (minutes in dry air, 1-2 hours in moist air).
 // Nothing pops in or out: rain appears over minutes and lingers after its storm has died, as on real radar loops.
 const HSH=(()=>{const r=mulberry(4242),a=new Float32Array(16384);for(let i=0;i<a.length;i++){const v=r();a[i]=v*v*(3-2*v)}return a})();
+const EYE=[];
 const MEM={M:null,T:null,A:null,D:null,RU:null,RV:null,w:0,h:0,G:2,ox:0,oy:0,tx:0,ty:0,res:0,fadeT:-1e9};
 const memG=()=>Math.max(2,Math.round(3.2/PX));
 function memInit(){const G=MEM.G=memG(),w=MEM.w=Math.ceil(W/G)+3,h=MEM.h=Math.ceil(H/G)+3,n=w*h;MEM.M=new Float32Array(n);MEM.C=new Float32Array(n);MEM.T=new Float32Array(n);MEM.A=new Float32Array(n);MEM.D=new Float32Array(n);
@@ -1413,6 +1436,7 @@ function memStep(dt,EM){memOk();atmOk();const{M,T,A,D,RU,RV,w,h,G,cw,ch}=MEM,n=w
   if(dt>0){
     // 4) fill toward the source over minutes; evaporate by the humidity of the air mass, faster where air sinks behind mountains
     const fade=simT<MEM.fadeT,kf=1-Math.exp(-dt/9),ev=1.3-0.8*env.evap,B=ATM.B,UP=ATM.UP,TT=ATM.T,aw=ATM.w,ah=ATM.h;
+    for(let e=0;e<EYE.length;e+=3){const ex=EYE[e],ey=EYE[e+1],er=EYE[e+2];for(let j=Math.max(0,((ey-er-MEM.oy)/G|0)+1);j<Math.min(h,((ey+er-MEM.oy)/G|0)+2);j++)for(let i=Math.max(0,((ex-er-MEM.ox)/G|0)+1);i<Math.min(w,((ex+er-MEM.ox)/G|0)+2);i++){const d=Math.hypot((i-1)*G+MEM.ox-ex,(j-1)*G+MEM.oy-ey)/er;if(d<1){const k=sst(0.55,1,d);M[j*w+i]*=k;T[j*w+i]*=k}}}
     for(let j=0;j<h;j++){const Y=(j-1)*G+MEM.oy,gy=clamp((Y/MG)|0,0,ah-1)*aw;for(let i=0;i<w;i++){const q=j*w+i;let m=M[q];const t=T[q];if(m<0.5&&t<=0){M[q]=0;continue}
       const g=gy+clamp((((i-1)*G+MEM.ox)/MG)|0,0,aw-1),tau=fade?4:(30+85*B[g])*ev*clamp(1+(UP[g]<0?5:2.5)*UP[g],0.28,1.7)*clamp(1.25-(TT[g]-30)/22,0.4,1.25);m/=1+dt/tau;if(t>m)m+=(t-m)*kf;M[q]=m}}
     // 5) it spreads out sideways (turbulent mixing and the spread of falling rain)
@@ -1450,7 +1474,8 @@ function computeField(dtf=1,adv=0){
       if(d>rs*1.05||d<Math.max(a.r,b.r)*0.35)continue;
       const mr=Math.min(a.r,b.r),P=Math.min(a.P,b.P)-1.5-4*(d/rs);if(P<34)continue;nb++;
       raster((a.x+b.x)/2,(a.y+b.y)/2,d*0.5+mr*0.6,mr*0.95,Math.atan2(dy,dx),P,0,1.6,1,3,17,41,90,133)}}
-  memStep(adv?dtf:0,EM);
+  for(const s of storms)if(s.tc&&s.vis&&!s.kill){const g=s.gf||1;EYE.push(s.x,s.y,(s.eyeR||16)*g*env.size/PX)}
+  memStep(adv?dtf:0,EM);EYE.length=0;
   // radar picture = cores + remembered rain (with a fine grain that rides along with it)
   {const D=MEM.D,mw=MEM.w,iG=1/MEM.G,ox=MEM.ox,oy=MEM.oy,tx=MEM.tx|0,ty=MEM.ty|0;
   for(let y=0;y<H;y++){const gy=(y-oy)*iG+1,y0=gy|0,fy=gy-y0,r=y*W,jr=y0*mw,nr=((y-ty)&255)<<8;
@@ -1613,6 +1638,15 @@ function paint(){if(product==='wind')return;
         const nz=TEX[nr|(((x-tx)>>1)&255)];let c=m>0.02?Math.max(0,m*3-0.2*(0.5-0.5*nz)-0.04):0;if(v>5){const cz=0.5+v/50;if(cz>c)c=cz}if(c>1)c=1;
         const q=Q[qr+Math.min(aw-1,(x/MG)|0)];if(q>0.6){const ch=Math.min(0.5,(q-0.6)*1.6)*(0.55+0.45*nz);if(ch>c)c=ch}
         if(c<0.05){r32[i]=0;continue}const g=(150+105*c)|0;r32[i]=pack(g,g,Math.min(255,g+6),(Math.min(1,c*1.25)*A*0.94)|0)}}}
+  else if(product==='hprob'){
+    // probability of hail at the ground: high echoes in storms able to grow hail, scaled by the hail setting
+    const bins=[[0.1,'#4caf50'],[0.3,'#e6d33a'],[0.5,'#f39a2a'],[0.7,'#e8392c'],[0.9,'#c837d6']].map(([v,c])=>[v,pack(...hex(c),Math.round(235*radarAlpha))]),hk=clamp(0.55+0.45*env.hail,0.3,1.2);
+    for(let i=0;i<N;i++){const v=DBZ[i];if(v<42){r32[i]=0;continue}const pr=Math.pow(sst(45,64,v),1.2)*(HK[i]>0?1:0.3)*hk;let c=0;for(const b of bins)if(pr>=b[0])c=b[1];r32[i]=c}}
+  else if(product==='ptype'){
+    // precipitation type: rain, mixed rain and snow, snow (from the temperature) and hail (from the hail size)
+    if(!HAIL_PK.length)buildHailPk();const A=Math.round(235*radarAlpha),C={r1:pack(122,211,122,A),r2:pack(46,158,74,A),r3:pack(20,105,55,A),sn:pack(205,238,255,A),mx:pack(242,160,214,A)},T=ATM.T,aw=ATM.w,ah=ATM.h;
+    for(let y=0;y<H;y++){const gr=Math.min(ah-1,(y/MG)|0)*aw;for(let x=0;x<W;x++){const i=y*W+x,v=DBZ[i];if(v<12){r32[i]=0;continue}const t=T?T[gr+Math.min(aw-1,(x/MG)|0)]:20;
+      if(v>=58&&hailSizeAt(i)>0){r32[i]=HAIL_PK[HAIL_CAT.indexOf(hailCat(hailSizeAt(i)))];continue}r32[i]=t<=0.5?C.sn:t<2.5?C.mx:v<30?C.r1:v<45?C.r2:C.r3}}}
   else if(product==='hacc'){if(!HAIL_PK.length)buildHailPk();for(let i=0;i<N;i++){const h=HACC[i];r32[i]=h>0?HAIL_PK[HAIL_CAT.indexOf(hailCat(h))]:0}}
   else{for(let i=0;i<N;i++){const a=ACC[i];r32[i]=a<0.5?0:ACC_LUT[a>=150?300:(a*2)|0]}}
   rCtx.putImageData(rImg,0,0);
@@ -1777,7 +1811,7 @@ function megaDynamics(s,dt){s.mt=(s.mt||0)+dt;const a=s.mt,L=s.tailL,ph=s.tph,k=
 }
 function cellDynamics(s,dt){
   if(s.hookR)superDynamics(s,dt);if(s.megaT)megaDynamics(s,dt);
-  if(s.spin){const a=-0.0012*dt*(0.5+env.morph),c=Math.cos(a),sn=Math.sin(a);for(const b of s.blobs){const x=b.rx,y=b.ry;b.rx=x*c-y*sn;b.ry=x*sn+y*c;b.ang+=a}}
+  if(s.spin){const a=-0.0012*(s.spinK||1)*dt*(0.5+env.morph),c=Math.cos(a),sn=Math.sin(a);for(const b of s.blobs){const x=b.rx,y=b.ry;b.rx=x*c-y*sn;b.ry=x*sn+y*c;b.ang+=a}}
   const p=s.age/s.life,fx=s.hx,fy=s.hy,gf=s.gf||1;let ncore=0,cx=0,cy=0,ws=0;
   const svu=s.vx*fx+s.vy*fy,svr=-s.vx*fy+s.vy*fx;
   const upw=upWind(s.x,s.y),upU=(upw.x-s.vx)*fx+(upw.y-s.vy)*fy,upV=-(upw.x-s.vx)*fy+(upw.y-s.vy)*fx;
@@ -1863,7 +1897,7 @@ function step(dt,rdt=0){
   const w=windVec(),hour=(START_H+simT/60)%24,diurnal=0.35+0.65*Math.max(0,Math.sin(Math.PI*(hour-9)/12));
   for(const s of storms){
     {let mc=moistAt(s.x,s.y);if(s.mega)mc=Math.max(mc,envHum(s.x,s.y));s.mc=s.mc==null?mc:s.mc+(mc-s.mc)*Math.min(1,dt*0.1)}
-    s.boost=(env.inst-0.5)*14+elevAt(s.x,s.y)*6+(ATM.UP?(u=>u<0?u*30:u*12)(atmSamp(ATM.UP,s.x,s.y)):0)+(env.sev-0.35)*8+(s.mc-0.5)*8*env.moistFx+(s.megaB||0)+(s.mini?3:0)+(s.fcBoost||0)+(s.nb||0)+(s.erB||0)+(s.trail?-9*clamp(s.age/s.life,0,1):0)-7*clamp(((ATM.T?atmSamp(ATM.T,s.x,s.y):30)-39)/8,0,1);
+    s.boost=(env.inst-0.5)*14+elevAt(s.x,s.y)*6+(ATM.UP?(u=>u<0?u*30:u*12)(atmSamp(ATM.UP,s.x,s.y)):0)+(env.sev-0.35)*8+(s.mc-0.5)*8*env.moistFx+(s.megaB||0)+(s.mini?3:0)+(s.tcB||0)+(s.fcBoost||0)+(s.nb||0)+(s.erB||0)+(s.trail?-9*clamp(s.age/s.life,0,1):0)-7*clamp(((ATM.T?atmSamp(ATM.T,s.x,s.y):30)-39)/8,0,1);
     // storm motion = steering wind (+ propagation): ordinary cells drift with ~90-100% of the mean wind,
     // supercells deviate ~30° right at ~75% (Maddox / Bunkers), squall lines run ahead of it (forward propagation),
     // multicells creep toward the moist inflow where new cells form, and young storms over high mountains stay anchored to the terrain.
@@ -1879,7 +1913,8 @@ function step(dt,rdt=0){
     if(!s.mega&&s.type!=='low'&&s.type!=='line')for(const m of storms){if(!m.mega||m.kill||m===s)continue;const dx=m.x-s.x,dy=m.y-s.y,d=Math.hypot(dx,dy),Rr=megaReach(m)+(s.rad||10)*(s.gf||1)*0.6+14/PX;
       if(d<Rr&&d>1){const pull=0.3*(Math.hypot(ws.x,ws.y)*env.speedK+0.05/PX)*(1-d/Rr);tx+=dx/d*pull;ty+=dy/d*pull}}
     if(s.megaT){const mt=s.mt||0,a=0.42*Math.sin(mt/260+s.mph)+0.18*Math.sin(mt/120+s.mph*2.1),c=Math.cos(a),sn=Math.sin(a),f=0.85+0.3*Math.sin(mt/150+s.mph*1.4);[tx,ty]=[(tx*c-ty*sn)*f,(tx*sn+ty*c)*f]}
-    if(s.type==='low'){tx*=0.7;ty*=0.7}
+    if(s.type==='low'){tx*=s.tc?0.55:0.7;ty*=s.tc?0.55:0.7}
+    if(s.tc){if(landAt(s.x,s.y)){s.age+=dt*1.3;s.tcB=Math.max(-14,(s.tcB||0)-dt*0.03)}else s.tcB=Math.min(0,(s.tcB||0)+dt*0.01)}
     if(s.type==='line'){const wm=Math.hypot(w.x,w.y);if(wm>1e-3&&(w.x*s.hx+w.y*s.hy)>0){const k3=Math.min(1,dt*0.01);s.hx+=(w.x/wm-s.hx)*k3;s.hy+=(w.y/wm-s.hy)*k3;const n=Math.hypot(s.hx,s.hy);s.hx/=n;s.hy/=n}
       const sp=Math.max(tx*s.hx+ty*s.hy,0.25)*(1.05+0.15*lifeF(pS,0.2));tx=s.hx*sp;ty=s.hy*sp}else{tx+=s.jx;ty+=s.jy}
     // the unexpected: at irregular times a storm changes course — a new cell takes over on one flank (discrete propagation),
@@ -1905,7 +1940,7 @@ function step(dt,rdt=0){
     s.age+=dt*(s.mini?clamp(1+(0.5-s.mc)*0.4,0.8,1.2):(1+(0.5-s.mc)*0.9*env.moistFx)*(1-0.4*(s.anc||0)));
     if(s.mini&&!s.kill&&ATM.Q){const gx=clamp((s.x/MG)|0,1,ATM.w-2),gy=clamp((s.y/MG)|0,1,ATM.h-2),Q=ATM.Q,dq=0.0011*dt;for(let oy=-1;oy<=1;oy++)for(let ox=-1;ox<=1;ox++){const i=(gy+oy)*ATM.w+gx+ox;Q[i]=Math.max(0.06,Q[i]-dq*(ox||oy?0.6:1))}}
     // no single cloud system lasts for ever: past about half a day (longer for wide rain and lows) it runs down quickly, whatever the settings
-    if(!s.scen&&!s.hold&&s.t0!=null){const over=(simT-s.t0)/60-(s.type==='low'?26:s.type==='strat'?15:11);if(over>0)s.age+=dt*Math.min(4,1+over)}
+    if(!s.scen&&!s.hold&&s.t0!=null){const over=(simT-s.t0)/60-(s.tc?40:s.type==='low'?26:s.type==='strat'?15:11);if(over>0)s.age+=dt*Math.min(4,1+over)}
     // a giant stays at full strength for a limited run (about 280-370 km of travel, or 10-14 hours if it hardly moves, or until the air dries); then it ages and dies like any thunderstorm
     if(s.mega&&!s.kill){s.trav=(s.trav||0)+Math.hypot(s.vx,s.vy)*dt*PX;s.ht=(s.ht||0)+dt;s.maxTrav=s.maxTrav||R(280,370);s.maxT=s.maxT||R(600,840);s.hold=s.mc>0.27&&s.trav<s.maxTrav&&s.ht<s.maxT;if(s.hold&&s.age>s.life*0.5)s.age=s.life*0.5;if(!s.hold&&s.held&&!s.rel){s.rel=1;s.age=Math.max(s.age,s.life*(1-Math.min(0.4,170/s.life)))}if(s.hold)s.held=1}const p=s.age/s.life;for(const b of s.blobs)b.t=(b.t||0)+dt;cellDynamics(s,dt);if(s.merged>0)coalesce(s,dt);
     if(s.scen){
@@ -1934,7 +1969,7 @@ function step(dt,rdt=0){
   }
   storms=storms.filter(s=>((s.age<s.life*1.2&&s.killF>0)||s.vis!==false)&&s.x>-80&&s.x<W+80&&s.y>-80&&s.y<H+80);
   liveT+=rdt;strikes=strikes.filter(k=>liveT-k.lt<6);if(hailMk.length)hailMk=hailMk.filter(k=>liveT-k.lt<6);if(hailMk.length>300)hailMk.splice(0,hailMk.length-300);if(strikes.length>350)strikes.splice(0,strikes.length-350);while(boltLog.length&&simT-boltLog[0]>60)boltLog.shift();
-  if(env.natural&&!mission.on&&!scen.world&&storms.length<(REGION.maxStorms||45)&&rnd()<dt*env.inst*env.moist*0.13*env.natRate*(REGION.natMul||1)){
+  if(env.natural&&!mission.on&&!scen.world&&storms.length<(REGION.maxStorms||45)&&rnd()<dt*env.inst*env.moist*0.13*env.natRate*(REGION.natMul||1)*seasonF()){
     let bx=0,by=0,bv=-1;for(let t=0;t<16;t++){const x=R(20,W-20),y=R(20,H-20),v=moistAt(x,y)+R(0,0.05);if(v>bv){bv=v;bx=x;by=y}}
     for(let t=0;t<1;t++){const x=bx,y=by;if(rnd()<clamp((bv-0.5)/0.25,0,1)*(1-0.8*clamp((atmSamp(ATM.T,x,y)-40)/7,0,1))){NATF=1;spawnBand(0.22,env.inst>0.45&&rnd()<0.12?'mini':env.inst<0.35&&env.moist>0.6?(rnd()<0.6?'strat':'shower'):env.sev>0.85&&env.shear>0.7&&rnd()<0.25?'super':env.inst>0.7&&rnd()<0.3?'storm':'shower',x,y);NATF=0;break}}}
   mergeStorms();
@@ -1943,7 +1978,7 @@ function step(dt,rdt=0){
   const f=pendDt/60;floodStep(pendDt);pendDt=0;
   {const Q=ATM.Q,aw=ATM.w,ah=ATM.h;for(let y=0;y<H;y++){const r=y*W,qr=Math.min(ah-1,(y/MG)|0)*aw;for(let x=0;x<W;x++){const i=r+x,v=DBZ[i];if(v<18)continue;if(v>=58){const hs=hailSizeAt(i);if(hs>HACC[i])HACC[i]=hs}
     if(v>DAY.mx)DAY.mx=v;const k=v>=70?140:(v*2)|0,w=RR_HUM[k];ACC[i]+=RR_LUT[k]*f*(w>0?Math.pow(humFac(Q[qr+Math.min(aw-1,(x/MG)|0)]),w):1)}}}
-  for(const c of CITIES){const v=DBZ[c.i];c.rate=rainAt(v,c.x,c.y);const before=c.total;c.total+=c.rate*f;
+  histTick(f);for(const c of CITIES){const v=DBZ[c.i];c.rate=rainAt(v,c.x,c.y);const before=c.total;c.total+=c.rate*f;
     {const hs=hailSizeAt(c.i);if(hs>=0.5&&simT-(c.al.hail??-99)>30){c.al.hail=simT;c.hail++;const hc=hailCat(hs);alert(`${hc[2]} على ${c.n}: حبات ≈ ${hs.toFixed(1)} سم (${hc[3]})`,'bad')}}
     if(c.rate>=40&&simT-(c.al.heavy??-99)>40){c.al.heavy=simT;alert(`أمطار غزيرة على ${c.n}: ${c.rate.toFixed(0)} مم/س`,'warn')}
     if(before<50&&c.total>=50){alert(`خطر سيول في ${c.n}: تجاوز المجموع 50 مم`,'bad')}
@@ -1980,11 +2015,12 @@ function dayRoll(){if(DAY.idx==null||scen.world){if(DAY.idx==null)dayStart();ret
   for(const s of storms)if(!s.kill&&s.vis&&s.t0!=null){const d=simT-s.t0;if(d>DAY.life)DAY.life=d}
   const di=dayIdx();if(di===DAY.idx)return;const tm=(DAY.idx+1)*1440-1,where=dateStr(tm)+' · '+REGION.name,{rows}=dayStats(),news={};
   if(rows.length&&recTry('rain',rows[0].v,rows[0].n+' · '+where))news.rain=1;if(recTry('st',DAY.st,where))news.st=1;if(recTry('hail',DAY.hail,where))news.hail=1;if(recTry('dbz',DAY.mx,where))news.dbz=1;if(recTry('life',DAY.life,where))news.life=1;if(DAY.fl>=FLQ[0]&&recTry('fl',DAY.fl,DAY.flC+' · '+where))news.fl=1;recSave();
+  logEvt('day','',`ملخص ${dateStr(tm)}: ${rows.length?'أعلى مطر '+rows[0].n+' '+rows[0].v.toFixed(1)+' مم، ':''}الصواعق ${DAY.st}${DAY.hail>0?'، أكبر برد '+DAY.hail.toFixed(1)+' سم':''}${DAY.fl>=FLQ[0]?'، أقوى سيل '+Math.round(DAY.fl)+' م³/ث':''}`);
   let auto=true;try{auto=localStorage.getItem('stormlab-daysum')!=='0'}catch(e){}
   if(auto&&!mission.on&&modal.hidden&&!RP.on&&product!=='fcst'&&!drag&&(rows.length||DAY.st>0)){showModal(daySummaryHTML('ملخص اليوم',tm,news)+`<div class="row"><button class="btn" id="dyOk">متابعة</button><button class="btn ghost" id="dyRec">الأرقام القياسية</button><button class="btn ghost" id="dyOff">لا تعرضه تلقائياً</button></div>`);
     $('dyOk').onclick=hideModal;$('dyRec').onclick=showRecords;$('dyOff').onclick=()=>{try{localStorage.setItem('stormlab-daysum','0')}catch(e){}hideModal();toast('تقدر تشوف الملخص من زر "ملخص اليوم" تحت الطبقات')}}
   dayStart()}
-function dateTick(){dayRoll();const d=simDate();if(d.getMonth()+1!==env.month&&!scen.world){env.month=d.getMonth()+1;env.season=MONTH_SEASON[env.month-1];const ms=document.getElementById('monthSel');if(ms)ms.value=String(env.month);if(ATM.Q)atmDiag();renderLegend();toast('دخل شهر '+MONTHS[env.month-1]+' · '+seasonOf().n)}}
+function dateTick(){dayRoll();seasonTick();const d=simDate();if(d.getMonth()+1!==env.month&&!scen.world){env.month=d.getMonth()+1;env.season=MONTH_SEASON[env.month-1];const ms=document.getElementById('monthSel');if(ms)ms.value=String(env.month);if(ATM.Q)atmDiag();renderLegend();toast('دخل شهر '+MONTHS[env.month-1]+' · '+seasonOf().n)}}
 const hhmm=tm=>{const m=((Math.floor(tm)%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
 // Replay: the radar picture is recorded every 5 simulated minutes and the last full day is kept, so the time bar can run
 // the past 24 hours backwards and forwards like a recorded video. While replaying, the simulation itself waits.
@@ -2000,11 +2036,11 @@ function rpEnter(i){if(!RP.fr.length){toast('ما فيه تسجيل بعد: خل
 function rpLive(){RP.on=false;RP.play=0;document.getElementById('tl').classList.remove('rp');fieldDirty=true;tlSync()}
 function rpStep(rdt){if(!RP.on||!RP.play)return;RP.acc+=rdt*2.5*RP.spd;while(RP.acc>=1){RP.acc-=1;const i=RP.idx+RP.play;if(i<0){RP.play=0;break}if(i>=RP.fr.length){rpLive();return}rpShow(i)}}
 function tlSync(){const bar=document.getElementById('tlBar');if(!bar)return;const n=RP.fr.length;bar.max=n;if(!RP.on)bar.value=n;else bar.value=RP.idx;
-  const fr=RP.on?RP.fr[RP.idx]:null,tm=fr?fr.tm:START_H*60+simT;document.getElementById('tlTxt').textContent=(RP.on?'إعادة · ':'')+dateStr(tm)+' · '+hhmm(tm);
+  const fr=RP.on?RP.fr[RP.idx]:null,tm=fr?fr.tm:START_H*60+simT;document.getElementById('tlTxt').textContent=(RP.on?'إعادة · ':'')+dateStr(tm)+' · '+localSeason(simDate(fr?fr.tm-START_H*60:simT)).n+' · '+hhmm(tm);
   document.getElementById('dateTxt').textContent=dateStr(tm)+(RP.on?' · إعادة':'');document.getElementById('clock').textContent=hhmm(tm);
   document.getElementById('tlRev').setAttribute('aria-pressed',RP.on&&RP.play<0);document.getElementById('tlPlay').setAttribute('aria-pressed',RP.on&&RP.play>0);document.getElementById('tlLive').setAttribute('aria-pressed',!RP.on)}
 const clockStr=()=>{const m=Math.floor(START_H*60+simT)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
-function alert(msg,level){alerts.unshift({t:clockStr(),msg,level});alerts.length=Math.min(alerts.length,6);renderAlerts();if(document.body.classList.contains('mob')&&!document.body.classList.contains('sheet')){const d=document.getElementById('mDot');if(d)d.hidden=false;if(level==='warn'&&liveT-(window.__mTo||-99)>8){window.__mTo=liveT;toast(msg)}}}
+function alert(msg,level,x,y){logEvt(evtCat(msg),level,msg,x,y);alerts.unshift({t:clockStr(),msg,level});alerts.length=Math.min(alerts.length,6);renderAlerts();if(document.body.classList.contains('mob')&&!document.body.classList.contains('sheet')){const d=document.getElementById('mDot');if(d)d.hidden=false;if(level==='warn'&&liveT-(window.__mTo||-99)>8){window.__mTo=liveT;toast(msg)}}}
 function renderAlerts(){const el=document.getElementById('alerts');
   el.innerHTML=alerts.length?alerts.map(a=>`<div class="a ${a.level}"><time>${a.t}</time><span>${a.msg}</span></div>`).join(''):'<div class="empty">لا توجد تنبيهات حتى الآن.</div>'}
 let toastT=0;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),1900)}
@@ -2192,7 +2228,7 @@ let WS={t:-1,list:[]};
 function warnStorms(){if(WS.t===simT&&WS.n===storms.length)return WS.list;const list=[];
   for(const st of storms){if(st.kill||st.trail)continue;let mx=0,cx=0,cy=0,n=0;for(const b of st.blobs)if(b.g>1.1&&b.Pe>0){mx=Math.max(mx,b.Pe);cx+=b.cx;cy+=b.cy;n++}
     if(mx<45||!n)continue;cx/=n;cy/=n;let r=0;for(const b of st.blobs)if(b.g>1.1&&b.Pe>40)r=Math.max(r,Math.hypot(b.cx-cx,b.cy-cy)+Math.max(b.ax,b.ay)*0.6);
-    list.push({id:st.id,mx,cx,cy,vx:st.vx||0,vy:st.vy||0,r:Math.max(r,6/PX)})}
+    list.push({id:st.id,s:st,mx,cx,cy,vx:st.vx||0,vy:st.vy||0,r:Math.max(r,6/PX)})}
   WS={t:simT,n:storms.length,list};return list}
 function cityWarn(c){const v=DBZ[c.i]||0,hs=v>=58?hailSizeAt(c.i):0;let near=false;for(let k=strikes.length-1;k>=0&&k>strikes.length-40;k--){const s=strikes[k];if(Math.hypot(s.x-c.x,s.y-c.y)*PX<15){near=true;break}}
   const why=[];let L=0;const up=(l,t)=>{if(l>L)L=l;if(!why.includes(t))why.push(t)};
@@ -2236,6 +2272,7 @@ function draw(now){
   for(const RD of RADARS){const[x,y]=toScreen(RD.x,RD.y);ctx.fillStyle='#8fd8ff';ctx.beginPath();ctx.moveTo(x,y-6);ctx.lineTo(x+5,y);ctx.lineTo(x,y+6);ctx.lineTo(x-5,y);ctx.closePath();ctx.fill();ctx.strokeStyle='#04070a';ctx.lineWidth=1.5;ctx.stroke()}
   // storm tracks
   if(product==='ref'||product==='acc'||product==='terr')drawFloods();
+  if(layers.sb&&!RP.on)drawSeaBreeze();drawGauges();
   // automatic forecast: where each significant storm is expected to be in one hour (its present motion carried forward, widening with uncertainty)
   if(layers.fc&&product==='ref'&&!RP.on)for(const w of warnStorms()){const[ax,ay]=toScreen(w.cx,w.cy),[bx,by]=toScreen(w.cx+w.vx*60,w.cy+w.vy*60),r0=Math.max(6,w.r*s),r1=r0*1.3+8,L=Math.hypot(bx-ax,by-ay),col=WARN_C[w.mx>=58?3:w.mx>=50?2:1];
     ctx.beginPath();if(L>3){const dx=(bx-ax)/L,dy=(by-ay)/L,an=Math.atan2(dy,dx);ctx.moveTo(ax-dy*r0,ay+dx*r0);ctx.lineTo(bx-dy*r1,by+dx*r1);ctx.arc(bx,by,r1,an+Math.PI/2,an-Math.PI/2,true);ctx.lineTo(ax+dy*r0,ay-dx*r0);ctx.closePath()}else ctx.arc(bx,by,r1,0,Math.PI*2);
@@ -2302,13 +2339,15 @@ const ICON={
   super:'<path d="M12 12a1.5 1.5 0 1 1 1.5 1.5"/><path d="M13.5 13.5A4 4 0 1 1 16 9"/><path d="M16 9a7 7 0 1 1-10 9"/><path d="M6 18a9.5 9.5 0 0 1 2-14"/>',
   line:'<path d="M3 18l4-7 4 4 4-8 6 6"/><path d="M14 20l3-3 3 3" opacity=".6"/>',
   lstrat:'<path d="M4 8h12M3 12h17M5 16h13" opacity=".55"/><path d="M8 19.5l-.6 1.5M12 19.5l-.6 1.5M16 19.5l-.6 1.5"/>',
+  tc:'<path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M12 4c-4 0-7 2-7 5 3-2 6-1 7 1"/><path d="M12 20c4 0 7-2 7-5-3 2-6 1-7-1"/><path d="M4 12c0 4 2 7 5 7-2-3-1-6 1-7"/><path d="M20 12c0-4-2-7-5-7 2 3 1 6-1 7"/>',
+  gauge:'<path d="M8 3h8v4l-1.5 12h-5L8 7z"/><path d="M9.5 13h5M9 9.5h6"/><path d="M6 21h12"/>',
   mcs:'<path d="M4 6h12M3 10h17M5 14h13"/><path d="M12 14l-2.5 4h3.5l-2.5 4"/>',
   strat:'<path d="M4 8h12M3 12h17M5 16h13"/><path d="M8 20h8" opacity=".6"/>',
   erase:'<path d="M15 4l5 5-10 10H5l-2-2a1.5 1.5 0 0 1 0-2z"/><path d="M9 10l5 5M11 19h9"/>',
   low:'<path d="M12 12m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0"/><path d="M3.5 10A9 9 0 0 1 17 4.5"/><path d="M20.5 14A9 9 0 0 1 7 19.5"/><path d="M6 6.5A6.5 6.5 0 0 1 18.5 11" opacity=".6"/><path d="M18 17.5A6.5 6.5 0 0 1 5.5 13" opacity=".6"/>',
   pan:'<path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>',
 };
-const TOOLS=[['shower','خلية مطرية'],['mini','عاصفة رعدية صغيرة'],['storm','عاصفة رعدية'],['super','خلية عملاقة'],['mega','عاصفة رعدية عملاقة'],['line','خط عواصف'],['lstrat','مطر واسع خفيف'],['strat','مطر واسع'],['mcs','مطر واسع عاصف'],['low','منخفض جوي'],['erase','ممحاة'],['pan','تحريك']];
+const TOOLS=[['shower','خلية مطرية'],['mini','عاصفة رعدية صغيرة'],['storm','عاصفة رعدية'],['super','خلية عملاقة'],['mega','عاصفة رعدية عملاقة'],['line','خط عواصف'],['lstrat','مطر واسع خفيف'],['strat','مطر واسع'],['mcs','مطر واسع عاصف'],['low','منخفض جوي'],['tc','إعصار مداري'],['gauge','محطة قياس'],['erase','ممحاة'],['pan','تحريك']];
 const toolsEl=document.getElementById('tools');
 toolsEl.innerHTML=`<div class="zbtns"><button class="tool zb" id="zIn" title="تكبير" aria-label="تكبير"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button class="tool zb" id="zOut" title="تصغير" aria-label="تصغير"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button></div>`+TOOLS.map(([k,n],i)=>`<button class="tool" data-t="${k}" aria-pressed="${k===tool}" title="${n} (${i+1})"><kbd>${i+1}</kbd><span class="cost"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg><span class="l">${n}</span></button>`).join('');
 function pickTool(t){if(t===tool&&t!=='pan'){setTool('pan');toast('أُلغي التحديد: الخريطة تتحرك بالسحب')}else setTool(t)}
@@ -2318,7 +2357,7 @@ function updateCosts(){toolsEl.querySelectorAll('.tool[data-t]').forEach(b=>{b.q
 
 function pay(t){if(!mission.on)return true;if(mission.done){toast('انتهت المهمة. ابدأ جولة جديدة.');return false}
   if(mission.budget<COST[t]){toast('الميزانية لا تكفي لهذه الأداة');return false}mission.budget-=COST[t];return true}
-const SPACING={lstrat:60,mini:22,mcs:1e9,mega:1e9,shower:18,storm:32,super:45,strat:55,low:110};
+const SPACING={tc:1e9,gauge:1e9,lstrat:60,mini:22,mcs:1e9,mega:1e9,shower:18,storm:32,super:45,strat:55,low:110};
 function trySpawn(t,x,y){if(x<0||y<0||x>W||y>H)return;if(storms.length>=70){toast('السماء ممتلئة. امسح بعض العواصف أولاً');return}if(!pay(t))return;spawn(t,x,y)}
 function lineHeading(a,b){const L=Math.hypot(b.x-a.x,b.y-a.y)||1,lx=(b.x-a.x)/L,ly=(b.y-a.y)/L;let hx=ly,hy=-lx;const w=windVec();
   if(Math.hypot(w.x,w.y)>1e-4){if(hx*w.x+hy*w.y<0){hx=-hx;hy=-hy}}else{hx=0.7071;hy=-0.7071;}return{hx,hy,lx,ly,L}}
@@ -2342,6 +2381,7 @@ cv.addEventListener('pointerdown',e=>{fly=null;cv.setPointerCapture(e.pointerId)
   if(e.button!==0&&e.pointerType==='mouse')return;
   if(tool==='line'){drag={kind:'line',a:w,b:w};return}
   if(tool==='erase'){drag={kind:'erase'};eraseAt(w);return}
+  if(tool==='gauge'){gaugeClick(w,e.offsetX,e.offsetY);return}
   trySpawn(tool,w.x,w.y);drag={kind:'paint',last:w,t:performance.now()};
 });
 cv.addEventListener('pointermove',e=>{if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
@@ -2373,6 +2413,67 @@ function updateReadout(w){lastRead=w;
    `<span class="dim">${RN.c} ${(rng*PX).toFixed(0)} km · ${az.toFixed(0).padStart(3,'0')}°${rng>RANGE?' · no data':''}</span>`+
    `<span class="big">${v>=5?v.toFixed(0)+' dBZ':'— dBZ'}</span>`+
    `<span>${rr>0?rr.toFixed(1):'0.0'} mm/h · Σ ${ACC[i].toFixed(1)} mm</span>`+`<span class="ar">الارتفاع ${Math.round(elevM?elevM[i]:0)} م · الحرارة ${Math.round(tempAt(w.x,w.y))}°${tempAt(w.x,w.y)<=1&&v>=10?' · ثلوج':''}${ATM.SN&&atmSamp(ATM.SN,w.x,w.y)>0.5?' · ثلج متراكم '+Math.round(atmSamp(ATM.SN,w.x,w.y))+' سم':''}${v>=12?' · قمة السحاب ≈ '+topKm(v).toFixed(0)+' كم':''}</span><span class="ar">الرطوبة هنا ${Math.round(humAt(w.x,w.y)*100)}% · ${v<5?'لا يوجد هطول':v<20?'رذاذ':v<30?'مطر خفيف':v<40?'مطر متوسط':v<50?'مطر غزير':v<60?'مطر غزير جداً':'أمطار عنيفة جداً'}</span>`}
+
+
+/* ---------- local seasons (Najdi star calendar, approximate dates) ---------- */
+const LSEAS=[[[8,24],'سهيل',0.7,'طلوع سهيل: يبدأ الحر ينكسر وتبرد الليالي'],[[10,16],'الوسم',1.5,'موسم الوسم: أمطار الخريف وبداية موسم الأمطار'],[[12,7],'المربعانية',1.0,'المربعانية: أشد البرد، وأمطار المنخفضات الشتوية'],
+  [[1,16],'الشبط',0.8,'الشبط: برد قارس وجفاف نسبي'],[[2,11],'العقارب',1.2,'العقارب: تقلبات الجو وبداية الدفء'],[[3,11],'الحميمين',1.4,'الحميمين: أمطار الربيع والعواصف الرعدية'],[[4,3],'الذراعين',1.5,'الذراعين: ذروة العواصف الرعدية الربيعية والبرد'],
+  [[4,29],'الثريا',0.9,'الثريا: آخر الأمطار وبداية الصيف'],[[6,7],'الجوزاء',0.35,'الجوزاء والتويبع: حر شديد ورياح السموم'],[[7,16],'المرزم',0.3,'المرزم: ذروة الحر، والعواصف نادرة إلا على السروات'],[[8,10],'الكليبين',0.4,'الكليبين: آخر الحر الشديد']];
+function localSeason(d){const md=(d.getMonth()+1)*100+d.getDate();let best=LSEAS[LSEAS.length-1],bv=-1;for(const q of LSEAS){const v=q[0][0]*100+q[0][1];if(v<=md&&v>bv){bv=v;best=q}}if(bv<0)best=LSEAS.reduce((a,q)=>q[0][0]*100+q[0][1]>a[0][0]*100+a[0][1]?q:a);return{n:best[1],f:best[2],d:best[3]}}
+const seasonF=()=>localSeason(simDate()).f;let SN_CUR='';
+function seasonTick(){const q=localSeason(simDate());if(q.n!==SN_CUR){if(SN_CUR){toast('دخل موسم '+q.n);logEvt('season','','دخل موسم '+q.n+' · '+q.d)}SN_CUR=q.n}}
+/* ---------- event log + information centre ---------- */
+let EVT=[],EVT_SEEN=0;const EVC={warn:'إنذار',hail:'برد',flood:'سيول',bolt:'صواعق',rain:'أمطار',merge:'اندماج',day:'ملخص',season:'موسم',other:'أخرى'};
+function evtCat(m){return /برد/.test(m)?'hail':/سيل|الأودية|جريان/.test(m)?'flood':/صواعق/.test(m)?'bolt':/أمطار غزيرة/.test(m)?'rain':/اندماج|اتحدت|عملاقة/.test(m)?'merge':'other'}
+function logEvt(cat,level,msg,x,y){EVT.unshift({tm:START_H*60+simT,cat,level:level||'',msg,x,y});if(EVT.length>600)EVT.length=600;badgeSync();if(LP.open&&LP.tab==='log')LP.t=0}
+function badgeSync(){const b=document.getElementById('logBadge');if(!b)return;const n=LP.open&&LP.tab==='log'?0:EVT.length-EVT_SEEN;b.hidden=n<=0;b.textContent=n>99?'99+':n}
+const LP={open:false,tab:'warn',t:0,f:{}};
+function lpOpen(o){LP.open=o;$('lp').hidden=!o;if(o){LP.t=0;lpRender()}}
+function lpRender(){const b=$('lpBody');if(!b)return;segSet('lpTabs','t',LP.tab);
+  if(LP.tab==='warn'){b.innerHTML=warnHTML()+'<p style="color:var(--muted);font-size:11.5px;margin:8px 0 0">الإنذار المبكر: المدينة تتلون إذا فيه سحابة قوية فوقها أو متجهة عليها خلال ساعة، أو سيل في أوديتها.</p>'}
+  else if(LP.tab==='cells')b.innerHTML=cellTableHTML();
+  else{EVT_SEEN=EVT.length;const on=k=>LP.f[k]!==false,rows=EVT.filter(e=>on(e.cat)).slice(0,250);
+    b.innerHTML=`<div class="lpChips">${Object.keys(EVC).map(k=>`<button data-f="${k}" aria-pressed="${on(k)}">${EVC[k]}</button>`).join('')}</div>`+(rows.length?rows.map(e=>`<div class="ev ${e.level}"${e.x!=null?` data-x="${e.x}" data-y="${e.y}"`:''}><time>${dateStr(e.tm-START_H*60).replace(/^\S+ /,'')} · ${hhmm(e.tm)}</time><span>${e.msg} <i>· ${EVC[e.cat]}</i></span></div>`).join(''):'<p style="color:var(--muted)">ما فيه أحداث بعد.</p>')+
+      `<div class="row" style="margin-top:8px"><button class="btn sm ghost" id="lpSave">حفظ السجل كملف</button><button class="btn sm ghost" id="lpClr">مسح السجل</button></div>`;
+    $('lpSave').onclick=()=>{const t=EVT.slice().reverse().map(e=>dateStr(e.tm-START_H*60)+' '+hhmm(e.tm)+' ['+EVC[e.cat]+'] '+e.msg).join('\n');try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+t],{type:'text/plain;charset=utf-8'}));a.download='سجل-مختبر-العواصف.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}catch(e){toast('تعذّر الحفظ هنا')}};
+    $('lpClr').onclick=()=>{EVT=[];EVT_SEEN=0;lpRender()}}badgeSync()}
+document.getElementById('logBtn').addEventListener('click',()=>lpOpen(!LP.open));document.getElementById('lpX').addEventListener('click',()=>lpOpen(false));
+document.getElementById('lpTabs').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;LP.tab=t.dataset.t;lpRender()});
+document.getElementById('lpBody').addEventListener('click',e=>{const f=e.target.closest('[data-f]');if(f){LP.f[f.dataset.f]=LP.f[f.dataset.f]===false;lpRender();return}const r=e.target.closest('[data-x]');if(r)flyTo(+r.dataset.x,+r.dataset.y,Math.max(view.s,6))});
+/* ---------- storm cell table (like the cell lists of operational radars) ---------- */
+function stormName(s){return s.megaT?'عاصفة رعدية عملاقة':s.mini?'عاصفة صغيرة':s.hookR?'خلية عملاقة':s.type==='line'?'خط عواصف':s.mcs?'مطر واسع عاصف':s.tc?'إعصار مداري':s.lst?'مطر واسع خفيف':s.type==='strat'?'مطر واسع':s.type==='low'?'منخفض':s.type==='shower'?'خلية مطرية':'عاصفة رعدية'}
+function cellTableHTML(){const L=warnStorms().slice().sort((a,b)=>b.mx-a.mx);if(!L.length)return '<p style="color:var(--muted)">ما فيه عواصف قوية حالياً (الجدول يعرض السحب من 45 dBZ).</p>';
+  const rows=L.slice(0,40).map(w=>{const sp=Math.hypot(w.vx,w.vy)*PX*60,az=(Math.atan2(w.vx,-w.vy)*180/Math.PI+360)%360,s=w.s,hp=hailOK(s)?Math.round(100*sst(50,66,w.mx)):Math.round(25*sst(56,68,w.mx));
+    let eta=null;for(const c of CITIES){for(let t=0;t<=180;t+=5){if(Math.hypot(w.cx+w.vx*t-c.x,w.cy+w.vy*t-c.y)<=w.r+8/PX){if(!eta||t<eta.t)eta={t,n:c.n};break}}}
+    const col=w.mx>=58?'#ff6b6b':w.mx>=50?'#ffb547':'#f2d43b';
+    return `<tr data-x="${w.cx}" data-y="${w.cy}"><td><b>${w.id}</b></td><td>${stormName(s)}</td><td class="dz" style="color:${col}">${w.mx.toFixed(0)}</td><td>${sp<3?'شبه ثابتة':Math.round(sp)+' كم/س ← '+DIRS[Math.round(az/45)%8]}</td><td>${hp?hp+'%':'—'}</td><td>${eta?(eta.t===0?'فوق '+eta.n:eta.n+' بعد '+eta.t+' د'):'—'}</td></tr>`}).join('');
+  return `<table class="ctab"><thead><tr><th>الرقم</th><th>النوع</th><th>dBZ</th><th>الحركة</th><th>برد</th><th>تصل إلى</th></tr></thead><tbody>${rows}</tbody></table><p style="color:var(--muted);font-size:11px;margin:6px 0 0">اضغط أي صف للذهاب للعاصفة · الاتجاه هو وين رايحة</p>`}
+/* ---------- rain history: every city and every gauge keeps 10-minute totals for the last day ---------- */
+const HB={t:null},GAUGES=[];let gaugeN=0;
+function histTick(f){if(HB.t==null)HB.t=simT;for(const c of CITIES)c.b10=(c.b10||0)+(c.rate||0)*f;for(const g of GAUGES){const v=DBZ[clamp(g.y|0,0,H-1)*W+clamp(g.x|0,0,W-1)];g.rate=rainAt(v,g.x,g.y);g.total+=g.rate*f;g.b10+=g.rate*f}
+  if(simT-HB.t>=10){const tm=START_H*60+HB.t;for(const q of [...CITIES,...GAUGES]){(q.hist||(q.hist=[])).push({tm,mm:q.b10||0});if(q.hist.length>150)q.hist.shift();q.b10=0}HB.t+=10*Math.floor((simT-HB.t)/10)}
+  for(const c of CITIES){const r=cityWarn(c);c.wl=r;if(r.L>(c.wlL||0)&&r.L>=1)logEvt('warn',r.L>=3?'bad':r.L===2?'warn':'',`${WARN_N[r.L]} على ${c.n}: ${r.why.join('، ')}`,c.x,c.y);c.wlL=r.L}}
+function chartModal(title,hist,total,extra=''){hist=hist||[];const now=START_H*60+simT,hrs=24,bins=new Array(hrs).fill(0);for(const h of hist){const k=Math.floor((now-h.tm)/60);if(k>=0&&k<hrs)bins[hrs-1-k]+=h.mm}
+  const last=bins.reduce((a,b)=>a+b,0);showModal(`<h3>${title}</h3><p style="color:var(--muted);margin-top:-6px">المطر ساعة بساعة آخر 24 ساعة · المجموع منذ البداية <b>${total.toFixed(1)} مم</b> · آخر 24 ساعة <b>${last.toFixed(1)} مم</b></p><canvas id="chC" width="560" height="220" style="position:static;inset:auto;width:100%;height:auto;max-width:560px;display:block;margin:6px 0;touch-action:auto;cursor:default"></canvas>${extra}<div class="row"><button class="btn" id="chOk">تم</button></div>`);
+  $('chOk').onclick=hideModal;const cv2=$('chC'),c=cv2.getContext('2d'),Wc=560,Hc=220,pl=34,pb=26,mx=Math.max(1,...bins)*1.15,dk=isDark(),bw=(Wc-pl-8)/hrs;c.font='11px "IBM Plex Sans Arabic",sans-serif';
+  c.strokeStyle=dk?'rgba(255,255,255,.12)':'rgba(0,0,0,.12)';c.fillStyle=dk?'#9fb3c8':'#556';c.textAlign='right';for(let k=0;k<=4;k++){const y=Hc-pb-(Hc-pb-10)*k/4;c.beginPath();c.moveTo(pl,y);c.lineTo(Wc-4,y);c.stroke();c.fillText((mx*k/4).toFixed(mx<4?1:0),pl-4,y+4)}
+  let cum=0;const cm=Math.max(0.1,last);c.textAlign='center';bins.forEach((v,k)=>{const x=pl+k*bw,h=(Hc-pb-10)*v/mx;c.fillStyle=v>=10?'#ff6b6b':v>=4?'#ffb547':'#45a6ff';c.fillRect(x+1.5,Hc-pb-h,bw-3,h);
+    if(k%4===3){c.fillStyle=dk?'#9fb3c8':'#556';c.fillText(hhmm(now-(hrs-1-k)*60).slice(0,2)+':00',x+bw/2,Hc-8)}});
+  c.beginPath();bins.forEach((v,k)=>{cum+=v;const x=pl+k*bw+bw/2,y=Hc-pb-(Hc-pb-10)*cum/cm;k?c.lineTo(x,y):c.moveTo(x,y)});c.strokeStyle='#7fe0a8';c.lineWidth=2;c.stroke()}
+function gaugeClick(w,sx,sy){for(const g of GAUGES){const[x,y]=toScreen(g.x,g.y);if(Math.hypot(x-sx,y-sy)<12){gaugeChart(g);return}}
+  if(GAUGES.length>=15){toast('وصلت الحد الأقصى (15 محطة)');return}if(w.x<0||w.y<0||w.x>=W||w.y>=H)return;const g={n:'محطة '+(++gaugeN),x:w.x,y:w.y,total:0,b10:0,rate:0,hist:[]};GAUGES.push(g);toast(g.n+': تم تركيب محطة قياس المطر. اضغط عليها لرؤية قراءتها');logEvt('other','','تركيب '+g.n,g.x,g.y)}
+function gaugeChart(g){chartModal(g.n+' · محطة قياس',g.hist,g.total,`<p style="color:var(--muted);margin:0">المطر الآن: <b>${(g.rate||0).toFixed(1)} مم/س</b></p><div class="row"><button class="btn ghost" id="gDel">إزالة المحطة</button></div>`);$('gDel').onclick=()=>{GAUGES.splice(GAUGES.indexOf(g),1);hideModal()}}
+function drawGauges(){for(const g of GAUGES){const[x,y]=toScreen(g.x,g.y);if(x<-30||y<-30||x>cw+30||y>ch+30)continue;ctx.fillStyle='#ffd166';ctx.strokeStyle='#04070a';ctx.lineWidth=1.5;ctx.beginPath();ctx.rect(x-4,y-4,8,8);ctx.fill();ctx.stroke();
+  label(g.n+' · '+g.total.toFixed(1)+' مم',x,y-12,'600 10.5px "IBM Plex Sans Arabic",sans-serif','#ffd166')}}
+/* ---------- sea breeze and low-level convergence layer ---------- */
+function drawSeaBreeze(){if(!ATM.Q||!ATM.XU)return;const{w,h,U,V,XU,XV,NM,LF}=ATM,s=view.s,dk=isDark();let mxc=0;const cvA=new Float32Array(w*h);
+  for(let gy=1;gy<h-1;gy++)for(let gx=1;gx<w-1;gx++){const i=gy*w+gx,c=-((U[i+1]-U[i-1])+(V[i+w]-V[i-w]));cvA[i]=c;if(LF[i]>=0.5&&c>mxc)mxc=c}
+  ctx.save();ctx.lineCap='round';const st=Math.max(1,Math.round(3/Math.max(0.6,s*MG/24)));
+  for(let gy=1;gy<h-1;gy++)for(let gx=1;gx<w-1;gx++){const i=gy*w+gx;const[x,y]=toScreen(gx*MG+4,gy*MG+4);if(x<-20||y<-20||x>cw+20||y>ch+20)continue;
+    if(mxc>1e-5&&LF[i]>=0.5&&cvA[i]>mxc*0.4){ctx.fillStyle=`rgba(255,150,40,${0.18+0.4*cvA[i]/mxc})`;ctx.beginPath();ctx.arc(x,y,Math.max(2.5,MG*s*0.45),0,6.283);ctx.fill()}
+    if(gx%st||gy%st||NM[i]<0.06)continue;const vx=XU[i],vy=XV[i],m=Math.hypot(vx,vy);if(m<0.01/PX)continue;const L=clamp(m*PX*260,6,22),ux=vx/m,uy=vy/m;
+    ctx.strokeStyle=dk?'rgba(127,214,255,.85)':'rgba(20,110,170,.85)';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(x-ux*L/2,y-uy*L/2);ctx.lineTo(x+ux*L/2,y+uy*L/2);ctx.lineTo(x+ux*L/2-ux*5-uy*3,y+uy*L/2-uy*5+ux*3);ctx.moveTo(x+ux*L/2,y+uy*L/2);ctx.lineTo(x+ux*L/2-ux*5+uy*3,y+uy*L/2-uy*5-ux*3);ctx.stroke()}
+  ctx.restore()}
 
 /* ---------- panel ---------- */
 const $=id=>document.getElementById(id);
@@ -2417,8 +2518,8 @@ $('natural').addEventListener('change',e=>{env.natural=e.target.checked});
   dial.addEventListener('pointerdown',e=>{on=true;dial.setPointerCapture(e.pointerId);set(e)});
   dial.addEventListener('pointermove',e=>{if(on)set(e)});dial.addEventListener('pointerup',()=>on=false);
   dial.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowDown'){env.windFrom=(env.windFrom+350)%360;syncEnv();e.preventDefault()}if(e.key==='ArrowRight'||e.key==='ArrowUp'){env.windFrom=(env.windFrom+10)%360;syncEnv();e.preventDefault()}});}
-const LMAP={lFlood:'flood',lFc:'fc',lMm:'mm',lMoist:'moist',lStreets:'streets',lTracks:'tracks',lRings:'rings',lSweep:'sweep',lLight:'light',lClutter:'clutter',lSmooth:'smooth',lLabels:'labels'};
-for(const[id,k]of Object.entries(LMAP)){$(id).checked=layers[k];$(id).addEventListener('change',e=>{layers[k]=e.target.checked;stDirty=true;if(k==='moist'||k==='flood'){moistT=0;renderLegend()}})}
+const LMAP={lSb:'sb',lFlood:'flood',lFc:'fc',lMm:'mm',lMoist:'moist',lStreets:'streets',lTracks:'tracks',lRings:'rings',lSweep:'sweep',lLight:'light',lClutter:'clutter',lSmooth:'smooth',lLabels:'labels'};
+for(const[id,k]of Object.entries(LMAP)){$(id).checked=layers[k];$(id).addEventListener('change',e=>{layers[k]=e.target.checked;stDirty=true;if(k==='moist'||k==='flood'||k==='sb'){moistT=0;renderLegend()}})}
 $('bClear').addEventListener('click',()=>{storms.forEach(s=>s.kill=true);MEM.fadeT=simT+30;toast('تتبدد السحب الآن')});
 $('bReset').addEventListener('click',()=>{DAY.idx=null;if(mission.on){toast('لا يمكن التصفير أثناء المهمة');return}ACC.fill(0);HACC.fill(0);CITIES.forEach(c=>{c.total=0;c.hail=0});toast('تم تصفير مجاميع الأمطار')});
 $('bFit').addEventListener('click',fit);
@@ -2456,7 +2557,7 @@ function syncSpeed(){$('speedSeg').querySelectorAll('button').forEach(b=>{const 
 $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.m==='chal'){if(mission.on)startFree();setProduct('fcst');toast('تحدي التوقع: ارسم وين تتوقع ينزل المطر خلال 3 ساعات، ثم اضغط "تحدي التوقع (3 ساعات)"');const c=document.getElementById('scChal');if(c){c.classList.add('pulse');setTimeout(()=>c.classList.remove('pulse'),4000)}return}if(product==='fcst')setProduct('ref');if(b.dataset.m==='mission')briefMission();else startFree()});
 
 function warnHTML(){const L=CITIES.map(c=>({c,r:c.wl||cityWarn(c)})).filter(o=>o.r.L).sort((a,b)=>b.r.L-a.r.L).slice(0,6);return `<div class="lt"><span>الإنذارات الحالية</span><b></b></div><div class="wl">${L.length?L.map(o=>`<div><i style="background:${WARN_C[o.r.L]}"></i><b>${o.c.n}</b> · ${WARN_N[o.r.L]}: ${o.r.why.join('، ')}</div>`).join(''):'<div>لا توجد إنذارات حالياً</div>'}</div><div class="lt" style="margin-top:6px"><span>درجات الإنذار من الأضعف إلى الأقوى</span><b></b></div><div class="wl">${[1,2,3].map(l=>`<div><i style="background:${WARN_C[l]}"></i><b>${WARN_N[l]}</b> · ${['','كن على اطلاع','كن مستعداً','خطر، اتخذ الاحتياطات'][l]}</div>`).join('')}</div>`}
-const LY_CHIPS=[['rain','الأمطار'],['hail','البرد'],['warn','الإنذارات']],LEG={rain:true,hail:true,warn:true};
+const LY_CHIPS=[['rain','الأمطار'],['hail','البرد']],LEG={rain:true,hail:true,warn:false};
 function renderLegend(){
   if(product==='top'){$('legend').innerHTML=`<div class="lt"><span>ارتفاع قمة السحب (Echo Top)</span><b>كم</b></div><div class="bar">${TOP_STEPS.map(([,c])=>`<div style="background:${c}"></div>`).join('')}</div><div class="ticks">${TOP_STEPS.map(([v])=>`<span>${v}</span>`).join('')}</div><div class="attr">كل ما ارتفعت قمة السحابة كانت العاصفة أقوى · فوق 12 كم غالباً عاصفة شديدة وبرد</div>`;return}
   if(product==='terr'){$('legend').innerHTML=`<div class="lt"><span>الارتفاع عن سطح البحر (بيانات حقيقية)</span><b>م</b></div><div class="bar">${TERR_STEPS.map(([,c])=>`<div style="background:${c}"></div>`).join('')}</div><div class="ticks">${TERR_STEPS.map(([v])=>`<span>${v}</span>`).join('')}</div><div class="attr">المنحدرات المواجهة للرياح ترفع الهواء الرطب فتقوى الأمطار، وخلف الجبال يجف الهواء النازل · بيانات الارتفاع: AWS Terrain Tiles (SRTM)</div>`;return}
@@ -2464,17 +2565,19 @@ function renderLegend(){
   if(product==='fcst'){$('legend').innerHTML=`<div class="lt"><span>مجموع الأمطار المتوقع خلال مدة التوقعات</span><b>mm</b></div><div class="bar">${ACC_STEPS.map(([,c])=>`<div style="background:${c}"></div>`).join('')}</div><div class="ticks">${ACC_STEPS.map(([v])=>`<span>${v}</span>`).join('')}</div><div class="attr">نفس ألوان مجموع الأمطار: قارن توقعك بما نزل فعلاً بعد نهاية السيناريو</div>`;return}
   if(product==='wind'){$('legend').innerHTML=`<div class="lt"><span>سرعة الرياح · الأسهم تتحرك مع اتجاه الريح</span><b>كم/س</b></div><div class="bar" style="background:linear-gradient(to right,${WIND_STEPS.map(([,c])=>c).join(',')});height:9px"></div><div class="ticks">${[0,16,32,52,78,120,150].map(v=>`<span>${v}</span>`).join('')}</div><div class="attr">الرياح محاكاة: الرياح العامة من الإعدادات، والاندفاع الخارج من العواصف، والدوران حول الخلايا العملاقة والمنخفضات</div>`;return}
   const st=product==='ref'?PALETTES[palKey].steps:ACC_STEPS;const smooth=palSmooth;
+  if(product==='hprob'){$('legend').innerHTML=`<div class="lt"><span>احتمال البرد على الأرض</span><b>%</b></div><div class="bar">${['#4caf50','#e6d33a','#f39a2a','#e8392c','#c837d6'].map(c=>`<div style="background:${c}"></div>`).join('')}</div><div class="ticks">${['10','30','50','70','90+'].map(t=>`<span>${t}</span>`).join('')}</div><div class="attr">يعتمد على قوة الصدى وقدرة العاصفة على تكوين البرد · مثل منتج احتمال البرد في رادارات الأرصاد</div>`;return}
+  if(product==='ptype'){$('legend').innerHTML=`<div class="lt"><span>نوع الهطول</span><b></b></div><div class="lb" style="border:0;margin-top:0;padding-top:0;gap:12px">${[['#7ad37a','مطر خفيف'],['#2e9e4a','مطر متوسط'],['#146937','مطر غزير'],['#f2a0d6','مطر وثلج'],['#cdeeff','ثلج'],['#ffffff','برد']].map(([c,n])=>`<i><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${c};border:1px solid rgba(0,0,0,.3)"></span>${n}</i>`).join('')}</div><div class="attr">النوع من درجة الحرارة عند الأرض وحجم البرد</div>`;return}
   if(product==='cloud'){$('legend').innerHTML=`<div class="lt"><span>رادار الغيوم · غطاء السحب</span><b></b></div><div class="bar" style="background:linear-gradient(to right,rgba(150,150,156,.25),#b9b9c0,#ffffff);height:9px"></div><div class="ticks"><span>غيوم خفيفة</span><span style="text-align:center">متوسطة</span><span style="text-align:left">كثيفة (عواصف)</span></div><div class="attr">الغيوم أوسع من المطر: تشمل السحب الممطرة وذيولها، وغيوم خفيفة في المناطق الرطبة حتى بدون مطر</div>`;return}
   if(product==='hacc'){$('legend').innerHTML=`<div class="lt"><span>مجموع البرد · أكبر حجم برد نزل على كل مكان</span><b>سم</b></div><div class="bar">${HAIL_CAT.map(c=>`<div style="background:${c[1]}"></div>`).join('')}</div><div class="ticks">${['<1','1-2','2-3','3-4.5','4.5-6','>6'].map(t=>`<span>${t}</span>`).join('')}</div><div class="attr">الأماكن البيضاء نزل عليها برد منذ البداية · كل ما غمق اللون كان البرد أكبر · "تصفير المجاميع" يمسحها</div>`;return}
-  const isR=product==='ref',sec=[];if(!isR||LEG.rain)sec.push(`<div class="lt"><span>${isR?'الأمطار':'مجموع الأمطار'}</span><b>${isR?'dBZ':'mm'}</b></div><div class="bar"${smooth?` style="background:linear-gradient(to right,${st.map(([,c])=>c).join(',')});height:9px"`:''}>${smooth?'':st.map(([,c])=>`<div style="background:${c}"></div>`).join('')}</div><div class="ticks">${st.map(([v])=>`<span>${v}</span>`).join('')}</div>`+(isR?`<div class="lb"><i><svg viewBox="0 0 24 24"><path d="M13 1L4 14h6.5L8 23 19.5 9H13l3-8z" fill="#ffe23b" stroke="#000" stroke-width="1.5"/></svg>صاعقة رعدية</i></div>`:''));if(isR&&LEG.hail)sec.push(`<div class="lb" style="border:0;margin-top:0;padding-top:0"><i><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="#e6f5ff" stroke="#000" stroke-width="1.5"/></svg>علامة البرد</i></div><div class="lt" style="margin-top:4px"><span>حجم حبات البرد</span><b>سم</b></div><div class="bar">${HAIL_CAT.map(c=>`<div style="background:${c[1]}"></div>`).join('')}</div><div class="ticks">${['<1','1-2','2-3','3-4.5','4.5-6','>6'].map(t=>`<span>${t}</span>`).join('')}</div>`);if(isR&&LEG.warn)sec.push(warnHTML());if(isR&&layers.flood)sec.push(`<div class="lt"><span>السيول والأودية · كمية الجريان</span><b>م³/ث</b></div><div class="bar">${FLC.map(c=>`<div style="background:${c}"></div>`).join('')}</div><div class="ticks">${FLQ.map(v=>`<span>${v}+</span>`).join('')}</div>`);if(layers.moist)sec.push(`<div class="lt"><span>خريطة الرطوبة · من الجاف إلى الرطب جداً</span><b>%</b></div><div class="bar">${MOIST_STEPS.map(([,c])=>`<div style="background:${c}"></div>`).join('')}</div><div class="ticks">${MOIST_STEPS.map(([v])=>`<span>${v}</span>`).join('')}</div>`);
+  const isR=product==='ref',sec=[];if(!isR||LEG.rain)sec.push(`<div class="lt"><span>${isR?'الأمطار':'مجموع الأمطار'}</span><b>${isR?'dBZ':'mm'}</b></div><div class="bar"${smooth?` style="background:linear-gradient(to right,${st.map(([,c])=>c).join(',')});height:9px"`:''}>${smooth?'':st.map(([,c])=>`<div style="background:${c}"></div>`).join('')}</div><div class="ticks">${st.map(([v])=>`<span>${v}</span>`).join('')}</div>`+(isR?`<div class="lb"><i><svg viewBox="0 0 24 24"><path d="M13 1L4 14h6.5L8 23 19.5 9H13l3-8z" fill="#ffe23b" stroke="#000" stroke-width="1.5"/></svg>صاعقة رعدية</i></div>`:''));if(isR&&LEG.hail)sec.push(`<div class="lb" style="border:0;margin-top:0;padding-top:0"><i><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="#e6f5ff" stroke="#000" stroke-width="1.5"/></svg>علامة البرد</i></div><div class="lt" style="margin-top:4px"><span>حجم حبات البرد</span><b>سم</b></div><div class="bar">${HAIL_CAT.map(c=>`<div style="background:${c[1]}"></div>`).join('')}</div><div class="ticks">${['<1','1-2','2-3','3-4.5','4.5-6','>6'].map(t=>`<span>${t}</span>`).join('')}</div>`);if(isR&&LEG.warn)sec.push(warnHTML());if(isR&&layers.sb)sec.push(`<div class="lt"><span>نسيم البحر والتقاء الرياح</span><b></b></div><div class="attr" style="margin-top:0">الأسهم الزرقاء: اتجاه نسيم البحر (نهاراً) ونسيم البر (ليلاً) · البرتقالي: خطوط التقاء الرياح اللي تتكون عليها السحب</div>`);if(isR&&layers.flood)sec.push(`<div class="lt"><span>السيول والأودية · كمية الجريان</span><b>م³/ث</b></div><div class="bar">${FLC.map(c=>`<div style="background:${c}"></div>`).join('')}</div><div class="ticks">${FLQ.map(v=>`<span>${v}+</span>`).join('')}</div>`);if(layers.moist)sec.push(`<div class="lt"><span>خريطة الرطوبة · من الجاف إلى الرطب جداً</span><b>%</b></div><div class="bar">${MOIST_STEPS.map(([,c])=>`<div style="background:${c}"></div>`).join('')}</div><div class="ticks">${MOIST_STEPS.map(([v])=>`<span>${v}</span>`).join('')}</div>`);
   $('legend').innerHTML=(isR?`<div class="lyc">${LY_CHIPS.map(([k,n])=>`<button data-ly="${k}" aria-pressed="${LEG[k]}">${n}</button>`).join('')}</div>`:'')+sec.map((h,j)=>j?`<div class="lw">${h}</div>`:h).join('')+`<div class="attr">${ST.failed?'':'الطرق والأماكن: © مساهمو OpenStreetMap (ODbL)'}${mapStyle!=='game'?(ST.failed?'':' · ')+'السواحل: Natural Earth · التضاريس تقريبية':''}</div>`}
 
-$('cities').addEventListener('click',e=>{const r=e.target.closest('.city');if(!r)return;const c=CITIES.find(q=>q.n===r.dataset.c);if(c)flyTo(c.x,c.y,Math.max(view.s,45))});
+$('cities').addEventListener('click',e=>{const ch=e.target.closest('.cch');if(ch){e.stopPropagation();const c=CITIES.find(q=>q.n===ch.dataset.ch);if(c)chartModal('مطر '+c.n,c.hist,c.total);return}const r=e.target.closest('.city');if(!r)return;const c=CITIES.find(q=>q.n===r.dataset.c);if(c)flyTo(c.x,c.y,Math.max(view.s,45))});
 function status(c){if(c.total>=50)return['سيول','bad'];if(simT-(c.al.hail??-99)<20)return['برد','warn'];
   if(mission.on&&c.m&&c.total>=10)return['مكتفية','ok'];if(c.rate>0.5)return['تمطر','rain'];return[c.total>0.1?'توقف':'جاف','']}
 function renderCities(){
   $('cities').innerHTML=CITIES.map(c=>{const[t,k]=status(c);
-    return `<div class="city" data-c="${c.n}" title="انقر للتكبير على ${c.n}"><span class="nm">${c.n}</span><span class="v"><b>${c.total.toFixed(1)}</b> mm · ${c.rate.toFixed(0)}/h</span><span class="pill ${k}">${t}</span>`+
+    return `<div class="city" data-c="${c.n}" title="انقر للتكبير على ${c.n}"><span class="nm">${c.n}</span><span class="v"><b>${c.total.toFixed(1)}</b> mm · ${c.rate.toFixed(0)}/h</span><span class="pill ${k}">${t}</span><button class="cch" data-ch="${c.n}" title="الرسم البياني لمطر ${c.n}" aria-label="الرسم البياني"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button>`+
       (mission.on&&c.m?`<div class="track"><div class="zone" style="left:${10/60*100}%;width:${40/60*100}%"></div><div class="fill" style="width:${Math.min(100,c.total/60*100)}%;background:${c.total>=50?'var(--bad)':c.total>=10?'var(--good)':'var(--accent)'}"></div></div>`:'')+`</div>`}).join('');
   if(mission.on){const left=Math.max(0,mission.dur-mission.elapsed);$('mTime').textContent=`${Math.floor(left/60)}:${String(Math.floor(left%60)).padStart(2,'0')} متبقٍ`;
     $('mBudget').textContent=mission.budget;$('mOk').textContent=MC.filter(c=>c.total>=10&&c.total<50).length+'/'+MC.length;$('mFlood').textContent=MC.filter(c=>c.total>=50).length}
@@ -2502,7 +2605,7 @@ function pickSmall(){
   sheet.querySelectorAll('.mapc').forEach(b=>b.onclick=()=>{hideModal();switchRegion(b.dataset.k)});$('mclose').onclick=hideModal;
 }
 $('mapSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.body.classList.remove('sheet');if(b.dataset.g==='nat'){if(regionKey!=='ksa')switchRegion('ksa');return}if(b.dataset.g==='big')pickBig();else pickSmall()});
-function resetWorld(){if(scen.running||scen.world){scen.running=false;scen.world=false;scen.editing=false;scen.main=null;scenUI()}DAY.idx=null;FL.key='';rpReset();{const cd=simDate();SD.y=cd.getFullYear();SD.m=cd.getMonth()+1;SD.d=Math.min(28,cd.getDate());SD.base=Math.floor(START_H*60/1440)}memClear();storms=[];strikes=[];hailMk=[];boltLog=[];alerts=[];ACC.fill(0);HACC.fill(0);CITIES.forEach(c=>{c.total=0;c.rate=0;c.hail=0;c.al={}});simT=0;scanNo=1;if(ATM.Q)atmReset();renderAlerts();computeField()}
+function resetWorld(){if(scen.running||scen.world){scen.running=false;scen.world=false;scen.editing=false;scen.main=null;scenUI()}DAY.idx=null;FL.key='';EVT=[];EVT_SEEN=0;GAUGES.length=0;HB.t=null;rpReset();{const cd=simDate();SD.y=cd.getFullYear();SD.m=cd.getMonth()+1;SD.d=Math.min(28,cd.getDate());SD.base=Math.floor(START_H*60/1440)}memClear();storms=[];strikes=[];hailMk=[];boltLog=[];alerts=[];ACC.fill(0);HACC.fill(0);CITIES.forEach(c=>{c.total=0;c.rate=0;c.hail=0;c.al={}});simT=0;scanNo=1;if(ATM.Q)atmReset();renderAlerts();computeField()}
 function briefMission(){
   resetWorld();mode='mission';mission.on=true;mission.done=false;mission.budget=REGION.budget||24;mission.elapsed=0;
   env.windFrom=Math.round(R(190,300));env.windSpd=Math.round(R(15,35));env.inst=+R(.45,.75).toFixed(2);env.moist=+R(.45,.7).toFixed(2);
@@ -2536,10 +2639,10 @@ addEventListener('keydown',e=>{if(e.target.matches('input,textarea'))return;
 /* ---------- loop ---------- */
 let last=performance.now(),uiT=0,paintT=0;
 function frame(now){const rdt=Math.min(0.1,(now-last)/1000);last=now;
-  if(drag&&drag.kind==='paint'&&tool!=='mega'&&tool!=='mcs'&&hover&&now-drag.t>650){const j=SPACING[tool]*0.6;trySpawn(tool,hover.x+R(-j,j),hover.y+R(-j,j));drag.t=now}
+  if(drag&&drag.kind==='paint'&&tool!=='mega'&&tool!=='mcs'&&tool!=='tc'&&tool!=='gauge'&&hover&&now-drag.t>650){const j=SPACING[tool]*0.6;trySpawn(tool,hover.x+R(-j,j),hover.y+R(-j,j));drag.t=now}
   flyStep(now);if(aimOn()&&cw){const c=toWorld(cw/2,ch/2);hover=c;if(!lastRead||Math.abs(lastRead.x-c.x)+Math.abs(lastRead.y-c.y)>0.25)updateReadout(c);
     const v=c.x>=0&&c.y>=0&&c.x<W&&c.y<H?DBZ[(c.y|0)*W+(c.x|0)]:0,k=v>=45?'hot':v>=15?'wet':'';if(mAimEl.className!==k)mAimEl.className=k}
-  if(product==='fcst')scenBrush(rdt);if(scen.running&&now-(scen.uiT||0)>400){scen.uiT=now;scenSync()}if(product==='ref'&&LEG.warn&&now-(window.__wlT||0)>1000){window.__wlT=now;renderLegend()}chalCheck();if(now-(SND.uT||0)>80){SND.uT=now;sndUpdate();sndBtnMeter()}
+  if(product==='fcst')scenBrush(rdt);if(scen.running&&now-(scen.uiT||0)>400){scen.uiT=now;scenSync()}if(LP.open&&now-LP.t>1000){LP.t=now;lpRender()}chalCheck();if(now-(SND.uT||0)>80){SND.uT=now;sndUpdate();sndBtnMeter()}
   rpStep(rdt);if(!paused&&modal.hidden&&scen.running&&!RP.on)scenSpawnStep(rdt*speed*SIMRATE);
   if(!paused&&modal.hidden&&!RP.on){const sd=rdt*speed*SIMRATE,n=Math.min(12,Math.max(1,Math.ceil(sd/1.5)));for(let k=0;k<n;k++)step(sd/n,rdt/n)}
   if(product==='wind'){if(now-windT>160){windT=now;windCompute()}windParticles(rdt)}
@@ -2558,8 +2661,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=110,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=111,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:111,title:'مركز المعلومات، منتجات رادار جديدة، الإعصار المداري، والمواسم',add:['زر "سجل الأحداث" فوق يفتح مركز المعلومات: الإنذارات الحالية، جدول العواصف، وسجل كل الأحداث (إنذارات، برد، سيول، صواعق، اندماج، ملخص الأيام، المواسم) مع فلترة وحفظ كملف وعدّاد للأحداث الجديدة','جدول العواصف: لكل عاصفة رقمها ونوعها وقوتها وسرعتها واتجاهها واحتمال البرد وأي مدينة بتوصلها ومتى، واضغط الصف وتروح لها','منتج رادار "احتمال البرد": خريطة نسبة احتمال نزول البرد','منتج رادار "نوع الهطول": مطر خفيف ومتوسط وغزير، مطر وثلج، ثلج، وبرد','أداة "محطة قياس": ركّب محطات مطر في أي مكان، واضغطها تشوف قراءتها ورسم بياني للمطر ساعة بساعة','رسم بياني لكل مدينة من زر صغير في إحصائيات الأمطار','أداة "إعصار مداري": عين صافية، جدار من العواصف القوية حولها، وأذرع مطر حلزونية تدور، ويضعف على اليابسة','المواسم المحلية: الوسم والمربعانية والشبط والعقارب والحميمين والذراعين والثريا والجوزاء والمرزم والكليبين وسهيل تطلع مع التاريخ، وكل موسم يأثر على كثرة السحب','طبقة "نسيم البحر والتقاء الرياح": اتجاه نسيم البحر نهاراً ونسيم البر ليلاً، وخطوط الالتقاء اللي تتكون عليها السحب'],fix:['قائمة الإنذارات انتقلت من تحت يسار إلى مركز المعلومات عشان ما تزحم الخريطة','برنامج الكمبيوتر الجديد: شاشة التحديث فيها شريط تقدم وحجم التحديث والسرعة والوقت المتبقي (تحتاج تنزيل البرنامج الجديد مرة وحدة)']},
   {v:110,title:'رجوع المطر الخفيف مثل قبل، ومطر واسع عاصف أقوى',fix:['المطر الواسع العاصف كان أضعف من المطر الواسع العادي: الحين مطره أقوى وأوسع وعواصفه الداخلية أقوى','رجّعنا شكل المطر الخفيف مثل ما كان (شلنا التنقيط المربع)','رجّعنا قوة المطر الواسع الخفيف مثل ما كانت قبل']},
   {v:105,title:'رجوع عمر العاصفة الصغيرة',fix:['رجّعنا عمر العاصفة الرعدية الصغيرة مثل قبل: 4 إلى 6 ساعات تقريباً، وإذا اندمجت تطوّل أكثر (والمطر الأزرق حولها باقي قليل)']},
   {v:104,title:'إعادة بناء خط العواصف',add:['خط العواصف صار مثل الرادار الحقيقي: خط ضيق متموّج من الخلايا القوية على حافة هبة الرياح، أقوى في أجزاء وأضعف في أجزاء، ومنقطع في مكان أو مكانين، ويضعف عند أطرافه','وراه منطقة هادئة، وبعدها حزام عريض من المطر المتوسط ممتد 30 إلى 80 كم','غالباً جزء واحد بس ينتفخ للأمام على شكل قوس، مو الخط كله']},
