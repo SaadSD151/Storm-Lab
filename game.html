@@ -1210,7 +1210,7 @@ const layers={sb:false,fc:false,mm:true,flood:true,moist:false,streets:true,trac
 let storms=[],strikes=[],alerts=[],hailMk=[];
 let START_H=13,simT=0,speed=1,paused=false,product='ref',tool='storm',mode='free';
 const mission={on:false,budget:24,elapsed:0,dur:480,done:false,started:false};
-const COST={tc:8,lstrat:2,mini:2,mcs:8,mega:8,shower:1,storm:2,super:4,line:4,strat:3,low:6};
+const COST={ul:10,tc:8,lstrat:2,mini:2,mcs:8,mega:8,shower:1,storm:2,super:4,line:4,strat:3,low:6};
 
 function windVec(){const t=(env.windFrom+180)*Math.PI/180,s=env.windSpd/60/PX;return{x:Math.sin(t)*s,y:-Math.cos(t)*s}}
 // steering flow: the deep-layer (≈0-6 km) mean wind that carries storms. Smooth on a few-hundred-km scale and slowly evolving
@@ -1339,6 +1339,15 @@ function spawn(type,x,y,o={}){
       const arms=3+(rnd()*2|0);for(let m=0;m<arms;m++){const A={a0:m/arms*6.283+R(-.35,.35),b:R(0.19,0.26),r0:rw+R(22,30)*Zs,len:R(3.5,4.8),w:R(1.1,1.6),P:R(39,45)};s.arms.push(A);
         const n=Math.round(A.len/0.09);for(let k=0;k<n;k++){const th=k*0.09,c=B(0,0,R(6.5,8.5)*Zs,R(3,4.2)*Zs*A.w,A.P,1.05,{k:1.25,m:1.05});c.tw={kind:'arm',m,th,P0:A.P+R(-3,2),ax0:c.ax,ay0:c.ay};bl.push(c);
           if(rnd()<0.22){const q=B(0,0,R(3,4.5)*Zs,R(2,2.8)*Zs,R(44,53),2,{k:2.2});q.persist=1;q.tw={kind:'arm',m,th:th+R(-.04,.04),P0:q.P,cell:1};bl.push(q)}}}
+      break;}
+    case'ul':{s.life=R(1500,2100);s.ul=1;s.maxCores=0;
+      // upper-level low (cut-off low): a long band of rain lying along the steering flow (usually south-west to north-east across the kingdom).
+      // New thunderstorms keep forming at its rear (south-west) end - which stays put over high ground - and run forward along it one after
+      // another (training), so the same places get rain again and again, while the band as a whole creeps north-east and east.
+      const st=steerAt(x,y),m=Math.hypot(st.x,st.y)||1e-6,ux=st.x/m||0.7071,uy=st.y/m||-0.7071,L=Math.min(650/PX,0.8*Math.max(W,H)),Wd=R(55,85)/PX;
+      s.hx=ux;s.hy=uy;s.L0=L;s.Wd=Wd;s.rear=[x-ux*L/2,y-uy*L/2];s.front=[x+ux*L/2,y+uy*L/2];s.nextC=0;s.ulPh=R(0,6.28);
+      for(let k=0,n=Math.round(L*PX/22);k<n;k++){const t=(k+R(.2,.8))/n,c=B(0,0,R(24,36)*Zs,R(14,22)*Zs,R(25,33)-3*t,0.85,{k:1,m:1.1});c.ul={t,lat:R(-0.45,0.45)};bl.push(c)}
+      for(let k=0,n=Math.round(L*PX/45);k<n;k++){const t=R(0.05,0.9),c=B(0,0,R(30,48)*Zs,R(20,30)*Zs,R(19,24),0.8,{k:1,m:1.15});c.ul={t,lat:R(-0.9,0.9)};bl.push(c)}
       break;}
     case'strat':s.life=R(200,280);for(let k=0,n=7+(rnd()*4|0);k<n;k++){const a=R(0,6.28),d=R(0,45);bl.push(blob(Math.cos(a)*d,Math.sin(a)*d,R(24,42),R(18,32),R(25,37),0.8,{k:1,m:1,ang:R(-1,1)}))}
       for(let k=0,n=3+(rnd()*4|0);k<n;k++)bl.push(core(R(-28,28),R(-28,28),R(6,10),R(38,48)));halo(30,R(2,2.5),R(15,19));break;
@@ -1822,8 +1831,17 @@ function tcDynamics(s,dt){const gf=s.gf||1,hang=Math.atan2(s.hy,s.hx),om=6.283/4
     else{const A=s.arms[w.m];w.th-=dt*(w.cell?0.0045:0.0028);if(w.th<0){w.th+=A.len;b.fv=0}const bb=A.b2||A.b;r=A.r0*Math.exp(bb*w.th);aw=A.a0+w.th;ta=aw+1.571-Math.atan(bb);
       const fade=sst(0,0.5,w.th)*(1-sst(A.len-0.9,A.len,w.th));const pz=samp(TEX,w.th*4.5+w.m*61+s.ph*6,w.m*37+s.ph*9);b.P=(w.P0-4.5*w.th/A.len+2.5*Math.sin(t/19+w.th*7)+7*pz-(pz<-0.55?14:0))*(0.35+0.65*fade);r+=Math.sin(w.th*9+s.ph*3)*1.2*env.size/PX;if(w.ax0){b.ax=Math.max(w.ax0,r*0.095*Math.hypot(1,bb)*0.62)/gf;b.ay=w.ay0*(0.85+0.45*Math.min(1,r/(A.r0*4)))*(1+0.45*pz)/gf}}
     b.rx=r*Math.cos(aw-hang)/gf;b.ry=r*Math.sin(aw-hang)/gf;b.ang=ta-hang}}
+function ulDynamics(s,dt){const st=steerAt(s.x,s.y),sp=env.speedK,re=s.rear,fr=s.front,gf=s.gf||1;
+  // the front runs with the flow; the rear creeps (and stays almost still over mountains)
+  const anc=clamp((elevAt(re[0],re[1])-0.25)/0.3,0,1),kr=0.28*(1-0.85*anc);fr[0]+=st.x*sp*0.85*dt;fr[1]+=st.y*sp*0.85*dt;re[0]+=st.x*sp*kr*dt;re[1]+=st.y*sp*kr*dt;
+  let dx=fr[0]-re[0],dy=fr[1]-re[1],L=Math.hypot(dx,dy)||1;if(L>s.L0*1.35){const k=(L-s.L0*1.35)/L;re[0]+=dx*k;re[1]+=dy*k;dx=fr[0]-re[0];dy=fr[1]-re[1];L=Math.hypot(dx,dy)}
+  s.hx=dx/L;s.hy=dy/L;s.x=(re[0]+fr[0])/2;s.y=(re[1]+fr[1])/2;s.vx=st.x*sp*0.55;s.vy=st.y*sp*0.55;s.ulPh+=dt*0.003;
+  for(const b of s.blobs){if(!b.ul)continue;const t=b.ul.t,wob=Math.sin(t*7+s.ulPh)*0.12;b.rx=(t-0.5)*L/gf;b.ry=(b.ul.lat+wob)*s.Wd/gf}
+  // new storms: mostly at the rear end, some along the band; they then travel forward along it
+  if(s.age>=s.nextC&&!s.kill&&storms.length<70&&s.age<s.life*0.85){s.nextC=s.age+R(14,28);const rearT=rnd()<0.6,t=rearT?R(0,0.22):R(0.22,0.8),lat=R(-0.35,0.35)*s.Wd,
+    X=re[0]+dx*t-s.hy*lat,Y=re[1]+dy*t+s.hx*lat;if(X>4&&Y>4&&X<W-4&&Y<H-4){const q=rnd(),c=spawn(q<0.55?'storm':q<0.9?'shower':'mini',X,Y);if(c){c.ulp=s.id;c.root=s.id}}}}
 function cellDynamics(s,dt){
-  if(s.hookR)superDynamics(s,dt);if(s.megaT)megaDynamics(s,dt);if(s.tc){tcDynamics(s,dt);return}
+  if(s.hookR)superDynamics(s,dt);if(s.megaT)megaDynamics(s,dt);if(s.tc){tcDynamics(s,dt);return}if(s.ul){ulDynamics(s,dt);return}
   if(s.spin){const a=-0.0012*(s.spinK||1)*dt*(0.5+env.morph),c=Math.cos(a),sn=Math.sin(a);for(const b of s.blobs){const x=b.rx,y=b.ry;b.rx=x*c-y*sn;b.ry=x*sn+y*c;b.ang+=a}}
   const p=s.age/s.life,fx=s.hx,fy=s.hy,gf=s.gf||1;let ncore=0,cx=0,cy=0,ws=0;
   const svu=s.vx*fx+s.vy*fy,svr=-s.vx*fy+s.vy*fx;
@@ -1877,7 +1895,7 @@ function coalesce(st,dt){
 }
 const megaReach=s=>Math.min(s.r0||s.rad0||s.rad||20,45/PX);
 function mergeStorms(){
-  const ok=s=>!s.kill&&!s.dead&&s.type!=='low'&&!s.tc&&!(s.noMergeUntil>s.age)&&s.age/s.life<0.88&&s.age/s.life>0.08;
+  const ok=s=>!s.kill&&!s.dead&&s.type!=='low'&&!s.tc&&!s.ul&&!(s.noMergeUntil>s.age)&&s.age/s.life<0.88&&s.age/s.life>0.08;
   for(let i=0;i<storms.length;i++){const a=storms[i];if(!ok(a))continue;
     for(let j=i+1;j<storms.length;j++){const b=storms[j];if(!ok(b)||!ok(a))continue;
       if(a.blobs.length+b.blobs.length>90)continue;const d=Math.hypot(a.x-b.x,a.y-b.y);const mg=a.mega?a:b.mega?b:null,ot=mg===a?b:a;if(env.merge<=0.01||d>(mg?megaReach(mg)+(ot.mega?megaReach(ot):(ot.rad||10)*(ot.gf||1)*0.5):((a.rad||10)*(a.gf||1)+(b.rad||10)*(b.gf||1))*0.5)*env.merge)continue;
@@ -1922,7 +1940,7 @@ function step(dt,rdt=0){
     if((s.type==='storm'||s.type==='super')&&pS<0.8){const gx=moistAt(s.x+8,s.y)-moistAt(s.x-8,s.y),gy=moistAt(s.x,s.y+8)-moistAt(s.x,s.y-8),gm=Math.hypot(gx,gy);
       if(gm>1e-4){const pm=0.28*Math.hypot(ws.x,ws.y)*env.speedK*Math.min(1,gm*12);tx+=gx/gm*pm;ty+=gy/gm*pm}}
     // orographic anchoring: while moist air keeps being forced up the slope, new cells keep forming over the mountain and the storm stays there
-    let anc=0;if(s.type!=='line'&&s.type!=='low'&&s.type!=='trail'&&!s.tc&&pS<0.8){const el=elevAt(s.x,s.y),up=ATM.UP?atmSamp(ATM.UP,s.x,s.y):0;s.tl=(s.tl||0)+dt;anc=clamp((el-0.25)/0.3,0,1)*clamp(0.65+up*3,0,1)*(1-sst(45,140,s.tl));if(anc>0){tx*=1-0.75*anc;ty*=1-0.75*anc}}s.anc=anc;
+    let anc=0;if(s.type!=='line'&&s.type!=='low'&&s.type!=='trail'&&!s.tc&&!s.ul&&pS<0.8){const el=elevAt(s.x,s.y),up=ATM.UP?atmSamp(ATM.UP,s.x,s.y):0;s.tl=(s.tl||0)+dt;anc=clamp((el-0.25)/0.3,0,1)*clamp(0.65+up*3,0,1)*(1-sst(45,140,s.tl));if(anc>0){tx*=1-0.75*anc;ty*=1-0.75*anc}}s.anc=anc;
     if(!s.mega&&s.type!=='low'&&s.type!=='line')for(const m of storms){if(!m.mega||m.kill||m===s)continue;const dx=m.x-s.x,dy=m.y-s.y,d=Math.hypot(dx,dy),Rr=megaReach(m)+(s.rad||10)*(s.gf||1)*0.6+14/PX;
       if(d<Rr&&d>1){const pull=0.3*(Math.hypot(ws.x,ws.y)*env.speedK+0.05/PX)*(1-d/Rr);tx+=dx/d*pull;ty+=dy/d*pull}}
     if(s.megaT){const mt=s.mt||0,a=0.42*Math.sin(mt/260+s.mph)+0.18*Math.sin(mt/120+s.mph*2.1),c=Math.cos(a),sn=Math.sin(a),f=0.85+0.3*Math.sin(mt/150+s.mph*1.4);[tx,ty]=[(tx*c-ty*sn)*f,(tx*sn+ty*c)*f]}
@@ -1933,7 +1951,7 @@ function step(dt,rdt=0){
     // the unexpected: at irregular times a storm changes course — a new cell takes over on one flank (discrete propagation),
     // a right (rarer left) turn as it strengthens, a near-stall when new cells keep forming upwind (back-building),
     // or a surge pushed by its own cold outflow. Each lasts 20-70 min and blends in over ~10 min (no teleporting).
-    if(s.type!=='low'&&s.type!=='trail'){const spd=Math.hypot(ws.x,ws.y)*env.speedK||0.2;
+    if(s.type!=='low'&&s.type!=='trail'&&!s.ul&&!s.tc){const spd=Math.hypot(ws.x,ws.y)*env.speedK||0.2;
       if(s.evU!=null&&s.age>=s.evEnd)s.evU=s.evV=null;
       if(s.evU==null&&pS>0.08&&pS<0.85&&rnd()<dt*0.005/60){   // very rare: about 0.5% per storm per hour
 
@@ -1953,7 +1971,7 @@ function step(dt,rdt=0){
     s.age+=dt*(s.mini?clamp(1+(0.5-s.mc)*0.4,0.8,1.2):(1+(0.5-s.mc)*0.9*env.moistFx)*(1-0.4*(s.anc||0)));
     if(s.mini&&!s.kill&&ATM.Q){const gx=clamp((s.x/MG)|0,1,ATM.w-2),gy=clamp((s.y/MG)|0,1,ATM.h-2),Q=ATM.Q,dq=0.0011*dt;for(let oy=-1;oy<=1;oy++)for(let ox=-1;ox<=1;ox++){const i=(gy+oy)*ATM.w+gx+ox;Q[i]=Math.max(0.06,Q[i]-dq*(ox||oy?0.6:1))}}
     // no single cloud system lasts for ever: past about half a day (longer for wide rain and lows) it runs down quickly, whatever the settings
-    if(!s.scen&&!s.hold&&s.t0!=null){const over=(simT-s.t0)/60-(s.tc?40:s.type==='low'?26:s.type==='strat'?15:11);if(over>0)s.age+=dt*Math.min(4,1+over)}
+    if(!s.scen&&!s.hold&&s.t0!=null){const over=(simT-s.t0)/60-(s.tc||s.ul?40:s.type==='low'?26:s.type==='strat'?15:11);if(over>0)s.age+=dt*Math.min(4,1+over)}
     // a giant stays at full strength for a limited run (about 280-370 km of travel, or 10-14 hours if it hardly moves, or until the air dries); then it ages and dies like any thunderstorm
     if(s.mega&&!s.kill){s.trav=(s.trav||0)+Math.hypot(s.vx,s.vy)*dt*PX;s.ht=(s.ht||0)+dt;s.maxTrav=s.maxTrav||R(280,370);s.maxT=s.maxT||R(600,840);s.hold=s.mc>0.27&&s.trav<s.maxTrav&&s.ht<s.maxT;if(s.hold&&s.age>s.life*0.5)s.age=s.life*0.5;if(!s.hold&&s.held&&!s.rel){s.rel=1;s.age=Math.max(s.age,s.life*(1-Math.min(0.4,170/s.life)))}if(s.hold)s.held=1}const p=s.age/s.life;for(const b of s.blobs)b.t=(b.t||0)+dt;cellDynamics(s,dt);if(s.merged>0)coalesce(s,dt);
     if(s.scen){
@@ -1970,7 +1988,7 @@ function step(dt,rdt=0){
     if(s.type==='line'&&p>0.18&&p<0.9)for(const b of s.blobs){b.rx+=b.bow*0.075*dt;if(b.rx0!=null)b.rx0+=b.bow*0.075*dt}
     if((s.type==='storm'||s.type==='super')&&!s.megaT&&!s.mini&&p>0.22&&p<0.72&&s.age>=s.nextD&&!s.kill&&storms.length<70){
       s.nextD=s.age+R(12,22);
-      if(rnd()<env.inst*0.95*(0.6+0.8*env.sev)*(s.nat?0.45:1)){const fw=R(-6,10)*env.size/PX,side=R(16,28)*env.size/PX*(s.type==='super'||rnd()<.7?1:-1);
+      if(rnd()<env.inst*0.95*(0.6+0.8*env.sev)*(s.nat?0.45:1)){const trn=rnd()<0.4,fw=(trn?-R(18,32):R(-6,10))*env.size/PX,side=(trn?R(-5,5):R(16,28))*env.size/PX*(s.type==='super'||rnd()<.7?1:-1);
         NATF=s.nat?1:0;const ch=spawn(!s.scen&&env.sev>0.8&&rnd()<0.15?'super':env.inst>0.65&&rnd()<0.35?'storm':'shower',s.x+fw*s.hx-side*s.hy,s.y+fw*s.hy+side*s.hx);NATF=0;if(ch){s.root=s.root||s.id;ch.root=s.root}
         if(ch&&s.scen){ch.scen=1;ch.bornT=simT;ch.fcBoost=s.fcBoost}}}
     if(rdt>0&&layers.light&&hailOK(s))for(const b of s.blobs)if(b.g>1.1&&b.Pe>=60){let n=(b.Pe-58)*0.02*rdt*(0.6+0.4*Math.sqrt(speed));while(n>0){if(rnd()<n){const a=R(0,6.28),r=R(0,Math.max(b.ax,b.ay)*0.5),x=b.cx+Math.cos(a)*r,y=b.cy+Math.sin(a)*r;if(x>=0&&y>=0&&x<W&&y<H){const hs=hailSizeAt((y|0)*W+(x|0));if(hs>0)hailMk.push({x,y,lt:liveT,hs}),hs>DAY.hail&&(DAY.hail=hs)}}n-=1}}
@@ -1984,7 +2002,7 @@ function step(dt,rdt=0){
   liveT+=rdt;strikes=strikes.filter(k=>liveT-k.lt<6);if(hailMk.length)hailMk=hailMk.filter(k=>liveT-k.lt<6);if(hailMk.length>300)hailMk.splice(0,hailMk.length-300);if(strikes.length>350)strikes.splice(0,strikes.length-350);while(boltLog.length&&simT-boltLog[0]>60)boltLog.shift();
   if(env.natural&&!mission.on&&!scen.world&&storms.length<(REGION.maxStorms||45)&&rnd()<dt*env.inst*env.moist*0.13*env.natRate*(REGION.natMul||1)*seasonF()){
     let bx=0,by=0,bv=-1;for(let t=0;t<16;t++){const x=R(20,W-20),y=R(20,H-20),v=moistAt(x,y)+R(0,0.05);if(v>bv){bv=v;bx=x;by=y}}
-    for(let t=0;t<1;t++){const x=bx,y=by;if(rnd()<clamp((bv-0.5)/0.25,0,1)*(1-0.8*clamp((atmSamp(ATM.T,x,y)-40)/7,0,1))){NATF=1;spawnBand(0.22,env.inst>0.45&&rnd()<0.12?'mini':env.inst<0.35&&env.moist>0.6?(rnd()<0.6?'strat':'shower'):env.sev>0.85&&env.shear>0.7&&rnd()<0.25?'super':env.inst>0.7&&rnd()<0.3?'storm':'shower',x,y);NATF=0;break}}}
+    for(let t=0;t<1;t++){const x=bx,y=by;if(rnd()<clamp((bv-0.5)/0.25,0,1)*(1-0.8*clamp((atmSamp(ATM.T,x,y)-40)/7,0,1))){if(env.moist>0.62&&env.inst>0.5&&!storms.some(q=>q.ul)&&rnd()<0.015*seasonF()){NATF=1;spawn('ul',x,y);NATF=0;logEvt('merge','warn','تكوّن منخفض علوي: حزام أمطار طويل وعواصف متتالية',x,y);break}NATF=1;spawnBand(0.22,env.inst>0.45&&rnd()<0.12?'mini':env.inst<0.35&&env.moist>0.6?(rnd()<0.6?'strat':'shower'):env.sev>0.85&&env.shear>0.7&&rnd()<0.25?'super':env.inst>0.7&&rnd()<0.3?'storm':'shower',x,y);NATF=0;break}}}
   mergeStorms();
   fieldClock+=rdt;pendDt+=dt;
   if(rdt===0||(radarFps<0?scanNo!==fieldScan:fieldClock>=(radarFps?1/radarFps:document.body.classList.contains('mob')?1/20:1/24))){fieldScan=scanNo;fieldClock=0;computeField(pendDt,1);fieldDirty=true;rpRecord();
@@ -2357,6 +2375,7 @@ const ICON={
   super:'<path d="M12 12a1.5 1.5 0 1 1 1.5 1.5"/><path d="M13.5 13.5A4 4 0 1 1 16 9"/><path d="M16 9a7 7 0 1 1-10 9"/><path d="M6 18a9.5 9.5 0 0 1 2-14"/>',
   line:'<path d="M3 18l4-7 4 4 4-8 6 6"/><path d="M14 20l3-3 3 3" opacity=".6"/>',
   lstrat:'<path d="M4 8h12M3 12h17M5 16h13" opacity=".55"/><path d="M8 19.5l-.6 1.5M12 19.5l-.6 1.5M16 19.5l-.6 1.5"/>',
+  ul:'<path d="M3 19L21 5" stroke-dasharray="2.5 2.5"/><path d="M6 15h4l-2 3M12 10h4l-2 3"/><path d="M16 4l5 1-1 5"/>',
   tc:'<path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M12 4c-4 0-7 2-7 5 3-2 6-1 7 1"/><path d="M12 20c4 0 7-2 7-5-3 2-6 1-7-1"/><path d="M4 12c0 4 2 7 5 7-2-3-1-6 1-7"/><path d="M20 12c0-4-2-7-5-7 2 3 1 6-1 7"/>',
   gauge:'<path d="M8 3h8v4l-1.5 12h-5L8 7z"/><path d="M9.5 13h5M9 9.5h6"/><path d="M6 21h12"/>',
   mcs:'<path d="M4 6h12M3 10h17M5 14h13"/><path d="M12 14l-2.5 4h3.5l-2.5 4"/>',
@@ -2365,7 +2384,7 @@ const ICON={
   low:'<path d="M12 12m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0"/><path d="M3.5 10A9 9 0 0 1 17 4.5"/><path d="M20.5 14A9 9 0 0 1 7 19.5"/><path d="M6 6.5A6.5 6.5 0 0 1 18.5 11" opacity=".6"/><path d="M18 17.5A6.5 6.5 0 0 1 5.5 13" opacity=".6"/>',
   pan:'<path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>',
 };
-const TOOLS=[['shower','خلية مطرية'],['mini','عاصفة رعدية صغيرة'],['storm','عاصفة رعدية'],['super','خلية عملاقة'],['mega','عاصفة رعدية عملاقة'],['line','خط عواصف'],['lstrat','مطر واسع خفيف'],['strat','مطر واسع'],['mcs','مطر واسع عاصف'],['low','منخفض جوي'],['tc','إعصار مداري'],['gauge','محطة قياس'],['erase','ممحاة'],['pan','تحريك']];
+const TOOLS=[['shower','خلية مطرية'],['mini','عاصفة رعدية صغيرة'],['storm','عاصفة رعدية'],['super','خلية عملاقة'],['mega','عاصفة رعدية عملاقة'],['line','خط عواصف'],['lstrat','مطر واسع خفيف'],['strat','مطر واسع'],['mcs','مطر واسع عاصف'],['low','منخفض جوي'],['ul','منخفض علوي'],['tc','إعصار مداري'],['gauge','محطة قياس'],['erase','ممحاة'],['pan','تحريك']];
 const toolsEl=document.getElementById('tools');
 toolsEl.innerHTML=`<div class="zbtns"><button class="tool zb" id="zIn" title="تكبير" aria-label="تكبير"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button class="tool zb" id="zOut" title="تصغير" aria-label="تصغير"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></button></div>`+TOOLS.map(([k,n],i)=>`<button class="tool" data-t="${k}" aria-pressed="${k===tool}" title="${n} (${i+1})"><kbd>${i+1}</kbd><span class="cost"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg><span class="l">${n}</span></button>`).join('');
 function pickTool(t){if(t===tool&&t!=='pan'){setTool('pan');toast('أُلغي التحديد: الخريطة تتحرك بالسحب')}else setTool(t)}
@@ -2375,7 +2394,7 @@ function updateCosts(){toolsEl.querySelectorAll('.tool[data-t]').forEach(b=>{b.q
 
 function pay(t){if(!mission.on)return true;if(mission.done){toast('انتهت المهمة. ابدأ جولة جديدة.');return false}
   if(mission.budget<COST[t]){toast('الميزانية لا تكفي لهذه الأداة');return false}mission.budget-=COST[t];return true}
-const SPACING={tc:1e9,gauge:1e9,lstrat:60,mini:22,mcs:1e9,mega:1e9,shower:18,storm:32,super:45,strat:55,low:110};
+const SPACING={ul:1e9,tc:1e9,gauge:1e9,lstrat:60,mini:22,mcs:1e9,mega:1e9,shower:18,storm:32,super:45,strat:55,low:110};
 function trySpawn(t,x,y){if(x<0||y<0||x>W||y>H)return;if(storms.length>=70){toast('السماء ممتلئة. امسح بعض العواصف أولاً');return}if(!pay(t))return;spawn(t,x,y)}
 function lineHeading(a,b){const L=Math.hypot(b.x-a.x,b.y-a.y)||1,lx=(b.x-a.x)/L,ly=(b.y-a.y)/L;let hx=ly,hy=-lx;const w=windVec();
   if(Math.hypot(w.x,w.y)>1e-4){if(hx*w.x+hy*w.y<0){hx=-hx;hy=-hy}}else{hx=0.7071;hy=-0.7071;}return{hx,hy,lx,ly,L}}
@@ -2459,7 +2478,7 @@ document.getElementById('logBtn').addEventListener('click',()=>lpOpen(!LP.open))
 document.getElementById('lpTabs').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;LP.tab=t.dataset.t;lpRender()});
 document.getElementById('lpBody').addEventListener('click',e=>{const f=e.target.closest('[data-f]');if(f){LP.f[f.dataset.f]=LP.f[f.dataset.f]===false;lpRender();return}const r=e.target.closest('[data-x]');if(r)flyTo(+r.dataset.x,+r.dataset.y,Math.max(view.s,6))});
 /* ---------- storm cell table (like the cell lists of operational radars) ---------- */
-function stormName(s){return s.megaT?'عاصفة رعدية عملاقة':s.mini?'عاصفة صغيرة':s.hookR?'خلية عملاقة':s.type==='line'?'خط عواصف':s.mcs?'مطر واسع عاصف':s.tc?'إعصار مداري':s.lst?'مطر واسع خفيف':s.type==='strat'?'مطر واسع':s.type==='low'?'منخفض':s.type==='shower'?'خلية مطرية':'عاصفة رعدية'}
+function stormName(s){return s.ul?'منخفض علوي':s.megaT?'عاصفة رعدية عملاقة':s.mini?'عاصفة صغيرة':s.hookR?'خلية عملاقة':s.type==='line'?'خط عواصف':s.mcs?'مطر واسع عاصف':s.tc?'إعصار مداري':s.lst?'مطر واسع خفيف':s.type==='strat'?'مطر واسع':s.type==='low'?'منخفض':s.type==='shower'?'خلية مطرية':'عاصفة رعدية'}
 function cellTableHTML(){const L=warnStorms().slice().sort((a,b)=>b.mx-a.mx);if(!L.length)return '<p style="color:var(--muted)">ما فيه عواصف قوية حالياً (الجدول يعرض السحب من 45 dBZ).</p>';
   const rows=L.slice(0,40).map(w=>{const sp=Math.hypot(w.vx,w.vy)*PX*60,az=(Math.atan2(w.vx,-w.vy)*180/Math.PI+360)%360,s=w.s,hp=hailOK(s)?Math.round(100*sst(50,66,w.mx)):Math.round(25*sst(56,68,w.mx));
     let eta=null;for(const c of CITIES){for(let t=0;t<=180;t+=5){if(Math.hypot(w.cx+w.vx*t-c.x,w.cy+w.vy*t-c.y)<=w.r+8/PX){if(!eta||t<eta.t)eta={t,n:c.n};break}}}
@@ -2657,7 +2676,7 @@ addEventListener('keydown',e=>{if(e.target.matches('input,textarea'))return;
 /* ---------- loop ---------- */
 let last=performance.now(),uiT=0,paintT=0;
 function frame(now){const rdt=Math.min(0.1,(now-last)/1000);last=now;
-  if(drag&&drag.kind==='paint'&&tool!=='mega'&&tool!=='mcs'&&tool!=='tc'&&tool!=='gauge'&&hover&&now-drag.t>650){const j=SPACING[tool]*0.6;trySpawn(tool,hover.x+R(-j,j),hover.y+R(-j,j));drag.t=now}
+  if(drag&&drag.kind==='paint'&&tool!=='mega'&&tool!=='mcs'&&tool!=='tc'&&tool!=='ul'&&tool!=='gauge'&&hover&&now-drag.t>650){const j=SPACING[tool]*0.6;trySpawn(tool,hover.x+R(-j,j),hover.y+R(-j,j));drag.t=now}
   flyStep(now);if(aimOn()&&cw){const c=toWorld(cw/2,ch/2);hover=c;if(!lastRead||Math.abs(lastRead.x-c.x)+Math.abs(lastRead.y-c.y)>0.25)updateReadout(c);
     const v=c.x>=0&&c.y>=0&&c.x<W&&c.y<H?DBZ[(c.y|0)*W+(c.x|0)]:0,k=v>=45?'hot':v>=15?'wet':'';if(mAimEl.className!==k)mAimEl.className=k}
   if(product==='fcst')scenBrush(rdt);if(scen.running&&now-(scen.uiT||0)>400){scen.uiT=now;scenSync()}if(LP.open&&now-LP.t>1000){LP.t=now;lpRender()}chalCheck();if(now-(SND.uT||0)>80){SND.uT=now;sndUpdate();sndBtnMeter()}
@@ -2679,8 +2698,9 @@ $('scStop').addEventListener('click',()=>scenEnd(true));$('scBack').addEventList
 function setProduct(pv){product=pv;document.body.classList.toggle('pf',pv==='fcst');segSet('prodSeg','p',pv);segSet('modeSeg','m',pv==='fcst'?'chal':mission.on?'mission':'free');fieldDirty=true;windT=0;WP.key='';if(pv==='fcst'&&scen.world&&!scen.running)scen.editing=true;if(pv!=='fcst')scen.editing=false;scenUI();scenSync();if(pv==='fcst'){scenEnsure();scen.dirty=true;scenRender()}renderLegend()}
 const DISCORD_URL=''; // رابط ديسكورد يوضع هنا لاحقاً
 // update notes shown on the welcome screen (newest first), like game patch notes
-const APP_VERSION=113,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
+const APP_VERSION=114,verLabel=v=>(v/100).toFixed(2);   // internal build number 50 -> shown as 0.50
 const CHANGELOG=[
+  {v:114,title:'المنخفض العلوي والعواصف المتتالية',add:['أداة جديدة "منخفض علوي": حزام أمطار طويل جداً مع اتجاه الرياح (من الجنوب الغربي للشمال الشرقي غالباً)، يمشي ككتلة وحدة ويولّد عواصف رعدية باستمرار','العواصف تتكون أغلبها من طرفه الخلفي وتمشي على طوله وحدة ورا وحدة، فنفس الأماكن يجيها مطر مرة بعد مرة وتزيد السيول','طرف الحزام الخلفي يثبت تقريباً لو كان فوق الجبال ويستمر يولّد عواصف، والطرف الأمامي يكمل مع الرياح','المنخفض العلوي يتكون لحاله أحياناً (نادر) في الأجواء الرطبة وغير المستقرة','العواصف العادية صارت أحياناً تولّد خلية جديدة وراها على نفس المسار (عواصف متتالية)']},
   {v:113,title:'مطر خفيف أوسع في الإعصار المداري',add:['الإعصار المداري صار حوله مطر خفيف أكثر وأوسع: غطاء مطر خفيف يدور معه، والأذرع حولها مطر خفيف بدل الفراغ الكامل']},
   {v:112,title:'إعصار مداري واقعي، وإصلاحات الجوال',add:['أعدنا بناء الإعصار المداري: عين صافية، جدار عواصف قوي حولها (أقوى من جهة)، حلقة مطر أخف، و3-4 أذرع مطر حلزونية واضحة بينها فراغات','الأذرع تدور عكس عقارب الساعة (الداخل أسرع)، والخلايا تزحف داخلها باتجاه العين، والأذرع تتنفس وتتغير، والإعصار كله يمشي مع الرياح ويضعف على اليابسة'],fix:['شلنا خانة "نوع الهطول"','الجوال: الصوت صار يشتغل بعد أول لمسة (وحتى لو الآيفون على الصامت)','الجوال: سجل الأحداث صار ينسحب (سكرول)','الجوال: شلنا زر الإعدادات']},
   {v:111,title:'مركز المعلومات، منتجات رادار جديدة، الإعصار المداري، والمواسم',add:['زر "سجل الأحداث" فوق يفتح مركز المعلومات: الإنذارات الحالية، جدول العواصف، وسجل كل الأحداث (إنذارات، برد، سيول، صواعق، اندماج، ملخص الأيام، المواسم) مع فلترة وحفظ كملف وعدّاد للأحداث الجديدة','جدول العواصف: لكل عاصفة رقمها ونوعها وقوتها وسرعتها واتجاهها واحتمال البرد وأي مدينة بتوصلها ومتى، واضغط الصف وتروح لها','منتج رادار "احتمال البرد": خريطة نسبة احتمال نزول البرد','منتج رادار "نوع الهطول": مطر خفيف ومتوسط وغزير، مطر وثلج، ثلج، وبرد','أداة "محطة قياس": ركّب محطات مطر في أي مكان، واضغطها تشوف قراءتها ورسم بياني للمطر ساعة بساعة','رسم بياني لكل مدينة من زر صغير في إحصائيات الأمطار','أداة "إعصار مداري": عين صافية، جدار من العواصف القوية حولها، وأذرع مطر حلزونية تدور، ويضعف على اليابسة','المواسم المحلية: الوسم والمربعانية والشبط والعقارب والحميمين والذراعين والثريا والجوزاء والمرزم والكليبين وسهيل تطلع مع التاريخ، وكل موسم يأثر على كثرة السحب','طبقة "نسيم البحر والتقاء الرياح": اتجاه نسيم البحر نهاراً ونسيم البر ليلاً، وخطوط الالتقاء اللي تتكون عليها السحب'],fix:['قائمة الإنذارات انتقلت من تحت يسار إلى مركز المعلومات عشان ما تزحم الخريطة','برنامج الكمبيوتر الجديد: شاشة التحديث فيها شريط تقدم وحجم التحديث والسرعة والوقت المتبقي (تحتاج تنزيل البرنامج الجديد مرة وحدة)']},
